@@ -1,0 +1,25 @@
+-> I have a text file in which all the paths that are accessible are stored (so that even if server is turned off or goes down this infomation is retained).
+-> On starting the server all these addresses are loaded into the buffer (2D char array).
+-> A separate thread will be maintaining this file by writing the current state of the accessible paths buffer whenever some change has taken place in it (deletion or addition)
+
+Hardcoded value for paths.txt file for testing:
+5
+./test_dir/dir1/file1.txt
+./test_dir/dir1/file2.txt
+./test_dir/dir2/file3.txt
+./test_dir/dir3/file4.txt
+./test_dir/dir3/file5.txt
+
+
+
+
+# Remaining to implement
+-> When the server starts find two other servers and store the same files in them also
+-> Tell all the other servers where the same file is stored to also update the files.
+-> Implement better data structures to search and update in accessible paths array
+-> Serve each request in it's own separate thread so we can move on to processing other requests
+
+
+
+# Assumptions
+-> relative path names always start with ./
