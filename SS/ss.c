@@ -2,10 +2,8 @@
 
 // Initiating global variables
 pthread_mutex_t accessible_paths_mutex;
-pthread_mutex_t pending_requests_arr_mutex;
 pthread_mutex_t threads_arr_mutex;
 pthread_cond_t update_paths_txt_cond_var;
-pthread_cond_t pending_requests_cond_var;
 
 char**  accessible_paths         = NULL;           // Stores the RELATIVE PATH (relative to the directory in which the storage server c file resides) of all the files that are accessible by clients on this storage server
 int     num_of_paths_stored      = 0;              // Initially no paths are stored
@@ -33,11 +31,9 @@ int main(int argc, char *argv[])
     // Initializing mutexes, condition variables and semaphores
     /*========== MUTEX ==========*/
     pthread_mutex_init(&accessible_paths_mutex, NULL);
-    pthread_mutex_init(&pending_requests_arr_mutex, NULL);
     pthread_mutex_init(&threads_arr_mutex, NULL);
     /*========== COND VARS ==========*/
     pthread_cond_init(&update_paths_txt_cond_var, NULL);
-    pthread_cond_inti(&pending_requests_cond_var, NULL);
     /*========== SEMAPHORES ==========*/
 
     // First start the NFS and Client TCP servers to listen to their requests
@@ -57,11 +53,9 @@ int main(int argc, char *argv[])
     // Destroying mutexes, condition variables and semaphores
     /*========== MUTEX ==========*/
     pthread_mutex_destroy(&accessible_paths_mutex);
-    pthread_mutex_destroy(&pending_requests_arr_mutex);
     pthread_mutex_destroy(&threads_arr_mutex);
     /*========== COND VARS ==========*/
     pthread_cond_destroy(&update_paths_txt_cond_var);
-    pthread_cond_destroy(&pending_requests_cond_var);
     /*========== SEMAPHORES ==========*/
 
     // Freeing Memory
