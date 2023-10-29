@@ -73,21 +73,26 @@ typedef struct st_pending_request_node
 
 typedef st_pending_request_node* pending_request_node;
 
+typedef struct st_thread_data
+{
+    int thread_idx;
+    int client_sock_fd;
+} st_thread_data;
+
+typedef struct st_thread_data* thread_data;
+
 // ========================= Global variables =========================
-extern char**  accessible_paths;            // Stores the RELATIVE PATH (relative to the directory in which the storage server c file resides) of all the files that are accessible by clients on this storage server
+extern char**  accessible_paths;            // Stores all the RELATIVE PATHS (relative to the directory in which the storage server c file resides) of all the files that are accessible by clients on this storage server
 extern int     num_of_paths_stored;         // Stores the number of paths which are currently stored in the accessible_paths array
-extern request request_buffer;              // Buffer (Queue) to store all the incoming requests
-extern int     num_of_pending_requests;     // Stores the number of pending requests in the queue
-extern int     request_buffer_read_idx;     // Index from where to read the request
-extern int     request_buffer_write_idx;    // Index where to write new incoming requests
 extern int     nfs_registrations_status;    // Stores the status whether our server has been registered with NFS or not
-extern int     nfs_socket_fd;               // NFS socket fd (used for communication with nfs)
-extern struct  sockaddr_in nfs_address;     // IPv4 address struct
-extern pending_request_node pending_requests_buffer;    // Buffer to store all the pending request to be served to clients
-extern int     num_of_pending_requests;     // Stores the number of pending requests stored in the pending_buffer
-extern int     read_head_idx_pending_requests_buffer;   // Index where to read the next pending request from
-extern int     write_head_idx_pending_requests_buffer;  // Index where to write the next pending request
+extern struct  sockaddr_in ss_address_nfs;      // IPv4 address struct
+extern struct  sockaddr_in ss_address_client;   // IPv4 address struct
+extern int     read_head_idx_requests_buffer;   // Index where to read the next pending request from
+extern int     write_head_idx_requests_buffer;  // Index where to write the next pending request
 extern pthread_t* requests_serving_threads_arr; // Holds the threads when a request is being served in some thread
 extern int*    thread_slot_empty_arr;           // 1 = thread is running, 0 = thread slot is free and can be used to create a new thread
-
+extern int     client_server_socket_fd;     // Socket file descriptor to receive client requests
+extern int     nfs_server_socket_fd;        // Socket file descriptot to receive NFS requests
+extern struct  sockaddr_in address;         // IPv4 address struct
+extern int     socket_fd;                   // UDP Socket used for communication with NFS to register my SS
 #endif

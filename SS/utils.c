@@ -46,7 +46,7 @@ void accessible_paths_init(void)
 }
 
 // This function tokenises the provided string on given character and returns a 2D character array broken at ch
-char** tokenize(const char* str, const char ch)
+char **tokenize(const char *str, const char ch)
 {
     // Counting the number of delimiters
     int num_of_ch = 0;
@@ -60,16 +60,16 @@ char** tokenize(const char* str, const char ch)
     int num_of_tokens = num_of_ch + 1;
 
     // Allocating num_of_tokens + 1 memory because we need to store last token as NULL token to mark the end of tokens
-    char** tokens = (char**) malloc((num_of_tokens + 1) * sizeof(char*));
+    char **tokens = (char **)malloc((num_of_tokens + 1) * sizeof(char *));
     for (int i = 0; i < num_of_tokens; i++)
     {
-        tokens[i] = (char*) calloc(MAX_PATH_LEN, sizeof(char));
+        tokens[i] = (char *)calloc(MAX_PATH_LEN, sizeof(char));
     }
     // The last token will be kept null so that when traversing we would know when the tokens end by checking for NULL token
     tokens[num_of_tokens] = NULL;
 
-    int token_idx = 0;      // Index of the token being stored
-    int token_str_idx = 0;  // Index where the next character is to be stored on token
+    int token_idx = 0;     // Index of the token being stored
+    int token_str_idx = 0; // Index where the next character is to be stored on token
     for (int i = 0; i < strlen(str); i++)
     {
         // If the delimiter character is encountered increment the token index by 1 to start storing the next token and reset the token string index to 0 to start storing from the starting of the string
@@ -89,7 +89,7 @@ char** tokenize(const char* str, const char ch)
 }
 
 // Frees the memory allocated to the 2D tokens array
-void free_tokens(char** tokens)
+void free_tokens(char **tokens)
 {
     // Looping through all the tokens untill the NULL token is encountered which marks the end of the tokens array
     int i = 0;
@@ -158,40 +158,112 @@ void remove_path(const char *path)
     return;
 }
 
-// This function just connects to the NFS server (SS acts as a UDP client)
-void start_nfs_port(void)
+// Registers my SS with NFS using UDP uses two threads one for sending and other for receiving acknowledgement
+void register_ss(void)
 {
-    // Creating the UDP socket
-    if ((nfs_socket_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-    {
+    socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (socket_fd < 0)
+    { 
         // Some error occured while creating socket
         fprintf(stderr, RED("socket : %s"), strerror(errno));
         exit(EXIT_FAILURE);
     }
 
-    memset(&nfs_address, 0, sizeof(nfs_address));
+    // Stores address information about the client side address
+    memset(&address, 0, sizeof(address));
 
-    nfs_address.sin_family = AF_INET;
-    nfs_address.sin_port = htons(NFS_SERVER_PORT_NO); // port on which server side process is listening
+    address.sin_family = AF_INET;
+    address.sin_port = htons(NFS_SERVER_PORT_NO); // port on which server side process is listening
 
-    // inet presentation to network - converts the ip string to unsigned integer
-    if (inet_pton(AF_INET, NFS_IP, nfs_address.sin_addr.s_addr) <= 0)
-    {
+    if (inet_pton(AF_INET, NFS_IP, &address.sin_addr.s_addr) <= 0)
+    { 
+        // inet presentation to network - converts the ip string to unsigned integer
         fprintf(stderr, RED("inet_pton : %s\n"), strerror(errno));
+        return 0;
+    }
+
+    // Two threads one to send the registration request and another to accept the registration request because we are using UDP socket
+    // Registration request sending and registration acknowledgement receiving thread
+    pthread_t reg_req_sending_thread, reg_ack_receiving_thread;
+
+    pthread_create(&reg_req_sending_thread, NULL, &send_reg_req, NULL);
+    pthread_create(&reg_ack_receiving_thread, NULL, &receive_reg_ack, NULL);
+
+    pthread_join(reg_req_sending_thread, NULL);
+    pthread_join(reg_ack_receiving_thread, NULL);
+
+    return;
+}
+
+// This function starts and binds to the port which listens for communication with NFS
+void start_nfs_port(void)
+{
+    memset(&ss_address_nfs, 0, sizeof(ss_address_nfs));
+
+    // This socket id is never used for sending/receiving data, used by server just to get new sockets (clients)
+    nfs_server_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (nfs_server_socket_fd < 0)
+    {
+        // Some error occured while creating socket
+        fprintf(stderr, RED("socket : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
 
-    pthread_t nfs_data_sending_thread, nfs_data_receiving_thread;
+    ss_address_nfs.sin_family = AF_INET;
+    ss_address_nfs.sin_port = htons(MY_NFS_PORT_NO); // My port on which I am listening to NFS communication
+    ss_address_nfs.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    pthread_create(&nfs_data_sending_thread, NULL, &send_data_nfs, NULL);
-    pthread_create(&nfs_data_receiving_thread, NULL, &receive_data_nfs, NULL);
+    // Binding to the port
+    if (bind(nfs_server_socket_fd, (struct sockaddr *)&ss_address_nfs, sizeof(ss_address_nfs)) == -1)
+    {
+        fprintf(stderr, RED("bind : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
 
-    pthread_join(nfs_data_sending_thread, NULL);
-    pthread_join(nfs_data_receiving_thread, NULL);
+    // Listening for incoming requests for communication
+    if (listen(nfs_server_socket_fd, MAX_PENDING) == -1)
+    {
+        fprintf(stderr, RED("listen : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
 
-    // Closing the udp socket
-    if (close(nfs_socket_fd) < 0) {
-        fprintf(stderr, RED("close : failed to close the socket!\n"));
+    while (1)
+    {
+        // Keep accepting incoming requests
+        // Accepting NFS requests
+        struct sockaddr_in nfs_addr;
+        int addr_size = sizeof(struct sockaddr_in);
+        int nfs_sock_fd = accept(nfs_server_socket_fd, (struct sockaddr *)&nfs_addr, (socklen_t *)&addr_size);
+        if (nfs_sock_fd == -1)
+        {
+            fprintf(stderr, RED("accept : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+
+        pthread_mutex_lock(&threads_arr_mutex);
+        for (int i = 0; i < MAX_PENDING; i++)
+        {
+            if (thread_slot_empty_arr[i] == 0)
+            {
+                thread_slot_empty_arr[i] = 1;
+                thread_data args = (thread_data)malloc(sizeof(st_thread_data));
+                args->client_sock_fd = nfs_sock_fd;
+                args->thread_idx = i;
+
+                // If this thread is still running then first wait for it to complete, it is about to complete as it has already made it's slot empty to 0
+                pthread_join(requests_serving_threads_arr[i], NULL);
+
+                // Create a new thread on the same position
+                pthread_create(&requests_serving_threads_arr[i], NULL, &serve_request, args);
+                break;
+            }
+        }
+        pthread_mutex_unlock(&threads_arr_mutex);
+    }
+
+    if (close(nfs_server_socket_fd) < 0)
+    {
+        fprintf(stderr, RED("close : failed to close the server socket!\n"));
         exit(EXIT_FAILURE);
     }
 
@@ -201,50 +273,83 @@ void start_nfs_port(void)
 // This function binds to the port listening for client requests and starts listening for requests made by clients (SS acts as TCP server)
 void start_client_port(void)
 {
-    struct sockaddr_in ss_address; // IPv4 address struct
-    memset(&ss_address, 0, sizeof(ss_address));
+    memset(&ss_address_client, 0, sizeof(ss_address_client));
 
-    int ss_socket_fd;
-    if ((ss_socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    // This socket id is never used for sending/receiving data, used by server just to get new sockets (clients)
+    client_server_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_server_socket_fd < 0)
     {
         // Some error occured while creating socket
         fprintf(stderr, RED("socket : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
 
-    ss_address.sin_family = AF_INET;
-    ss_address.sin_port = htons(MY_CLIENT_PORT_NO); // port on which we are listening to client
-    ss_address.sin_addr.s_addr = htonl(INADDR_ANY);
+    ss_address_client.sin_family = AF_INET;
+    ss_address_client.sin_port = htons(MY_CLIENT_PORT_NO); // My port on which I am listening to Client communication
+    ss_address_client.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    // Binding to the socket
-    if (bind(ss_socket_fd, (struct sockaddr *)&ss_address, sizeof(ss_address)) == -1)
+    // Binding to the port
+    if (bind(client_server_socket_fd, (struct sockaddr *)&ss_address_client, sizeof(ss_address_client)) == -1)
     {
+        // Error while binding to the port
         fprintf(stderr, RED("bind : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
 
-    // Listen is non blocking call
-    if (listen(ss_socket_fd, MAX_PENDING) == -1)
+    // Listening for incoming requests for communication
+    if (listen(client_server_socket_fd, MAX_PENDING) == -1)
     {
         fprintf(stderr, RED("listen : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
 
-    pthread_t client_data_sending_thread, client_data_receiving_thread;
-
-    pthread_create(&client_data_sending_thread, NULL, &send_data_client, NULL);
-    int* sock_fd = (int*) malloc(sizeof(int));
-    *sock_fd = ss_socket_fd;
-    pthread_create(&client_data_receiving_thread, NULL, &receive_data_client, sock_fd);
-
-    pthread_join(client_data_sending_thread, NULL);
-    pthread_join(client_data_sending_thread, NULL);
-
-    if (close(ss_socket_fd) < 0)
+    while (1)
     {
+        // Keep accepting incoming requests
+        // Accepting client requests
+        struct sockaddr_in client_addr;
+        int addr_size = sizeof(struct sockaddr_in);
+
+        // This socket is used for communication with the particular client
+        int client_socket_fd = accept(client_server_socket_fd, (struct sockaddr *)&client_addr, (socklen_t *)&addr_size);
+        if (client_socket_fd == -1)
+        {
+            fprintf(stderr, RED("accept : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+
+        // If the threads array is full then the request won't be served and just ignored => No ack will be sent for that request so the NFS should request the same again if ack is not received in some time
+        pthread_mutex_lock(&threads_arr_mutex);
+        for (int i = 0; i < MAX_PENDING; i++)
+        {
+            if (thread_slot_empty_arr[i] == 0)
+            {
+                // This thread slot will now get busy so setting it's value to 1 (busy)
+                thread_slot_empty_arr[i] = 1;
+                // Storing the data that is to be passed to the thread in a struct
+                thread_data args = (thread_data)malloc(sizeof(st_thread_data));
+                args->client_sock_fd = client_socket_fd;
+                args->thread_idx = i;
+
+                // If this thread is still running then first wait for it to complete, it is about to complete as it has already made it's slot empty to 0
+                pthread_join(requests_serving_threads_arr[i], NULL);
+
+                // Create a new thread on the same position
+                pthread_create(&requests_serving_threads_arr[i], NULL, &serve_request, args);
+                break;
+            }
+        }
+        pthread_mutex_unlock(&threads_arr_mutex);
+    }
+
+    // Close the server
+    if (close(client_server_socket_fd) < 0)
+    {
+        // Error while closing the socket
         fprintf(stderr, RED("close : failed to close the server socket!\n"));
-        return 1;
+        exit(EXIT_FAILURE);
     }
 
     return;
 }
+
