@@ -1,0 +1,33 @@
+import subprocess
+import sys
+import os
+
+# Change the operating system name on which device you are running this code (macos/linux)
+operating_system = "macos"
+
+num_of_ss: int = 1
+
+# Provide the number of SS to start through command line otherwise the default value is 1
+if len(sys.argv) >= 2:
+    num_of_ss = int(sys.argv[1])
+
+# Getting the path to current working directory
+cwd = os.getcwd()
+
+if operating_system == "macos":
+    for i in range(num_of_ss):
+        os.chdir(f"SS{i + 1}")
+        command = f'open -a Terminal.app ss.o'
+        subprocess.Popen(command, shell=True)
+        os.chdir("..")
+
+elif operating_system == "linux":
+    for i in range(num_of_ss):
+        os.chdir(f"SS{i + 1}")
+        command = f'gnome-terminal -x bash -c "./ss.o"'
+        subprocess.Popen(command, shell=True)
+        os.chdir("..")
+
+    
+
+
