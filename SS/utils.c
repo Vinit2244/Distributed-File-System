@@ -179,7 +179,7 @@ void register_ss(void)
     { 
         // inet presentation to network - converts the ip string to unsigned integer
         fprintf(stderr, RED("inet_pton : %s\n"), strerror(errno));
-        return 0;
+        exit(EXIT_FAILURE);
     }
 
     // Two threads one to send the registration request and another to accept the registration request because we are using UDP socket

@@ -49,7 +49,7 @@ void* serve_request(void* args)
     }
 
     // Process request
-    printf(BLUE("\nRequest received : %d\n"), request.data);
+    printf(BLUE("\nRequest received : %s\n"), request.data);
 
     // Send acknowledgement
     st_request ack_st;
@@ -109,7 +109,7 @@ void *send_reg_req(void* args)
     while (nfs_registrations_status == NOT_REGISTERED)
     {
         int sent_msg_size;
-        if ((sent_msg_size = send_to(socket_fd, (request)&registration_request_st, sizeof(st_request), 0, (struct sockaddr *)&address, sizeof(address))) < 0)
+        if ((sent_msg_size = sendto(socket_fd, (request)&registration_request_st, sizeof(st_request), 0, (struct sockaddr *)&address, sizeof(address))) < 0)
         {
             fprintf(stderr, RED("sendto : %s\n"), strerror(errno));
             exit(1);
