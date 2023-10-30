@@ -4,6 +4,7 @@ import subprocess
 import shutil
 import re
 
+# Updates the "headers.h" file to assign each individual SS a unique port number for NFS and client communication
 def update_header_and_config_files(i: int, base_dir: str) -> None:
     # Now assigning the port numbers to this Storage server
     input_file = base_dir + "/headers.h"    # File in which these macros are stored
@@ -26,16 +27,19 @@ def update_header_and_config_files(i: int, base_dir: str) -> None:
     with open("ss_config.txt", "a") as config_file:
         config_file.write(f"SS {i + 1}:\nNFS_PORT_NO_SS{i + 1} = {1000 * (i + 1) + 500}\nCLIENT_PORT_NO_SS_{i + 1} = {1000 * (i + 1) + 501}\n\n")
 
+# Cleans all the make compiled files
 def run_clean(i: int) -> None:
     os.chdir(f"SS{i + 1}")
     subprocess.run(['make', 'clean'],  check = True)
     os.chdir("..")
 
+# Compiles all the make files
 def compile_make(i: int) -> None:
     os.chdir(f"SS{i + 1}")
     subprocess.run(['make'],  check = True)
     os.chdir("..")
-    
+
+# Copy the "SS_to_copy" folder n times (n specified through command line argument)
 def copy_folder_n_times(num_of_ss: int, cwd: str) -> None:
     source_dir = cwd + "/SS_to_copy"
 
@@ -48,6 +52,7 @@ def copy_folder_n_times(num_of_ss: int, cwd: str) -> None:
         finally:
             pass
     
+# Creates a directory at the specified absolute path
 def create_dir(path: str) -> None:
     # Try to create the directory and if it already exists then just ignore and continue
     try:
@@ -57,6 +62,7 @@ def create_dir(path: str) -> None:
     finally:
         pass
     
+# Creates a file with the current file index in it's name at the path provided
 def create_file(path: str, curr_file_index: int) -> None:
     try:
         with open(path, "x") as file:
@@ -68,6 +74,7 @@ def create_file(path: str, curr_file_index: int) -> None:
 with open("ss_config.txt", "w") as config_file:
     pass
 
+# Setting the default values for these parameters (if new values are provided through command line arguments they would be used instead of the default ones)
 num_of_ss: int = 10     # Number of storage servers available
 num_of_dir: int = 3     # Number of dir in each test_dir
 max_num_of_files_in_dir: int = 2   # Number of files in each dir

@@ -5,6 +5,7 @@ import os
 # Change the operating system name on which device you are running this code (macos/linux)
 operating_system = "macos"
 
+# Number of Storage servers i want to start (default = 1), input provided through command line
 num_of_ss: int = 1
 
 # Provide the number of SS to start through command line otherwise the default value is 1
@@ -16,17 +17,18 @@ cwd = os.getcwd()
 
 if operating_system == "macos":
     for i in range(num_of_ss):
-        os.chdir(f"SS{i + 1}")
-        command = f'open -a Terminal.app ss.o'
+        os.chdir(f"SS{i + 1}")                  # Changing cwd to the SS folder 
+        command = f'open -a Terminal.app ss.o'  # Running the command to open new terminal window and run the .o file
         subprocess.Popen(command, shell=True)
-        os.chdir("..")
+        os.chdir("..")                          # Going back to parent directory
 
 elif operating_system == "linux":
     for i in range(num_of_ss):
-        os.chdir(f"SS{i + 1}")
+        os.chdir(f"SS{i + 1}")                  # Changing cwd to the SS folder 
+        # Running the command to open new terminal window and run the .o file
         command = f'gnome-terminal -x bash -c "./ss.o"'
         subprocess.Popen(command, shell=True)
-        os.chdir("..")
+        os.chdir("..")                          # Going back to parent directory
 
     
 
