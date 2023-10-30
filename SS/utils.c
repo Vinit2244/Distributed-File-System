@@ -219,6 +219,8 @@ void start_nfs_port(void)
         fprintf(stderr, RED("bind : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
+    
+    printf(GREEN("Started listening to NFS requests.\n"));
 
     // Listening for incoming requests for communication
     if (listen(nfs_server_socket_fd, MAX_PENDING) == -1)
@@ -295,6 +297,8 @@ void start_client_port(void)
         fprintf(stderr, RED("bind : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
+
+    printf(GREEN("Started listening to Client requests.\n"));
 
     // Listening for incoming requests for communication
     if (listen(client_server_socket_fd, MAX_PENDING) == -1)

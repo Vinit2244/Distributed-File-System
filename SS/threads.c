@@ -31,8 +31,8 @@ void *store_filepaths(void *args)
 void* serve_request(void* args)
 {
     st_thread_data meta_data = *((thread_data) args);
-    int sock_fd = meta_data.client_sock_fd;
-    int thread_index = meta_data.thread_idx;
+    int sock_fd = meta_data.client_sock_fd;             // Socket id for communicating with the node which has sent the request
+    int thread_index = meta_data.thread_idx;            // Index of the thread on which this is running
 
     // Freeing arguments as all the information is extracted
     free(args);
@@ -125,13 +125,22 @@ void *receive_reg_ack(void* args)
 {
     // Receiving registration acknowledgement
     st_request registration_ack_st;
-    memset(&registration_ack_st, 0, MAX_DATA_LENGTH);
-
-    int msg_size_recvd;
-    if ((msg_size_recvd = recv(socket_fd, &registration_ack_st, sizeof(st_request), 0)) <= 0)
+    while (1)
     {
-        fprintf(stderr, RED("recv : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
+        memset(&registration_ack_st, 0, MAX_DATA_LENGTH);
+
+        int msg_size_recvd;
+        if ((msg_size_recvd = recv(socket_fd, &registration_ack_st, sizeof(st_request), 0)) <= 0)
+        {
+            fprintf(stderr, RED("recv : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+
+        if (registration_ack_st.request_type == REGISTRATION_ACK)
+        {
+            nfs_registrations_status = REGISTERED;
+            break;
+        }
     }
 
     // Closing NFS socket
