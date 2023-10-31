@@ -161,37 +161,80 @@ void remove_path(const char *path)
 // Registers my SS with NFS using UDP uses two threads one for sending and other for receiving acknowledgement
 void register_ss(void)
 {
-    // printf("Register SS handler!\n");
-    socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (socket_fd < 0)
+    // Preparing the request to be sent
+    st_request registration_request_st;
+    registration_request_st.request_type = REGISTRATION_REQUEST;
+    memset(registration_request_st.data, 0, MAX_DATA_LENGTH);
+
+    // Creating paths string array to be 1000 less than the max size because the data would also contain ip and ports info so not all space is used by the paths
+    char paths_string[MAX_DATA_LENGTH - 1000] = {0};
+
+    pthread_mutex_lock(&accessible_paths_mutex);
+    for (int i = 0; i < num_of_paths_stored; i++)
+    {
+        // Attach the path to the end of the string
+        strcat(paths_string, accessible_paths[i]);
+
+        // If the current path is not the last one then attach a pipe '|' after the current path
+        if (i != num_of_paths_stored - 1)
+        {
+            strcat(paths_string, "|");
+        }
+    }
+    pthread_mutex_unlock(&accessible_paths_mutex);
+
+    // Printing my SS details like port number and ip address and all the paths that are stored currently with me on the query
+    sprintf(registration_request_st.data, "%d|%s|%d|%d|%d|%s", MY_SS_ID, MY_IP, MY_CLIENT_PORT_NO, MY_NFS_PORT_NO, num_of_paths_stored, paths_string); // <My ss_id>|<My ip>|<client port>|<nfs port>|<no of paths>|[<paths>]
+
+    // Connecting to the NFS through TCP
+    memset(&address, 0, sizeof(address));
+
+    socket_fd = socket(PF_INET, SOCK_STREAM, 0);
+    if (socket_fd < 0) 
     { 
         // Some error occured while creating socket
-        fprintf(stderr, RED("socket : %s"), strerror(errno));
+        fprintf(stderr, RED("socket : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
 
-    // Stores address information about the client side address
-    memset(&address, 0, sizeof(address));
+    address.sin_port    = htons(NFS_SERVER_PORT_NO);        // port on which server side process is listening
+    address.sin_family  = AF_INET;
 
-    address.sin_family = AF_INET;
-    address.sin_port = htons(NFS_SERVER_PORT_NO); // port on which server side process is listening
-
-    if ((address.sin_addr.s_addr = inet_addr(NFS_IP)) <= 0)
-    { 
-        // inet presentation to network - converts the ip string to unsigned integer
+    if (inet_pton(AF_INET, NFS_IP, &address.sin_addr.s_addr) <= 0) 
+    {   
         fprintf(stderr, RED("inet_pton : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
 
-    // Two threads one to send the registration request and another to accept the registration request because we are using UDP socket
-    // Registration request sending and registration acknowledgement receiving thread
-    pthread_t reg_req_sending_thread, reg_ack_receiving_thread;
+    // Waiting for us to connect to the NFS, it may happen that the NFS port might be busy and could not accept the connection request so sending it again and again until once it connects
+    while(1)
+    {
+        if (connect(socket_fd, (struct sockaddr *) &address, sizeof(address)) == -1) 
+        {
+            // Could not connect
+            continue;
+        }
+        // Connected
+        break;
+    }
 
-    pthread_create(&reg_req_sending_thread, NULL, &send_reg_req, NULL);
-    pthread_create(&reg_ack_receiving_thread, NULL, &receive_reg_ack, NULL);
+    // Sending the registration request
+    int sent_msg_size;
+    if ((sent_msg_size = sendto(socket_fd, (request)&registration_request_st, sizeof(st_request), 0, (struct sockaddr *)&address, sizeof(address))) < 0)
+    {
+        fprintf(stderr, RED("sendto : %s\n"), strerror(errno));
+        exit(1);
+    }
 
-    pthread_join(reg_req_sending_thread, NULL);
-    pthread_join(reg_ack_receiving_thread, NULL);
+    // Send the registration request (since we are using TCP we are sure that it would have reaced the NFS so now we can change the registration status to register assuming that the NFS also registers our ss successfully)
+    nfs_registrations_status = REGISTERED;
+
+    // Closing the socket as the communication is done
+    if (close(socket_fd) < 0) 
+    {
+        fprintf(stderr, RED("close : failed to close the socket!\n"));
+        exit(EXIT_FAILURE);
+    }
 
     return;
 }
