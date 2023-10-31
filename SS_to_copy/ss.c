@@ -13,7 +13,8 @@ int     nfs_server_socket_fd;                      // TCP Socket file descriptor
 int     socket_fd;                                 // UDP Socket used for communication with NFS to register my SS
 struct  sockaddr_in ss_address_nfs;                // IPv4 address struct for ss and nfs TCP communication (requests)
 struct  sockaddr_in ss_address_client;             // IPv4 address struct for ss and client TCP communication (requests)
-struct  sockaddr_in address;                       // IPv4 address struct for ss and nfs USP communication (register)
+struct  sockaddr_in address;         
+socklen_t addr_size;              // IPv4 address struct for ss and nfs USP communication (register)
 int*    thread_slot_empty_arr;                     // 1 = thread is running, 0 = thread slot is free and can be used to create a new thread
 pthread_t* requests_serving_threads_arr;           // Holds the threads when a request is being served in some thread
 
@@ -37,11 +38,11 @@ int main(int argc, char *argv[])
     /*========== SEMAPHORES ==========*/
 
     // First start the NFS and Client TCP servers to listen to their requests
+    if(nfs_registrations_status==NOT_REGISTERED)register_ss();
     start_nfs_port();
     start_client_port();
-
+    
     // Register my SS with NFS
-    register_ss();
 
     // Creating the thread that would keep updating the paths.txt file with the current state of the accessible paths array regularly after some time interval
     pthread_t store_filepaths_thread;

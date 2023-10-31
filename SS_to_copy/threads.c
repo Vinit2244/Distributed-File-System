@@ -109,6 +109,7 @@ void *send_reg_req(void* args)
     while (nfs_registrations_status == NOT_REGISTERED)
     {
         int sent_msg_size;
+        // printf("%d\n",sizeof(&registration_request_st))
         if ((sent_msg_size = sendto(socket_fd, (request)&registration_request_st, sizeof(st_request), 0, (struct sockaddr *)&address, sizeof(address))) < 0)
         {
             fprintf(stderr, RED("sendto : %s\n"), strerror(errno));
@@ -127,17 +128,20 @@ void *receive_reg_ack(void* args)
     st_request registration_ack_st;
     while (1)
     {
+        printf("Getting acknowledged!\n");
         memset(&registration_ack_st, 0, MAX_DATA_LENGTH);
 
         int msg_size_recvd;
-        if ((msg_size_recvd = recv(socket_fd, &registration_ack_st, sizeof(st_request), 0)) <= 0)
+        if ((msg_size_recvd = recvfrom(socket_fd, &registration_ack_st,sizeof(st_request),0,(struct sockaddr*)&address,&addr_size)) <= 0)
         {
             fprintf(stderr, RED("recv : %s\n"), strerror(errno));
             exit(EXIT_FAILURE);
         }
+        // printf("%d\n",msg_size_recvd);
 
         if (registration_ack_st.request_type == REGISTRATION_ACK)
         {
+            printf("Got acknowledged!\n");
             nfs_registrations_status = REGISTERED;
             break;
         }

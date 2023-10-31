@@ -161,6 +161,7 @@ void remove_path(const char *path)
 // Registers my SS with NFS using UDP uses two threads one for sending and other for receiving acknowledgement
 void register_ss(void)
 {
+    // printf("Register SS handler!\n");
     socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (socket_fd < 0)
     { 
@@ -175,7 +176,7 @@ void register_ss(void)
     address.sin_family = AF_INET;
     address.sin_port = htons(NFS_SERVER_PORT_NO); // port on which server side process is listening
 
-    if (inet_pton(AF_INET, NFS_IP, &address.sin_addr.s_addr) <= 0)
+    if (address.sin_addr.s_addr=inet_addr(NFS_IP) <= 0)
     { 
         // inet presentation to network - converts the ip string to unsigned integer
         fprintf(stderr, RED("inet_pton : %s\n"), strerror(errno));
