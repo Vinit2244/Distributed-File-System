@@ -14,7 +14,7 @@ int     socket_fd;                                 // UDP Socket used for commun
 struct  sockaddr_in ss_address_nfs;                // IPv4 address struct for ss and nfs TCP communication (requests)
 struct  sockaddr_in ss_address_client;             // IPv4 address struct for ss and client TCP communication (requests)
 struct  sockaddr_in address;         
-socklen_t addr_size;              // IPv4 address struct for ss and nfs USP communication (register)
+socklen_t addr_size;                               // IPv4 address struct for ss and nfs USP communication (register)
 int*    thread_slot_empty_arr;                     // 1 = thread is running, 0 = thread slot is free and can be used to create a new thread
 pthread_t* requests_serving_threads_arr;           // Holds the threads when a request is being served in some thread
 

@@ -53,8 +53,9 @@
 #define READ_REQ             5
 #define DELETE_REQ           6
 #define CREATE_REQ           7
-#define REGISTRATION_REQUEST 8
-#define REGISTRATION_ACK     9
+#define APPEND_REQ           8
+#define REGISTRATION_REQUEST 9
+#define REGISTRATION_ACK     10
 
 // ============================= Statuses =============================
 #define NOT_REGISTERED 0

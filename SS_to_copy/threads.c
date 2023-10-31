@@ -39,30 +39,60 @@ void* serve_request(void* args)
 
     // Accepting the request
     st_request request;
-    memset(&(request.data), 0, MAX_DATA_LENGTH);
-
-    int recvd_msg_size;
-    if ((recvd_msg_size = recv(sock_fd, &request, sizeof(st_request), 0)) <= 0)
+    int stop_req_received = 0;
+    int first_request = 1;
+    while (stop_req_received != 1)
     {
-        fprintf(stderr, RED("recv : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
+        memset(&(request.data), 0, MAX_DATA_LENGTH);
+
+        // Receiving the request
+        int recvd_msg_size;
+        if ((recvd_msg_size = recv(sock_fd, &request, sizeof(st_request), 0)) <= 0)
+        {
+            fprintf(stderr, RED("recv : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+
+        first_request = 0; // First request is received so the following requests won't be the first request (used for sending large amounts of data for writing and appending)
+
+        // Process request
+        printf(BLUE("\nRequest received : %s\n"), request.data);
+        char** request_tkns = tokenize(request.data, '|');
+        /*
+            READ data format : <path>
+            WRITE data format : <path>|<content to write> (Keep sending write data in this format and when all the data to be written is sent send the stop request)
+            APPEND data format : same as write
+        */
+
+        // Selecting the type of request sent
+        if (request.request_type == READ_REQ)
+        {
+            // Read the data onto the specified file break it in parts and send each part in chunks followed by stop request at last
+        }
+        else if (request.request_type == WRITE_REQ)
+        {
+            char* path_to_write;
+        }
+        else if (request.request_type == APPEND_REQ)
+        {
+
+        }
+
+        free_tokens(request_tkns);
     }
 
-    // Process request
-    printf(BLUE("\nRequest received : %s\n"), request.data);
-
-    // Send acknowledgement
-    st_request ack_st;
-    ack_st.request_type = ACK;
-    // Write something on the data like the request id (unique to each request made and the success code/failure code/ or somthing to tell what has happened)
-    strcpy(ack_st.data, "write the message here to be copied");
+    // Send acknowledgement and stop packet within the request processing only
+    // st_request ack_st;
+    // ack_st.request_type = ACK;
+    // // Write something on the data like the request id (unique to each request made and the success code/failure code/ or somthing to tell what has happened)
+    // strcpy(ack_st.data, "write the message here to be copied");
     
-    int sent_msg_size;
-    if ((sent_msg_size = send(sock_fd, &ack_st, sizeof(st_request), 0)) <= 0)
-    {
-        fprintf(stderr, RED("send : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    // int sent_msg_size;
+    // if ((sent_msg_size = send(sock_fd, &ack_st, sizeof(st_request), 0)) <= 0)
+    // {
+    //     fprintf(stderr, RED("send : %s\n"), strerror(errno));
+    //     exit(EXIT_FAILURE);
+    // }
 
     // Closing client socket as all the communication is done
     if (close(sock_fd) < 0) {

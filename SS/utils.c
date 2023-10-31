@@ -229,6 +229,8 @@ void register_ss(void)
     // Send the registration request (since we are using TCP we are sure that it would have reaced the NFS so now we can change the registration status to register assuming that the NFS also registers our ss successfully)
     nfs_registrations_status = REGISTERED;
 
+    printf(GREEN("SS %d registered successfully.\n"), MY_SS_ID);
+
     // Closing the socket as the communication is done
     if (close(socket_fd) < 0) 
     {
