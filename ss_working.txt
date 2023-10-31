@@ -27,3 +27,4 @@ Hardcoded value for paths.txt file for testing:
 #for NFS
 -> On the requests made by NFS to SS it will receive ack when the task is completed
 -> Give a unique token number to each request made to SS by NFS to identify which all tasks are completed by SS
+-> Error codes and error handling remaining (file not present/access denied/permission denied etc.)

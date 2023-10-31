@@ -56,10 +56,15 @@
 #define APPEND_REQ           8
 #define REGISTRATION_REQUEST 9
 #define REGISTRATION_ACK     10
+#define STOP_REQ             11
+#define READ_REQ_DATA        12
 
 // ============================= Statuses =============================
 #define NOT_REGISTERED 0
 #define REGISTERED     1
+#define WRITE_SUCCESSFUL 2
+#define APPEND_SUCCESSFUL 2
+#define SUCCESSFUL 2    // Keep all three successes to have the same value
 
 // ============================ Structures ============================
 // All the network communication happens in this structure form
@@ -86,11 +91,11 @@ extern int     num_of_paths_stored;             // Stores the number of paths wh
 extern int     nfs_registrations_status;        // Stores the status whether our server has been registered with NFS or not
 extern int     client_server_socket_fd;         // Socket file descriptor to receive client requests
 extern int     nfs_server_socket_fd;            // Socket file descriptot to receive NFS requests
-extern int     socket_fd;                       // UDP Socket used for communication with NFS to register my SS
+extern int     socket_fd;                       // TCP Socket used for communication with NFS to register my SS
 extern struct  sockaddr_in ss_address_nfs;      // IPv4 address struct for TCP communication between ss and nfs (requests)
 extern struct  sockaddr_in ss_address_client;   // IPv4 address struct for TCP communication between ss and client (requests)
 extern struct  sockaddr_in address;     
-extern socklen_t addr_size;       // IPv4 address struct for UDP communication between ss and nfs (register)
+extern socklen_t addr_size;                     // IPv4 address struct for TCP communication between ss and nfs (register)
 extern int*    thread_slot_empty_arr;           // 1 = thread is running, 0 = thread slot is free and can be used to create a new thread
 extern pthread_t* requests_serving_threads_arr; // Holds the threads when a request is being served in some thread
 

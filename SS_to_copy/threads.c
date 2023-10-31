@@ -38,16 +38,21 @@ void* serve_request(void* args)
     free(args);
 
     // Accepting the request
-    st_request request;
+    st_request recvd_request;
     int stop_req_received = 0;
     int first_request = 1;
+
+    int writing_req = 0; // Indicates whether the current request processed was a writing/append request or not (Used for unlocking the mutex if it was a write/append request)
+
+    int idx_of_file_writing_on = -1;
+
     while (stop_req_received != 1)
     {
-        memset(&(request.data), 0, MAX_DATA_LENGTH);
+        memset(&(recvd_request.data), 0, MAX_DATA_LENGTH);
 
         // Receiving the request
         int recvd_msg_size;
-        if ((recvd_msg_size = recv(sock_fd, &request, sizeof(st_request), 0)) <= 0)
+        if ((recvd_msg_size = recv(sock_fd, &recvd_request, sizeof(st_request), 0)) <= 0)
         {
             fprintf(stderr, RED("recv : %s\n"), strerror(errno));
             exit(EXIT_FAILURE);
@@ -56,8 +61,8 @@ void* serve_request(void* args)
         first_request = 0; // First request is received so the following requests won't be the first request (used for sending large amounts of data for writing and appending)
 
         // Process request
-        printf(BLUE("\nRequest received : %s\n"), request.data);
-        char** request_tkns = tokenize(request.data, '|');
+        printf(BLUE("\nRequest received : %s\n"), recvd_request.data);
+        char** request_tkns = tokenize(recvd_request.data, '|');
         /*
             READ data format : <path>
             WRITE data format : <path>|<content to write> (Keep sending write data in this format and when all the data to be written is sent send the stop request)
@@ -65,17 +70,112 @@ void* serve_request(void* args)
         */
 
         // Selecting the type of request sent
-        if (request.request_type == READ_REQ)
+        if (recvd_request.request_type == STOP_REQ)
+        {
+            stop_req_received = 1;
+            if (writing_req)
+            {
+                pthread_mutex_unlock(&file_mutex_arr[idx_of_file_writing_on]);
+            }
+
+            break;
+        }
+        else if (recvd_request.request_type == READ_REQ)
         {
             // Read the data onto the specified file break it in parts and send each part in chunks followed by stop request at last
-        }
-        else if (request.request_type == WRITE_REQ)
-        {
-            char* path_to_write;
-        }
-        else if (request.request_type == APPEND_REQ)
-        {
+            char* path_to_read = request_tkns[0];
+            
+            FILE* fptr;
+            fptr = fopen(path_to_read, "r");
 
+            while (1)
+            {
+                st_request send_read_data;
+                send_read_data.request_type = READ_REQ_DATA;
+                memset(send_read_data.data, 0, MAX_DATA_LENGTH);
+
+                int bytes_read = fread(send_read_data.data, 1, MAX_DATA_LENGTH, fptr);
+
+                if (bytes_read == 0)
+                {
+                    // Complete file is read so now send stop request and break from the loop
+                    // send stop request
+                    send_ack(STOP_REQ, sock_fd);
+                    break;
+                }
+
+                int sent_msg_size;
+                if ((sent_msg_size = send(sock_fd, (request) &send_read_data, sizeof(st_request), 0)) <= 0)
+                {
+                    fprintf(stderr, RED("send : %s\n"), strerror(errno));
+                    exit(EXIT_FAILURE);
+                }
+            }
+
+            stop_req_received = 1;  // Since read request is only one so we manually set the stop req received to 1 so that we do not enter the while loop again
+        }
+        else if (recvd_request.request_type == WRITE_REQ)
+        {
+            char* path_to_write = request_tkns[0];
+            char* data_to_write = request_tkns[1];
+
+            if (first_request)
+            {
+                writing_req = 1;
+
+                // Finding the index of file on which we are going to write so as to lock it so that no other client can write on that file while I am writing
+                for (int k = 0; k < num_of_paths_stored; k++)
+                {
+                    if (strcmp(accessible_paths[k], path_to_write) == 0)
+                    {
+                        idx_of_file_writing_on = k;
+                        pthread_mutex_lock(&file_mutex_arr[idx_of_file_writing_on]);
+                        break;
+                    }
+                }
+
+                FILE* fptr;
+                fptr = fopen(path_to_write, "w");
+                fprintf(fptr, "%s", data_to_write);
+                fclose(fptr);
+            }
+            else
+            {
+                FILE* fptr;
+                fptr = fopen(path_to_write, "a");
+                fprintf(fptr, "%s", data_to_write);
+                fclose(fptr);
+            }
+
+            send_ack(WRITE_SUCCESSFUL, sock_fd);
+        }
+        else if (recvd_request.request_type == APPEND_REQ)
+        {
+            char* path_to_write = request_tkns[0];
+            char* data_to_write = request_tkns[1];
+
+            if (first_request)
+            {
+                writing_req = 1;    // The current request being processed is request to write onto a file so we will be locking the mutex and so don't forget to unlock it when the stop request is received
+
+                // Finding the index of file on which we are going to write so as to lock it so that no other client can write on that file while I am writing
+                for (int k = 0; k < num_of_paths_stored; k++)
+                {
+                    if (strcmp(accessible_paths[k], path_to_write) == 0)
+                    {
+                        idx_of_file_writing_on = k;
+                        pthread_mutex_lock(&file_mutex_arr[idx_of_file_writing_on]);
+                        break;
+                    }
+                }
+            }
+
+            FILE* fptr;
+            fptr = fopen(path_to_write, "a");
+            fprintf(fptr, "%s", data_to_write);
+            fclose(fptr);
+
+            send_ack(APPEND_SUCCESSFUL, sock_fd);
         }
 
         free_tokens(request_tkns);

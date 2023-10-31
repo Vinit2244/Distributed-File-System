@@ -158,7 +158,7 @@ void remove_path(const char *path)
     return;
 }
 
-// Registers my SS with NFS using UDP uses two threads one for sending and other for receiving acknowledgement
+// Send registration request to the NFS using TCP socket and waits for registration ack
 void register_ss(void)
 {
     // Preparing the request to be sent
@@ -220,10 +220,10 @@ void register_ss(void)
 
     // Sending the registration request
     int sent_msg_size;
-    if ((sent_msg_size = sendto(socket_fd, (request)&registration_request_st, sizeof(st_request), 0, (struct sockaddr *)&address, sizeof(address))) < 0)
+    if ((sent_msg_size = send(socket_fd, (request) &registration_request_st, sizeof(st_request), 0)) < 0)
     {
-        fprintf(stderr, RED("sendto : %s\n"), strerror(errno));
-        exit(1);
+        fprintf(stderr, RED("send : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
     }
 
     // Send the registration request (since we are using TCP we are sure that it would have reaced the NFS so now we can change the registration status to register assuming that the NFS also registers our ss successfully)
@@ -240,3 +240,23 @@ void register_ss(void)
 
     return;
 }
+
+// Sends the mentioned acknowledgement to the given socket file descriptor
+void send_ack(const int status_code, const int sock_fd)
+{
+    // Send acknowledgement
+    st_request ack_st;
+    ack_st.request_type = status_code;
+
+    // Nothing to be written onto the data as only ack is being sent
+    
+    int sent_msg_size;
+    if ((sent_msg_size = send(sock_fd, (request) &ack_st, sizeof(st_request), 0)) <= 0)
+    {
+        fprintf(stderr, RED("send : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    return;
+}
+
