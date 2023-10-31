@@ -1,5 +1,4 @@
 //Code for initialising and working with NFS for the project
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,13 +44,10 @@
 #define CYAN(str)   CYAN_COLOR   str RESET_COLOR
 #define ORANGE(str) ORANGE_COLOR str RESET_COLOR
 
-
-
 //Concurrency locks and conditional variables
 extern pthread_mutex_t server_lock;
 extern pthread_mutex_t send_buffer_lock;
 extern pthread_cond_t send_signal;
-
 
 //Request packet structure
 typedef struct st_request

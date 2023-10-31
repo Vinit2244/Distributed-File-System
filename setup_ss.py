@@ -11,7 +11,8 @@ def update_header_and_config_files(i: int, base_dir: str) -> None:
     # Defining regex to identify the line
     pattern1 = r'^\s*#define\s*MY_NFS_PORT_NO.*$'   
     pattern2 = r'^\s*#define\s*MY_CLIENT_PORT_NO.*$'
-    
+    pattern3 = r'^\s*#define\s*MY_SS_ID.*$'
+
     # Read the content of the input file
     with open(input_file, 'r') as file:
         lines = file.readlines()
@@ -19,19 +20,22 @@ def update_header_and_config_files(i: int, base_dir: str) -> None:
     # Modify the lines to replace #define with #ifndef
     modified_lines = [re.sub(pattern1, f'#define MY_NFS_PORT_NO {1000 * (i + 1) + 500}', line) for line in lines]
     modified_lines = [re.sub(pattern2, f'#define MY_CLIENT_PORT_NO {1000 * (i + 1) + 501}', line) for line in modified_lines]
+    modified_lines = [re.sub(pattern3, f'#define MY_SS_ID {i + 1}', line) for line in modified_lines]
     
     # Write the modified content back to the same file
     with open(input_file, 'w') as file:
         file.writelines(modified_lines)
         
     with open("ss_config.txt", "a") as config_file:
-        config_file.write(f"SS {i + 1}:\nNFS_PORT_NO_SS{i + 1} = {1000 * (i + 1) + 500}\nCLIENT_PORT_NO_SS_{i + 1} = {1000 * (i + 1) + 501}\n\n")
+        config_file.write(f"SS {i + 1}:\nNFS_PORT_NO_SS{i + 1} = {1000 * (i + 1) + 500}\nCLIENT_PORT_NO_SS_{i + 1} = {1000 * (i + 1) + 501}\nSS_ID = {i + 1}\n\n")
 
 # Cleans all the make compiled files
 def run_clean(i: int) -> None:
-    os.chdir(f"SS{i + 1}")
-    subprocess.run(['make', 'clean'],  check = True)
-    os.chdir("..")
+    file_to_be_deleted = f"SS{i + 1}"
+    subprocess.run(['rm', '-r', file_to_be_deleted], check = True)
+    # os.chdir(f"SS{i + 1}")
+    # subprocess.run(['make', 'clean'],  check = True)
+    # os.chdir("..")
 
 # Compiles all the make files
 def compile_make(i: int) -> None:
@@ -81,7 +85,7 @@ max_num_of_files_in_dir: int = 2   # Number of files in each dir
 total_num_of_files: int = 5 # Total number of test files in the SS
 
 # Flag to check whether we need to compile all the make files or clean them
-run_clean: int = 0
+clear: int = 0
 
 # If any of these arguments are not provided as command line arguments then the above values will be taken as default
 if len(sys.argv) >= 2:
@@ -91,7 +95,8 @@ if len(sys.argv) >= 3:
     num_of_dir = sys.argv[2]
     # If clean is passed as the second argument then cleans all the compiled files
     if (num_of_dir == "clean"):
-        run_clean = 1
+        clear = 1
+        subprocess.run(['rm', 'ss_config.txt'], check = True)
     else:
         num_of_dir = int(num_of_dir)
 
@@ -110,7 +115,7 @@ copy_folder_n_times(num_of_ss, cwd)
 # Looping through all the storage server folders to create test directories and files
 for i in range(num_of_ss):
     # If run_clean is 0 then we run the makefile to compile the code
-    if run_clean == 0:
+    if clear == 0:
         paths_to_be_stored: list = list()  # Stores the list of all the paths accessible to the SS which will later be written onto the paths.txt file
         
         curr_file_index: int = 1
@@ -139,6 +144,8 @@ for i in range(num_of_ss):
         
         # Writing stored paths onto the file
         with open(f"./SS{i + 1}/paths.txt", "w") as paths_file:
+            paths_file.write(str(total_num_of_files))
+            paths_file.write("\n")
             for path in paths_to_be_stored:
                 paths_file.write(path)
                 paths_file.write("\n")

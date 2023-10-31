@@ -4,9 +4,7 @@ pthread_mutex_t server_lock=PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t send_buffer_lock=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t send_signal = PTHREAD_COND_INITIALIZER;
 
-
 void* send_handler(){
-
 
     //Currently work in progress
 

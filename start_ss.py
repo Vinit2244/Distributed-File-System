@@ -3,7 +3,7 @@ import sys
 import os
 
 # Change the operating system name on which device you are running this code (macos/linux)
-operating_system = "linux"
+operating_system = "macos"
 
 # Number of Storage servers i want to start (default = 1), input provided through command line
 num_of_ss: int = 1

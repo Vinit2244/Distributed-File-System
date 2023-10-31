@@ -15,5 +15,7 @@ void* store_filepaths(void* args);
 void* serve_request(void* args);
 void* send_reg_req(void* args);
 void* receive_reg_ack(void* args);
+void* start_nfs_port(void* args);
+void* start_client_port(void* args);
 
 #endif

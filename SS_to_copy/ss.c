@@ -38,11 +38,12 @@ int main(int argc, char *argv[])
     /*========== SEMAPHORES ==========*/
 
     // First start the NFS and Client TCP servers to listen to their requests
-    if(nfs_registrations_status==NOT_REGISTERED)register_ss();
-    start_nfs_port();
-    start_client_port();
-    
+    pthread_t nfs_thread, client_thread;
+    pthread_create(&nfs_thread, NULL, &start_nfs_port, NULL);
+    pthread_create(&client_thread, NULL, &start_client_port, NULL);
+
     // Register my SS with NFS
+    register_ss();
 
     // Creating the thread that would keep updating the paths.txt file with the current state of the accessible paths array regularly after some time interval
     pthread_t store_filepaths_thread;
@@ -50,6 +51,8 @@ int main(int argc, char *argv[])
 
     // Waiting for threads to complete
     pthread_join(store_filepaths_thread, NULL);
+    pthread_join(nfs_thread, NULL);
+    pthread_join(client_thread, NULL);
 
     // Destroying mutexes, condition variables and semaphores
     /*========== MUTEX ==========*/
