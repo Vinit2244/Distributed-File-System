@@ -108,6 +108,7 @@ void *send_reg_req(void* args)
     // Sending the registration request until acknowledgement is not received
     while (nfs_registrations_status == NOT_REGISTERED)
     {
+        printf("Trying to register!\n");
         int sent_msg_size;
         if ((sent_msg_size = sendto(socket_fd, (request)&registration_request_st, sizeof(st_request), 0, (struct sockaddr *)&address, sizeof(address))) < 0)
         {
