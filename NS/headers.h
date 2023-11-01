@@ -13,7 +13,7 @@
 
 //Relevant Macros
 #define NS_PORT 2000
-#define NS_IP "127.0.0.1"
+#define NS_IP "0.0.0.0"
 #define MAX_DATA_LENGTH 100000
 #define MAX_CONNECTIONS 10
 
@@ -27,6 +27,8 @@
 #define CREATE_REQ           7
 #define REGISTRATION_REQUEST 8
 #define REGISTRATION_ACK     9
+#define RETRIEVE_INFO 10
+#define FILE_NOT_FOUND 11
 
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
@@ -49,6 +51,11 @@ extern pthread_mutex_t server_lock;
 extern pthread_mutex_t send_buffer_lock;
 extern pthread_cond_t send_signal;
 
+extern int server_socket_tcp, client_socket_tcp;
+extern struct sockaddr_in server_addr_tcp, client_addr_tcp;
+extern socklen_t client_addr_len_tcp;
+
+
 //Request packet structure
 typedef struct st_request
 {
@@ -68,6 +75,9 @@ typedef struct ss_info
     char client_port[10];
     char paths[1000][100];
     int path_count;
+    int server_socket, client_socket;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t client_addr_len;
 
 } ss_info;
 
@@ -86,6 +96,7 @@ typedef send_packet* packet;
 
 
 
+
 //Global variables
 extern ss ss_list[100];
 extern int server_count;
@@ -94,6 +105,7 @@ extern int send_count;
 extern int sockfd_udp;
 extern struct sockaddr_in server_addr_udp, client_addr_udp;
 extern socklen_t addr_size_udp;
+extern pthread_cond_t send_signal;
 
 
 //Defined functions
@@ -104,5 +116,6 @@ void init_storage(char data[]);
 void process(request req);
 void* send_handler();
 void* receive_handler();
-void* udp_handler();
+void* server_handler(void* p);
+// void* udp_handler();
 
