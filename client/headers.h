@@ -54,6 +54,8 @@
 #define CREATE_REQ           7
 #define REGISTRATION_REQUEST 8
 #define REGISTRATION_ACK     9
+#define FILE_NOT_FOUND       11
+#define COPY_REQ             12
 
 // ============================= Statuses =============================
 #define NOT_REGISTERED 0
