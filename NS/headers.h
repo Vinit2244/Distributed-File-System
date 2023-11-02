@@ -29,6 +29,9 @@
 #define REGISTRATION_ACK     9
 #define RETRIEVE_INFO 10
 #define FILE_NOT_FOUND 11
+#define COPY_REQUEST 12
+#define COPY_FROM 13
+#define COPY_TO 14
 
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"

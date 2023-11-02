@@ -119,6 +119,73 @@ void process(request req)
         send(client_socket_tcp, r, sizeof(st_request), 0);
 
     }
+    else if (req->request_type == COPY_REQUEST){
+         char* source = (char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+         char* desti = (char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+
+         char* token = strtok(req->data,"|");
+         while(token!=NULL){
+             strcpy(source,token);
+             token = strtok(NULL,"|");
+             strcpy(desti,token);
+         }
+
+         ss source_no,dest_no;
+         int flag=0;
+
+        pthread_mutex_lock(&server_lock);
+            for(int i=0;i<server_count;i++){
+                for(int j=0;j<ss_list[i]->path_count;j++){
+                    if(strcmp(ss_list[i]->paths[j],source)==0){
+                        source_no=ss_list[i];
+                        flag++;
+                    }
+                    if(strcmp(ss_list[i]->paths[j],desti)==0){
+                        dest_no=ss_list[i];
+                        flag++;
+                    }
+                    if(flag==2){
+                        break;
+                    }
+                }
+                if(flag==2){
+                    break;
+                }
+        }
+        pthread_mutex_unlock(&server_lock);
+
+        if(flag<2){
+
+            request r = (request)malloc(sizeof(request));
+            r->request_type=FILE_NOT_FOUND;
+            strcpy(r->data,"File not found");
+            send(client_socket_tcp, r, sizeof(st_request), 0);
+        }
+        else{
+
+            request get_r = (request)malloc(sizeof(st_request));
+            get_r->request_type = COPY_FROM;
+            strcpy(get_r->data,source);
+            send(source_no->client_socket, get_r, sizeof(st_request), 0);
+            request put_r = (request)malloc(sizeof(st_request));
+            while(get_r->request_type != ACK){
+                recv(source_no->client_socket, get_r, sizeof(st_request), 0);
+                put_r->request_type=COPY_TO;
+                strcpy(put_r->data,get_r->data);
+                send(dest_no->client_socket,put_r,sizeof(st_request),0);
+
+            }
+
+            request r = (request)malloc(sizeof(st_request));
+            r->request_type = ACK;
+            strcpy(r->data,"Copying succesful!\n");
+            send(client_socket_tcp, r, sizeof(st_request), 0);
+
+
+
+        }
+
+    }
 
     
 
