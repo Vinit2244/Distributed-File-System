@@ -1,50 +1,5 @@
 #include "headers.h"
 
-// Reads all the paths accessible to the server (which are stored in the file paths.txt and stores them in cached buffer in the program 2D array)
-// void accessible_paths_init(void)
-// {
-//     // First allocating memory to the file paths
-//     accessible_paths = (char **)calloc(MAX_FILES, sizeof(char *)); // Memory to individual paths will be allocated when the path is stored
-
-//     pthread_mutex_lock(&accessible_paths_mutex);
-//     FILE *fptr;
-
-//     if ((fptr = fopen("paths.txt", "r")) == NULL)
-//     {
-//         // File do not exist yet so we need to create the file
-//         fptr = fopen("paths.txt", "w");
-
-//         if (fptr == NULL) // Error in opening file in write mode
-//             fprintf(stderr, RED("fopen : %s\n"), strerror(errno));
-//         else
-//         {
-//             // Write 0 in the file on the initial line as no path is stored and the file is opened for the first time
-//             fprintf(fptr, "%d\n", 0);
-//             fclose(fptr);
-//         }
-//     }
-//     else
-//     {
-//         // File already exists so we just need to read the already stored paths
-//         int num_of_paths;
-//         fscanf(fptr, "%d", &num_of_paths); // Reading the number of paths that is stored on the first line in the file
-
-//         // Reading all the paths that is stored afterwards and storing it in the accessible paths 2D array
-//         for (int i = 0; i < num_of_paths; i++)
-//         {
-//             char path[1024] = {0};
-//             fscanf(fptr, "%s", path);
-
-//             accessible_paths[num_of_paths_stored] = (char *)calloc(MAX_PATH_LEN, sizeof(char));
-//             strcpy(accessible_paths[num_of_paths_stored++], path);
-//         }
-//         fclose(fptr);
-//     }
-//     pthread_mutex_unlock(&accessible_paths_mutex);
-
-//     return;
-// }
-
 // This function tokenises the provided string on given character and returns a 2D character array broken at ch
 char **tokenize(const char *str, const char ch)
 {
@@ -102,59 +57,65 @@ void free_tokens(char **tokens)
     return;
 }
 
-// This function first adds the path to the accessible array if there is space available and then signals the update thread to update the paths.txt file with the latest modifications
-void add_path(const char *path)
+// Sends request to NFS to add or delete some paths
+void send_update_paths_request(int request_type, char* paths_string)
 {
-    pthread_mutex_lock(&accessible_paths_mutex);
-    if (num_of_paths_stored == MAX_FILES) // Checking if the storage limit is full or not
-    {
-        printf(RED("You cannot add new files. File limit exceeded.\n"));
-    }
-    else
-    {
-        // Allocating memory before copying the path
-        accessible_paths[num_of_paths_stored] = (char *)calloc(MAX_PATH_LEN, sizeof(char));
-        // Copying the path in the correct location
-        strcpy(accessible_paths[num_of_paths_stored], path);
-        num_of_paths_stored++;
-        // Signalling to update the paths.txt
-        pthread_cond_signal(&update_paths_txt_cond_var);
-    }
-    pthread_mutex_unlock(&accessible_paths_mutex);
-    return;
-}
+    // Preparing the request to be sent
+    st_request update_request;
+    update_request.request_type = request_type;
+    memset(update_request.data, 0, MAX_DATA_LENGTH);
 
-// This function removes the specified path from the accessible paths array
-void remove_path(const char *path)
-{
-    pthread_mutex_lock(&accessible_paths_mutex);
-    int flag = 1; // Flag to keep track of whether the specified path was found or not
-    // Looping through all the paths to find required path
-    for (int i = 0; i < num_of_paths_stored; i++)
+    // Storing all the file paths to be updated
+    sprintf(update_request.data, "%d|%s", MY_SS_ID, paths_string); // <My ss_id>|[<paths>]
+
+    // Connecting to the NFS through TCP
+    struct sockaddr_in address;
+    memset(&address, 0, sizeof(address));
+
+    int socket_fd = socket(PF_INET, SOCK_STREAM, 0);
+    if (socket_fd < 0) 
+    { 
+        // Some error occured while creating socket
+        fprintf(stderr, RED("socket : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_port    = htons(NFS_SERVER_PORT_NO);        // port on which server side process is listening
+    address.sin_family  = AF_INET;
+
+    if (inet_pton(AF_INET, NFS_IP, &address.sin_addr.s_addr) <= 0) 
+    {   
+        fprintf(stderr, RED("inet_pton : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    // Waiting for us to connect to the NFS, it may happen that the NFS port might be busy and could not accept the connection request so sending it again and again until once it connects
+    while(1)
     {
-        // If required path is found
-        if (strcmp(accessible_paths[i], path) == 0)
+        if (connect(socket_fd, (struct sockaddr *) &address, sizeof(address)) == -1) 
         {
-            // Freeing the memory allocated to that path
-            free(accessible_paths[i]);
-            // Shifting all the remaining paths ahead of this path back by one place
-            for (int j = i + 1; j < num_of_paths_stored; j++)
-            {
-                accessible_paths[j - 1] = accessible_paths[j];
-            }
-            accessible_paths[num_of_paths_stored - 1] = NULL;
-            num_of_paths_stored--;
-            flag = 0;                                        // Path was found
-            pthread_cond_signal(&update_paths_txt_cond_var); // Signalling update thread to update the contents in the paths.txt file
-            break;
+            // Could not connect
+            continue;
         }
+        // Connected
+        break;
     }
-    // If specified path was not found
-    if (flag)
+
+    // Sending the registration request
+    int sent_msg_size;
+    if ((sent_msg_size = send(socket_fd, (request) &update_request, sizeof(st_request), 0)) < 0)
     {
-        printf(RED("No such path available.\n"));
+        fprintf(stderr, RED("send : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
     }
-    pthread_mutex_unlock(&accessible_paths_mutex);
+
+    // Closing the socket as the communication is done
+    if (close(socket_fd) < 0) 
+    {
+        fprintf(stderr, RED("close : failed to close the socket!\n"));
+        exit(EXIT_FAILURE);
+    }
+
     return;
 }
 
@@ -189,9 +150,10 @@ void register_ss(void)
     sprintf(registration_request_st.data, "%d|%s|%d|%d", MY_SS_ID, MY_IP, MY_CLIENT_PORT_NO, MY_NFS_PORT_NO); // <My ss_id>|<My ip>|<client port>|<nfs port>
 
     // Connecting to the NFS through TCP
+    struct sockaddr_in address;
     memset(&address, 0, sizeof(address));
 
-    socket_fd = socket(PF_INET, SOCK_STREAM, 0);
+    int socket_fd = socket(PF_INET, SOCK_STREAM, 0);
     if (socket_fd < 0) 
     { 
         // Some error occured while creating socket
@@ -262,6 +224,7 @@ void send_ack(const int status_code, const int sock_fd)
     return;
 }
 
+// Searches for all files recursively
 void seek(char* path_to_base_dir, linked_list_head paths) {
     struct stat dir_stat;
     stat(path_to_base_dir, &dir_stat);
@@ -293,6 +256,7 @@ void seek(char* path_to_base_dir, linked_list_head paths) {
     return;
 }
 
+// ===================================== LINKED LIST FUNC ===========================================
 linked_list_head create_linked_list_head() {
     linked_list_head linked_list = (linked_list_head) malloc(sizeof(linked_list_head_struct));
     linked_list->number_of_nodes = 0;

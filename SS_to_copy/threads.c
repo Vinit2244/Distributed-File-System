@@ -1,37 +1,12 @@
 #include "headers.h"
 
-// Writes onto the paths.txt file the current state of the accessible paths buffer regularly from time to time
-// void *store_filepaths(void *args)
-// {
-//     pthread_mutex_lock(&accessible_paths_mutex);
-//     while(1)
-//     {
-//         // Wait till there is some update done to the accessible paths 2D array and as soon as some thing is updated write it onto the text file
-//         // pthread_cond_wait(&update_paths_txt_cond_var, &accessible_paths_mutex);
-
-//         FILE* fptr = fopen("paths.txt", "w");
-
-//         // First write the number of paths
-//         fprintf(fptr, "%d\n", num_of_paths_stored);
-        
-//         // Then write all the paths (one in each line)
-//         for (int i = 0; i < num_of_paths_stored; i++)
-//         {
-//             fprintf(fptr, "%s\n", accessible_paths[i]);
-//         }
-
-//         fclose(fptr);
-//     }
-//     pthread_mutex_unlock(&accessible_paths_mutex);
-
-//     return NULL;
-// }
-
 // Periodically keeps checking for all the file paths and if some new file path is created/deleted then immediately signals the NFS to add/delete that path
 void* check_and_store_filepaths(void* args)
 {
     while (1)
     {
+        pthread_mutex_lock(&accessible_paths_mutex);
+        
         char base_dir_path[MAX_PATH_LEN] = {0};
         sprintf(base_dir_path, "%s/SS%d_test_dir", PWD, MY_SS_ID);
 
@@ -56,7 +31,7 @@ void* check_and_store_filepaths(void* args)
             accessible_paths_copy[i] = NULL;
         }
         // Storing a copy of found_paths as well so after comparing if there are some new paths or some paths are deleted then we can create a new accessible paths array
-        // char** found_paths_copy = (char**) malloc(paths->number_of_nodes * sizeof(char*));
+        char** found_paths_copy = (char**) malloc(paths->number_of_nodes * sizeof(char*));
 
         for (int k = 0; k < num_of_paths_stored; k++)
         {
@@ -68,9 +43,9 @@ void* check_and_store_filepaths(void* args)
         while (n != NULL)
         {
             found_paths[idx] = (char*) calloc(MAX_PATH_LEN, sizeof(char));
-            // found_paths_copy[idx] = (char*) calloc(MAX_PATH_LEN, sizeof(char));
-            // strcpy(found_paths_copy[idx], ".");
-            // strcat(found_paths_copy[idx], &n->path[strlen(PWD)]);
+            found_paths_copy[idx] = (char*) calloc(MAX_PATH_LEN, sizeof(char));
+            strcpy(found_paths_copy[idx], ".");
+            strcat(found_paths_copy[idx], &n->path[strlen(PWD)]);
             strcpy(found_paths[idx], ".");
             strcat(found_paths[idx++], &n->path[strlen(PWD)]);
             n = n->next;
@@ -88,38 +63,84 @@ void* check_and_store_filepaths(void* args)
                 char* curr_accessible_path = accessible_paths_copy[j];
                 if (strcmp(curr_found_path, curr_accessible_path) == 0)
                 {
+                    free(found_paths[k]);
+                    free(accessible_paths_copy[j]);
                     found_paths[k] = NULL;
                     accessible_paths_copy[j] = NULL;
+                    break;
                 }
             }
         }
 
         // Now all the not null paths in found_paths are the paths that are newly added while all the not null paths in accessible paths copy are deleted paths
-        int n_new_paths = 0;
+        // Checking for new paths
         char new_paths[MAX_DATA_LENGTH - 1000] = {0};
         for (int i = 0; i < n_paths_found; i++)
         {
             if (found_paths[i] != NULL)
             {
-                n_new_paths++;
                 strcat(new_paths, found_paths[i]);
                 strcat(new_paths, "|");
             }
         }
-
-        for (int k = 0; k < n_paths_found; k++)
+        // Removing the last | from the concatenation of paths
+        if (strlen(new_paths) > 0)
         {
-            printf("%s\n", found_paths[k]);
-            free(found_paths[k]);
+            new_paths[strlen(new_paths) - 1] = '\0';
         }
-        for (int k = 0; k < num_of_paths_stored; k++)
+        send_update_paths_request(ADD_PATHS, new_paths);
+
+        // Checking for deleted paths
+        char deleted_paths[MAX_DATA_LENGTH - 1000] = {0};
+        for (int i = 0; i < num_of_paths_stored; i++)
         {
-            free(accessible_paths_copy[k]);
+            if (accessible_paths_copy[i] != NULL)
+            {
+                strcat(deleted_paths, accessible_paths_copy[i]);
+                strcat(deleted_paths, "|");
+            }
+        }
+        // Removing the last | from the concatenation of paths
+        if (strlen(deleted_paths) > 0)
+        {
+            deleted_paths[strlen(deleted_paths) - 1] = '\0';
+        }
+        send_update_paths_request(DELETE_PATHS, deleted_paths);
+
+        // Freeing all the memory allocated except the found paths copy array
+        for (int i = 0; i < n_paths_found; i++)
+        {
+            if (found_paths[i] != NULL)
+            {
+                free(found_paths[i]);
+                found_paths[i] = NULL;
+            }
+        }
+        free(found_paths);
+
+        for (int i = 0; i < num_of_paths_stored; i++)
+        {
+            if (accessible_paths_copy[i] != NULL)
+            {
+                free(accessible_paths_copy[i]);
+                accessible_paths_copy[i] = NULL;
+            }
         }
         free(accessible_paths_copy);
 
-        // read_initial_paths = 1;
-        sleep(1);
+        // Copying all the found paths into the accessible paths array 
+        for (int i = 0; i < n_paths_found; i++)
+        {
+            memset(accessible_paths[i], 0, MAX_PATH_LEN);
+            strcpy(accessible_paths[i], found_paths_copy[i]);
+            free(found_paths_copy[i]);
+        }
+        free(found_paths_copy);
+
+        pthread_mutex_unlock(&accessible_paths_mutex);
+
+        // Keep checking every 5 seconds
+        sleep(5);
     }
     
     return NULL;

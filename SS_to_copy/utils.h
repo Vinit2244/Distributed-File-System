@@ -22,6 +22,7 @@ void free_linked_list(linked_list_head linked_list);
 
 // General utility functions
 // void accessible_paths_init(void);
+void send_update_paths_request(int request_type, char* paths_string);
 void register_ss(void);
 void free_tokens(char** tokens);
 char** tokenize(const char* str, const char ch);
