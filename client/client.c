@@ -56,15 +56,40 @@ void communicate_with_ss_write(char *ipaddress,char *port,char* path)
         return;
     }
     printf("-----Storage     Server      Connected------\n");
-
-    while(1)
+    char input='a';                             //Junk to initialise so that goes into loop
+    int dataread=0;
+    st_request* packet=malloc(sizeof(st_request));
+    packet->request_type=WRITE_REQ;
+    snprintf(packet->data, sizeof(packet->data), "%s|", path);
+    while(input!='\n')
     {
-        char *input=malloc(sizeof(char)*10000);
-        scanf("%s",input);
-
-
+        input=fgetc(stdin);
+        packet->data[strlen(packet->data)]=input;
+        dataread++;
+        packet->data[strlen(packet->data)+1]='\0';
+        if(dataread==MAX_DATA_LENGTH-1)
+        {
+            ssize_t bytes_sent = send(client_socket, packet, sizeof(st_request), 0);
+            if (bytes_sent == -1)
+            {
+                perror("Send failed");
+            }
+            free(packet);
+            st_request* packet=malloc(sizeof(st_request));
+            packet->request_type=WRITE_REQ;
+            snprintf(packet->data, sizeof(packet->data), "%s|", path);
+            dataread=0;
+        }
 
     }
+    if (dataread > 0) 
+    {
+        ssize_t bytes_sent = send(client_socket, packet, sizeof(st_request), 0);
+        if (bytes_sent == -1) {
+            perror("Send failed");
+        }
+    }
+    free(packet);
 }
 void client_to_ns()
 {
