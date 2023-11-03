@@ -25,13 +25,13 @@
 #define MAX_FILES           30          // Maximum number of files that can be stored in the storage server
 #define MAX_PATH_LEN        1024        // Maximum length the relative path of a file can have
 #define NFS_SERVER_PORT_NO  2000        // Port on which NFS server listens
-#define MY_NFS_PORT_NO      3000        // Port number used to communicate with NFS server
-#define MY_CLIENT_PORT_NO   4000        // Port number used to communicate with client
+#define MY_NFS_PORT_NO 1500
+#define MY_CLIENT_PORT_NO 1501
 #define MY_IP               "127.0.0.1" // Ip address of this storage server
 #define NFS_IP              "127.0.0.1" // IP address of the naming server
 #define MAX_PENDING         10          // Maximum number of connections the TCP socket can have in queue waiting
-#define MY_SS_ID            1           // Each storage server is assigned a unique SS_ID (used to distinguish between different servers)
-#define PWD                 "/home/divyansh/Music/final-project-43/SS_to_copy"
+#define MY_SS_ID 1
+#define PWD "/home/divyansh/Music/final-project-43/SS1"
 
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
