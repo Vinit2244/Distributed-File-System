@@ -208,27 +208,28 @@ void* serve_request(void* args)
         }
         else if (recvd_request.request_type == READ_REQ)
         {
+            printf("Read request received\n");
             // Read the data onto the specified file break it in parts and send each part in chunks followed by stop request at last
             char* path_to_read = request_tkns[0];
             
             FILE* fptr;
             fptr = fopen(path_to_read, "r");
-
-            while (1)
-            {
+            printf("File opened\n");
+            // while (1)
+            // {
                 st_request send_read_data;
                 send_read_data.request_type = READ_REQ_DATA;
                 memset(send_read_data.data, 0, MAX_DATA_LENGTH);
 
                 int bytes_read = fread(send_read_data.data, 1, MAX_DATA_LENGTH, fptr);
-
-                if (bytes_read == 0)
-                {
-                    // Complete file is read so now send stop request and break from the loop
-                    // send stop request
-                    send_ack(STOP_REQ, sock_fd);
-                    break;
-                }
+                printf("%s\n", send_read_data.data);
+                // if (bytes_read == 0)
+                // {
+                //     // Complete file is read so now send stop request and break from the loop
+                //     // send stop request
+                //     send_ack(STOP_REQ, sock_fd);
+                //     break;
+                // }
 
                 int sent_msg_size;
                 if ((sent_msg_size = send(sock_fd, (request) &send_read_data, sizeof(st_request), 0)) <= 0)
@@ -236,7 +237,9 @@ void* serve_request(void* args)
                     fprintf(stderr, RED("send : %s\n"), strerror(errno));
                     exit(EXIT_FAILURE);
                 }
-            }
+                send_ack(STOP_REQ, sock_fd);
+                // printf("%d\n",sent_msg_size);
+            // }
 
             stop_req_received = 1;  // Since read request is only one so we manually set the stop req received to 1 so that we do not enter the while loop again
         }

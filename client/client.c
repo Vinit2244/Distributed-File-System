@@ -5,11 +5,12 @@
 void communicate_with_ss(char *ipaddress,char *port,char* path)
 {
     int client_socket;
+    client_socket = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(atoi(port));
     server_address.sin_addr.s_addr = inet_addr(ipaddress);
-    if (connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address) == -1)) {
+    if (connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address)) == -1) {
         perror("Connection failed");
         return;
     }
@@ -25,35 +26,37 @@ void communicate_with_ss(char *ipaddress,char *port,char* path)
 
     //Reader Packet sent 
 
-    while(1)
-    {
+    // while(1)
+    // {
         request req = (request)malloc(sizeof(st_request));
         if(recv(client_socket,req,sizeof(st_request), 0) == -1){
             perror("Receiving data failed");
-            continue;
+            // continue;
         }
-        if(strcmp(req->data,"STOP")==0)
-        {
-            free(req);
-            break;
-        }
-        else
-        {
-            printf("%s",req->data);
-        }
+        // printf("%d\n",req->request_type);
+        // if(req->request_type==STOP_REQ)
+        // {
+        //     free(req);
+        //     // break;
+        // }
+        // else
+        // {
+            printf("%s\n",req->data);
+        // }
         //Send request object for processing
         free(req);
-    }
+    // }
 
 }
 void communicate_with_ss_write(char *ipaddress,char *port,char* path)
 {
     int client_socket;
+    client_socket = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(atoi(port));
     server_address.sin_addr.s_addr = inet_addr(ipaddress);
-    if (connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address) == -1)) {
+    if (connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address)) == -1) {
         perror("Connection failed");
         return;
     }
@@ -175,7 +178,7 @@ void readingoperation(char *path)
     }
     printf("%s %s \n",ipaddress,port);
     close(client_socket);
-    // communicate_with_ss(ipaddress,port,path);
+    communicate_with_ss(ipaddress,port,path);
 }
 
 void writingoperation(char *path)

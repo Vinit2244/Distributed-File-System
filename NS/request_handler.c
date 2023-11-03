@@ -18,7 +18,7 @@ void process(request req)
     else if (req->request_type == WRITE_REQ || req->request_type == READ_REQ || req->request_type == RETRIEVE_INFO){
         
 
-        printf("%d\n",server_count);
+        // printf("%d\n",server_count);
         pthread_mutex_lock(&server_lock);
         int flag=0;
         request r = (request)malloc(sizeof(st_request));
@@ -27,8 +27,9 @@ void process(request req)
             
             pthread_mutex_lock(&ss_list[i]->lock);
 
-            for(int i=0;i<ss_list[i]->path_count;i++){
-                if(strcmp(ss_list[i]->paths[i],req->data)==0){
+            for(int j=0;j<ss_list[i]->path_count;j++){
+                // printf("%s\n",ss_list[i]->paths[j]);
+                if(strcmp(ss_list[i]->paths[j],req->data)==0){
                     snprintf(reference,MAX_DATA_LENGTH,"%s|%s",ss_list[i]->ip,ss_list[i]->client_port);
                     flag=1;
                     break; 
