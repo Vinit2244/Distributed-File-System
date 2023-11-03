@@ -129,23 +129,6 @@ void register_ss(void)
     registration_request_st.request_type = REGISTRATION_REQUEST;
     memset(registration_request_st.data, 0, MAX_DATA_LENGTH);
 
-    // Creating paths string array to be 1000 less than the max size because the data would also contain ip and ports info so not all space is used by the paths
-    // char paths_string[MAX_DATA_LENGTH - 1000] = {0};
-
-    // pthread_mutex_lock(&accessible_paths_mutex);
-    // for (int i = 0; i < num_of_paths_stored; i++)
-    // {
-    //     // Attach the path to the end of the string
-    //     strcat(paths_string, accessible_paths[i]);
-
-    //     // If the current path is not the last one then attach a pipe '|' after the current path
-    //     if (i != num_of_paths_stored - 1)
-    //     {
-    //         strcat(paths_string, "|");
-    //     }
-    // }
-    // pthread_mutex_unlock(&accessible_paths_mutex);
-
     // Printing my SS details like port number and ip address and all the paths that are stored currently with me on the query
     sprintf(registration_request_st.data, "%d|%s|%d|%d", MY_SS_ID, MY_IP, MY_CLIENT_PORT_NO, MY_NFS_PORT_NO); // <My ss_id>|<My ip>|<client port>|<nfs port>
 

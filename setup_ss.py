@@ -125,7 +125,7 @@ for i in range(num_of_ss):
         
         update_header_and_config_files(i, base_dir, cwd)
         
-        test_dir_path = os.path.join(base_dir, f"SS{i + 1}_test_dir")
+        test_dir_path = os.path.join(base_dir, "storage")
         create_dir(test_dir_path)
         
         # Creating multiples directories in the test directory

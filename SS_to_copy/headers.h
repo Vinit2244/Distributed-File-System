@@ -32,6 +32,7 @@
 #define MAX_PENDING         10          // Maximum number of connections the TCP socket can have in queue waiting
 #define MY_SS_ID            1           // Each storage server is assigned a unique SS_ID (used to distinguish between different servers)
 #define PWD                 "temp"
+
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
 #define GREEN_COLOR  "\033[0;32m"
@@ -63,6 +64,9 @@
 #define READ_REQ_DATA        12
 #define ADD_PATHS            13
 #define DELETE_PATHS         14
+#define COPY_TO              15
+#define COPY_FROM            16
+#define COPY_REQUESt         17
 
 // ============================= Statuses =============================
 #define NOT_REGISTERED 0

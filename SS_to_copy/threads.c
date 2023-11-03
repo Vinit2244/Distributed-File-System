@@ -8,7 +8,7 @@ void* check_and_store_filepaths(void* args)
         pthread_mutex_lock(&accessible_paths_mutex);
         
         char base_dir_path[MAX_PATH_LEN] = {0};
-        sprintf(base_dir_path, "%s/SS%d_test_dir", PWD, MY_SS_ID);
+        sprintf(base_dir_path, "%s/storage", PWD);
 
         // Linked list to store the paths found as we don't know in advance how many paths will be found
         linked_list_head paths = create_linked_list_head();
@@ -73,7 +73,7 @@ void* check_and_store_filepaths(void* args)
         }
 
         // Now all the not null paths in found_paths are the paths that are newly added while all the not null paths in accessible paths copy are deleted paths
-        // Checking for new paths
+        // Checking for new paths=
         char new_paths[MAX_DATA_LENGTH - 1000] = {0};
         for (int i = 0; i < n_paths_found; i++)
         {
@@ -87,8 +87,8 @@ void* check_and_store_filepaths(void* args)
         if (strlen(new_paths) > 0)
         {
             new_paths[strlen(new_paths) - 1] = '\0';
+            send_update_paths_request(ADD_PATHS, new_paths);
         }
-        send_update_paths_request(ADD_PATHS, new_paths);
 
         // Checking for deleted paths
         char deleted_paths[MAX_DATA_LENGTH - 1000] = {0};
@@ -104,8 +104,8 @@ void* check_and_store_filepaths(void* args)
         if (strlen(deleted_paths) > 0)
         {
             deleted_paths[strlen(deleted_paths) - 1] = '\0';
+            send_update_paths_request(DELETE_PATHS, deleted_paths);
         }
-        send_update_paths_request(DELETE_PATHS, deleted_paths);
 
         // Freeing all the memory allocated except the found paths copy array
         for (int i = 0; i < n_paths_found; i++)
