@@ -14,3 +14,6 @@
 - If a client initiates a write request to a file on which some other client is already writing then the new client will have to wait till the previous one completes writing, after that only the new client's write request would proceed.
 - Assuming all the accessible files are in the storage folder only.
 - If you are running ss.c file in some other folder and running it there then you will have to manually update the pwd macro to the pwd of that headers.h
+- Assuming that only files can be copied. As there can be multiple storage servers with same folder names but it is guranteed to have a unique file path for each file which may not be unique for each subpath or path to each folder so it would not be possible to figure out what the client exactly wants and which folder is to be copied.
+- Assuming if a file is being copied, there won't be already a file with exactly the same relative path, and if there is it's data will be overwritten
+- Assuming all the files ends with .txt (all are text files) and no folder name ends with .txt

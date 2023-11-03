@@ -18,7 +18,7 @@ char **tokenize(const char *str, const char ch)
     char **tokens = (char **)malloc((num_of_tokens + 1) * sizeof(char *));
     for (int i = 0; i < num_of_tokens; i++)
     {
-        tokens[i] = (char *)calloc(MAX_PATH_LEN, sizeof(char));
+        tokens[i] = (char *)calloc(MAX_DATA_LENGTH, sizeof(char));
     }
     // The last token will be kept null so that when traversing we would know when the tokens end by checking for NULL token
     tokens[num_of_tokens] = NULL;

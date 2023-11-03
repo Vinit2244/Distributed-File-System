@@ -188,17 +188,16 @@ void* serve_request(void* args)
     // Selecting the type of request sent
     if (recvd_request.request_type == READ_REQ)
     {
-        printf("Read request received\n");
-        // Read the data onto the specified file break it in parts and send each part in chunks followed by stop request at last
+        // Read the data in the file specified (Assuming that all the data can be read within the size of the request data buffer)
         char* path_to_read = request_tkns[0];
         
-        FILE* fptr;
-        fptr = fopen(path_to_read, "r");
+        FILE* fptr = fopen(path_to_read, "r");
 
         st_request send_read_data;
         send_read_data.request_type = READ_REQ_DATA;
         memset(send_read_data.data, 0, MAX_DATA_LENGTH);
 
+        // Reading data onto the data buffer of read request
         int bytes_read = fread(send_read_data.data, 1, MAX_DATA_LENGTH, fptr);
 
         int sent_msg_size;
@@ -210,9 +209,11 @@ void* serve_request(void* args)
     }
     else if (recvd_request.request_type == WRITE_REQ)
     {
+        // Extracting the path to write and content to write
         char* path_to_write = request_tkns[0];
         char* data_to_write = request_tkns[1];
 
+        // Opening file in write mode and writing onto the file (Assuming that the path is always correct and the file already exits)
         FILE* fptr;
         fptr = fopen(path_to_write, "w");
         fprintf(fptr, "%s", data_to_write);
@@ -231,7 +232,8 @@ void* serve_request(void* args)
         fclose(fptr);
 
         send_ack(APPEND_SUCCESSFUL, sock_fd);
-    } else if (recvd_request.request_type == RETRIEVE_INFO)
+    }
+    else if (recvd_request.request_type == RETRIEVE_INFO)
     {
         // Path of the file whose information has to be retrieved
         char* path = recvd_request.data;
@@ -241,6 +243,7 @@ void* serve_request(void* args)
         send_info.request_type = INFO;
         memset(send_info.data, 0, MAX_DATA_LENGTH);
 
+        // Retrieving file permissions
         if (!stat(path, &file_stat)) {
             strcpy(send_info.data, (S_ISDIR(file_stat.st_mode))  ? "d" : "-");
             strcat(send_info.data, (file_stat.st_mode & S_IRUSR) ? "r" : "-");
@@ -258,8 +261,56 @@ void* serve_request(void* args)
         }
         strcat(send_info.data, " ");
         char size_str[10] = {0};
+
+        // Storing file size with a space
         sprintf(size_str, "%d", file_stat.st_blocks);
         strcat(send_info.data, size_str);
+        strcat(send_info.data, " ");
+
+        // Storing last modification time
+        time_t modificationTime = file_stat.st_mtime;
+
+        // Convert time to a formatted string and print it
+        char* time_string;
+        time_string = ctime(&modificationTime);
+        char month[4];
+        char date[3];
+        char hour[3];
+        char mins[3];
+        char year[5];
+        for (int i = 4; i < 7; i++)
+        {
+            month[i - 4] = time_string[i];
+        }
+        month[3] = '\0';
+
+        for (int i = 8; i < 10; i++)
+        {
+            date[i - 8] = time_string[i];
+        }
+        date[2] = '\0';
+
+        for (int i = 11; i < 13; i++)
+        {
+            hour[i - 11] = time_string[i];
+        }
+        hour[2] = '\0';
+
+        for (int i = 14; i < 16; i++)
+        {
+            mins[i - 14] = time_string[i];
+        }
+        mins[2] = '\0';
+
+        for (int i = 20; i < 24; i++)
+        {
+            year[i - 20] = time_string[i];
+        }
+        year[4] = '\0';
+        
+        char timestamp[100] = {0};
+        sprintf(timestamp, "%s %s %s %s ", month, date, hour, mins);
+        strcat(send_info.data, timestamp);
 
         int sent_msg_size;
         if ((sent_msg_size = send(sock_fd, (request) &send_info, sizeof(st_request), 0)) <= 0)
@@ -268,11 +319,84 @@ void* serve_request(void* args)
             exit(EXIT_FAILURE);
         }
     }
+    else if (recvd_request.request_type == COPY)
+    {
+        // Read the data in the file given
+        char* path = recvd_request.data;
 
+        st_request copy_data_request;
+        copy_data_request.request_type = DATA_TO_BE_COPIED;
+        memset(copy_data_request.data, 0, MAX_DATA_LENGTH);
+
+        FILE* fptr = fopen(path, "r");
+        char buffer[MAX_DATA_LENGTH - 1026] = {0};
+        int bytes_read = fread(buffer, 1, MAX_DATA_LENGTH, fptr);
+
+        // <path>|<data in file>
+        strcpy(copy_data_request.data, path);
+        strcat(copy_data_request.data, "|");
+        strcat(copy_data_request.data, buffer);
+
+        int sent_msg_size;
+        if ((sent_msg_size = send(sock_fd, (request) &copy_data_request, sizeof(st_request), 0)) <= 0)
+        {
+            fprintf(stderr, RED("send : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+    }
+    else if (recvd_request.request_type == PASTE)
+    {
+        char* file_path = request_tkns[0];
+        char* file_content = request_tkns[1];
+
+        // Creating intermediate directories if not already present
+        // First tokenising the file_path on "/"
+        char** dirs = tokenize(file_path, "/");
+
+        // Calculating the number of intermediate dirs
+        int n_tkns = 0;
+        while (dirs[n_tkns] != NULL)
+        {
+            n_tkns++;
+        }
+        // Final number of dirs is 1 less than the number of tokens as the last one is the file
+        int n_dirs = n_tkns - 1;
+
+        // Now creating all the intermediate dirs one by one
+        for (int i = 0; i < n_dirs; i++)
+        {
+            if (mkdir(dirs[i], 0777) == -1)
+            {
+                // If the directory already exitsts do nothing
+            }
+            // Moving into that directory to create the next directory in hierarchy
+            chdir(dirs[i]);
+        }
+        // Moving out of all dirs again to the home dir
+        for (int i = 0; i < n_dirs; i++)
+        {
+            chdir("..");
+        }
+
+        // Now opening the file in write mode, if it does not exist it would be created otherwise the old data would be overwritten
+        FILE* fptr = fopen(file_path, "w");
+        fprintf(fptr, "%s", file_content);
+        fclose(fptr);
+
+        // Can send pasted acknowledgement
+    }
+    else if (recvd_request.request_type == PING)
+    {
+        // Received a ping request from NFS to check if my SS is still responding or not so sending back the PING to say that I am active and listening
+        st_request ping_request;
+        send_ack(PING, sock_fd);
+    }
+    
     free_tokens(request_tkns);
 
     // Closing client socket as all the communication is done
-    if (close(sock_fd) < 0) {
+    if (close(sock_fd) < 0)
+    {
         fprintf(stderr, RED("close : failed to close the client socket!\n"));
         exit(EXIT_FAILURE);
     }

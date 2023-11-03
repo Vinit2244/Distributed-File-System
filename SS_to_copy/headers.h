@@ -64,11 +64,13 @@
 #define READ_REQ_DATA        12
 #define ADD_PATHS            13
 #define DELETE_PATHS         14
-#define COPY_TO              15
-#define COPY_FROM            16
+#define PASTE                15
+#define COPY                 16
 #define COPY_REQUEST         17
 #define RETRIEVE_INFO        19
 #define INFO                 20
+#define DATA_TO_BE_COPIED    21
+#define PING                 22
 
 // ============================= Statuses =============================
 #define NOT_REGISTERED 0
