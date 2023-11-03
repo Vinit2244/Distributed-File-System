@@ -200,7 +200,7 @@ void createoperation(char *path,char *name)
     }
     st_request* response = (st_request*)malloc(sizeof(st_request));
     ssize_t bytes_received = recv(client_socket, response, sizeof(st_request), 0);
-    if(response->data=="STOP")
+    if(strcmp(response->data,"STOP")==0)
     {
         printf("Creation of Directory or File succesfull \n");
     }
@@ -221,7 +221,7 @@ void deleteoperation(char *path,char *name)
     }
     st_request* response = (st_request*)malloc(sizeof(st_request));
     ssize_t bytes_received = recv(client_socket, response, sizeof(st_request), 0);
-    if(response->data=="STOP")
+    if(strcmp(response->data,"STOP")==0)
     {
         printf("Deletion of Directory or File succesfull \n");
     }
@@ -243,7 +243,7 @@ void copyoperation(char *path1,char *path2)
     }
     st_request* response = (st_request*)malloc(sizeof(st_request));
     ssize_t bytes_received = recv(client_socket, response, sizeof(st_request), 0);
-    if(response->data=="STOP")
+    if(strcmp(response->data,"STOP")==0)
     {
         printf("Copy of Directory or File succesfull \n");
     }
