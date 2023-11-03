@@ -25,7 +25,7 @@
 #define MY_CLIENT_PORT_NO   4000        // Port number used to communicate with client
 #define MY_IP               "0.0.0.0"   // Ip address of this storage server
 #define NS_PORT 2000                    // NS PORT
-#define NS_IP "127.0.0.1"               // NS IP
+#define NS_IP "0.0.0.0"               // NS IP
 
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
@@ -56,8 +56,14 @@
 #define REGISTRATION_REQUEST 9
 #define REGISTRATION_ACK     10
 #define STOP_REQ             11
-#define FILE_NOT_FOUND       12
-#define COPY_REQ             13
+#define READ_REQ_DATA        12
+#define ADD_PATHS            13
+#define DELETE_PATHS         14
+#define COPY_TO 15
+#define COPY_FROM 16
+#define COPY_REQ 17
+#define FILE_NOT_FOUND 18
+#define RETRIEVE_INFO 19
 
 // ============================= Statuses =============================
 #define NOT_REGISTERED 0

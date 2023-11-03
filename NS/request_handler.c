@@ -17,6 +17,8 @@ void process(request req)
     }
     else if (req->request_type == WRITE_REQ || req->request_type == READ_REQ || req->request_type == RETRIEVE_INFO){
         
+
+        printf("%d\n",server_count);
         pthread_mutex_lock(&server_lock);
         int flag=0;
         request r = (request)malloc(sizeof(st_request));
@@ -46,6 +48,7 @@ void process(request req)
             
             r->request_type=FILE_NOT_FOUND;
             strcpy(r->data,"File not found");
+            printf("No files found , informing client\n");
             send(client_socket_tcp, r, sizeof(st_request), 0);
         }
         else{

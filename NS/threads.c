@@ -107,7 +107,6 @@ void *receive_handler()
     while (1)
     {
         client_socket_tcp = accept(server_socket_tcp, (struct sockaddr *)&client_addr_len_tcp, &client_addr_len_tcp);
-
         request req = (request)malloc(sizeof(st_request));
         int x=recv(client_socket_tcp,req,sizeof(st_request),0);
         process(req);

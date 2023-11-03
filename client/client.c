@@ -1,9 +1,10 @@
 #include "headers.h"
 
-int client_socket;
+
 
 void communicate_with_ss(char *ipaddress,char *port,char* path)
 {
+    int client_socket;
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(atoi(port));
@@ -47,6 +48,7 @@ void communicate_with_ss(char *ipaddress,char *port,char* path)
 }
 void communicate_with_ss_write(char *ipaddress,char *port,char* path)
 {
+    int client_socket;
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(atoi(port));
@@ -63,6 +65,7 @@ void communicate_with_ss_write(char *ipaddress,char *port,char* path)
     snprintf(packet->data, sizeof(packet->data), "%s|", path);
     while(input!='\n')
     {
+        
         input=fgetc(stdin);
         packet->data[strlen(packet->data)]=input;
         dataread++;
@@ -93,6 +96,7 @@ void communicate_with_ss_write(char *ipaddress,char *port,char* path)
 }
 void client_to_ns()
 {
+    int client_socket;
     printf("-------Connection to NS started for client--------- \n");
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket == -1)
@@ -117,16 +121,35 @@ void client_to_ns()
     {
         perror("Send failed");
     }
+    // recv(client_socket, initialization, sizeof(st_request), 0);
 
+    close(client_socket);
     printf("-----Communication with NS established-----\n");
 }
 
 
 void readingoperation(char *path)
 {
+    int client_socket;
+    client_socket=socket(AF_INET,SOCK_STREAM,0);
     st_request* readerpacket=malloc(sizeof(st_request));
     readerpacket->request_type=READ_REQ;
     strcpy(readerpacket->data,path);
+    struct sockaddr_in server_address;
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(NS_PORT);          
+    server_address.sin_addr.s_addr = inet_addr(NS_IP); 
+    // printf("%s\n",path);
+    while(1){
+        if(connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address)) == -1){
+            perror("Connection failed");
+            continue;
+        }
+        else{
+            break;
+        }
+    }
+
     ssize_t bytes_sent = send(client_socket, readerpacket, sizeof(st_request), 0);
     if (bytes_sent == -1)
     {
@@ -151,11 +174,13 @@ void readingoperation(char *path)
         port=strtok(NULL, "|");
     }
     printf("%s %s \n",ipaddress,port);
-    communicate_with_ss(ipaddress,port,path);
+    close(client_socket);
+    // communicate_with_ss(ipaddress,port,path);
 }
 
 void writingoperation(char *path)
 {
+    int client_socket;
     st_request* readerpacket=malloc(sizeof(st_request));
     readerpacket->request_type=WRITE_REQ;
     strcpy(readerpacket->data,path);
@@ -190,6 +215,7 @@ void writingoperation(char *path)
 
 void createoperation(char *path,char *name)
 {
+    int client_socket;
     st_request* packet=malloc(sizeof(st_request));
     packet->request_type=CREATE_REQ;
     snprintf(packet->data, sizeof(packet->data), "%s|%s", path, name);
@@ -211,6 +237,7 @@ void createoperation(char *path,char *name)
 }
 void deleteoperation(char *path,char *name)
 {
+    int client_socket;
     st_request* packet=malloc(sizeof(st_request));
     packet->request_type=DELETE_REQ;
     snprintf(packet->data, sizeof(packet->data), "%s|%s", path, name);
@@ -233,6 +260,7 @@ void deleteoperation(char *path,char *name)
 
 void copyoperation(char *path1,char *path2)
 {
+    int client_socket;
     st_request* packet=malloc(sizeof(st_request));
     packet->request_type=COPY_REQ;
     snprintf(packet->data, sizeof(packet->data), "%s|%s", path1, path2);
@@ -299,6 +327,6 @@ int main()
             printf("Invalid Operation do again\n");
         }
     }
-    close(client_socket);
+    // close(client_socket);
     
 }
