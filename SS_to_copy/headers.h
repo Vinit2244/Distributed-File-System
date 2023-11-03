@@ -11,6 +11,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 // ==================== User defined header files  ====================
 #include "utils.h"
@@ -28,7 +31,7 @@
 #define NFS_IP              "127.0.0.1" // IP address of the naming server
 #define MAX_PENDING         10          // Maximum number of connections the TCP socket can have in queue waiting
 #define MY_SS_ID            1           // Each storage server is assigned a unique SS_ID (used to distinguish between different servers)
-
+#define PWD                 "temp"
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
 #define GREEN_COLOR  "\033[0;32m"
@@ -58,6 +61,8 @@
 #define REGISTRATION_ACK     10
 #define STOP_REQ             11
 #define READ_REQ_DATA        12
+#define ADD_PATHS            13
+#define DELETE_PATHS         14
 
 // ============================= Statuses =============================
 #define NOT_REGISTERED 0
@@ -98,5 +103,6 @@ extern struct  sockaddr_in address;
 extern socklen_t addr_size;                     // IPv4 address struct for TCP communication between ss and nfs (register)
 extern int*    thread_slot_empty_arr;           // 1 = thread is running, 0 = thread slot is free and can be used to create a new thread
 extern pthread_t* requests_serving_threads_arr; // Holds the threads when a request is being served in some thread
+// extern int     read_initial_paths;              // Flag to indicate that the reading and storing paths thread have done reading so I can register my ss now
 
 #endif

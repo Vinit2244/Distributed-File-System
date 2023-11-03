@@ -1,29 +1,127 @@
 #include "headers.h"
 
 // Writes onto the paths.txt file the current state of the accessible paths buffer regularly from time to time
-void *store_filepaths(void *args)
-{
-    pthread_mutex_lock(&accessible_paths_mutex);
-    while(1)
-    {
-        // Wait till there is some update done to the accessible paths 2D array and as soon as some thing is updated write it onto the text file
-        pthread_cond_wait(&update_paths_txt_cond_var, &accessible_paths_mutex);
+// void *store_filepaths(void *args)
+// {
+//     pthread_mutex_lock(&accessible_paths_mutex);
+//     while(1)
+//     {
+//         // Wait till there is some update done to the accessible paths 2D array and as soon as some thing is updated write it onto the text file
+//         // pthread_cond_wait(&update_paths_txt_cond_var, &accessible_paths_mutex);
 
-        FILE* fptr = fopen("paths.txt", "w");
+//         FILE* fptr = fopen("paths.txt", "w");
 
-        // First write the number of paths
-        fprintf(fptr, "%d\n", num_of_paths_stored);
+//         // First write the number of paths
+//         fprintf(fptr, "%d\n", num_of_paths_stored);
         
-        // Then write all the paths (one in each line)
-        for (int i = 0; i < num_of_paths_stored; i++)
+//         // Then write all the paths (one in each line)
+//         for (int i = 0; i < num_of_paths_stored; i++)
+//         {
+//             fprintf(fptr, "%s\n", accessible_paths[i]);
+//         }
+
+//         fclose(fptr);
+//     }
+//     pthread_mutex_unlock(&accessible_paths_mutex);
+
+//     return NULL;
+// }
+
+// Periodically keeps checking for all the file paths and if some new file path is created/deleted then immediately signals the NFS to add/delete that path
+void* check_and_store_filepaths(void* args)
+{
+    while (1)
+    {
+        char base_dir_path[MAX_PATH_LEN] = {0};
+        sprintf(base_dir_path, "%s/SS%d_test_dir", PWD, MY_SS_ID);
+
+        // Linked list to store the paths found as we don't know in advance how many paths will be found
+        linked_list_head paths = create_linked_list_head();
+
+        // Searching the SS_test_dir recursively to obtain the absolute paths of all the files
+        seek(base_dir_path, paths);
+
+        // Print the number of paths found for debugging
+        printf("\nChecked filepaths : %d\n", paths->number_of_nodes);
+
+        // Number of paths found
+        int n_paths_found = paths->number_of_nodes;
+
+        // Storing relative paths of the files found in the found_paths array
+        char** found_paths = (char**) malloc(paths->number_of_nodes * sizeof(char*));
+        // Storing the copy of accessible paths array to match with the files found
+        char** accessible_paths_copy = (char**) malloc(MAX_FILES * sizeof(char*));
+        for (int i = 0; i < MAX_FILES; i++)
         {
-            fprintf(fptr, "%s\n", accessible_paths[i]);
+            accessible_paths_copy[i] = NULL;
+        }
+        // Storing a copy of found_paths as well so after comparing if there are some new paths or some paths are deleted then we can create a new accessible paths array
+        // char** found_paths_copy = (char**) malloc(paths->number_of_nodes * sizeof(char*));
+
+        for (int k = 0; k < num_of_paths_stored; k++)
+        {
+            accessible_paths_copy[k] = calloc(MAX_PATH_LEN, sizeof(char));
+            strcpy(accessible_paths_copy[k], accessible_paths[k]);
+        }
+        linked_list_node n = paths->first;
+        int idx = 0;
+        while (n != NULL)
+        {
+            found_paths[idx] = (char*) calloc(MAX_PATH_LEN, sizeof(char));
+            // found_paths_copy[idx] = (char*) calloc(MAX_PATH_LEN, sizeof(char));
+            // strcpy(found_paths_copy[idx], ".");
+            // strcat(found_paths_copy[idx], &n->path[strlen(PWD)]);
+            strcpy(found_paths[idx], ".");
+            strcat(found_paths[idx++], &n->path[strlen(PWD)]);
+            n = n->next;
         }
 
-        fclose(fptr);
-    }
-    pthread_mutex_unlock(&accessible_paths_mutex);
+        // Have copied all the found paths in the array so now we can free the linked list
+        free_linked_list(paths);
 
+        // Now go and match each paths in found_paths and accessible_paths
+        for (int k = 0; k < n_paths_found; k++)
+        {
+            char* curr_found_path = found_paths[k];
+            for (int j = 0; j < num_of_paths_stored; j++)
+            {
+                char* curr_accessible_path = accessible_paths_copy[j];
+                if (strcmp(curr_found_path, curr_accessible_path) == 0)
+                {
+                    found_paths[k] = NULL;
+                    accessible_paths_copy[j] = NULL;
+                }
+            }
+        }
+
+        // Now all the not null paths in found_paths are the paths that are newly added while all the not null paths in accessible paths copy are deleted paths
+        int n_new_paths = 0;
+        char new_paths[MAX_DATA_LENGTH - 1000] = {0};
+        for (int i = 0; i < n_paths_found; i++)
+        {
+            if (found_paths[i] != NULL)
+            {
+                n_new_paths++;
+                strcat(new_paths, found_paths[i]);
+                strcat(new_paths, "|");
+            }
+        }
+
+        for (int k = 0; k < n_paths_found; k++)
+        {
+            printf("%s\n", found_paths[k]);
+            free(found_paths[k]);
+        }
+        for (int k = 0; k < num_of_paths_stored; k++)
+        {
+            free(accessible_paths_copy[k]);
+        }
+        free(accessible_paths_copy);
+
+        // read_initial_paths = 1;
+        sleep(1);
+    }
+    
     return NULL;
 }
 

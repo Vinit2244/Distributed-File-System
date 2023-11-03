@@ -3,7 +3,7 @@
 // Initiating global variables
 pthread_mutex_t accessible_paths_mutex;
 pthread_mutex_t threads_arr_mutex;
-pthread_cond_t update_paths_txt_cond_var;
+// pthread_cond_t update_paths_txt_cond_var;
 pthread_mutex_t* file_mutex_arr;              // Used to lock a particular file path when some client is performing write operation on it, so that no two clients can write on the same file at the same time
 
 
@@ -19,6 +19,8 @@ struct  sockaddr_in address;
 socklen_t addr_size;                               // IPv4 address struct for ss and nfs USP communication (register)
 int*    thread_slot_empty_arr;                     // 1 = thread is running, 0 = thread slot is free and can be used to create a new thread
 pthread_t* requests_serving_threads_arr;           // Holds the threads when a request is being served in some thread
+char* pwd = NULL;
+// int     read_initial_paths = 0;                    // Flag to indicate that the reading and storing paths thread have done reading so I can register my ss now
 
 int main(int argc, char *argv[])
 {
@@ -28,9 +30,9 @@ int main(int argc, char *argv[])
     file_mutex_arr               = (pthread_mutex_t*) malloc(MAX_FILES * sizeof(pthread_mutex_t));
 
     // Initializing all the accessible paths (Reading all the paths stored in paths.txt and storing it in accessible paths buffer)
-    accessible_paths_init();
+    // accessible_paths_init();
 
-    printf(GREEN("\nPaths read from the text file into the accessible paths 2D array.\n"));
+    // printf(GREEN("\nPaths read from the text file into the accessible paths 2D array.\n"));
 
     // Initializing mutexes, condition variables and semaphores
     /*========== MUTEX ==========*/
@@ -41,7 +43,7 @@ int main(int argc, char *argv[])
         pthread_mutex_init(&file_mutex_arr[i], NULL);
     }
     /*========== COND VARS ==========*/
-    pthread_cond_init(&update_paths_txt_cond_var, NULL);
+    // pthread_cond_init(&update_paths_txt_cond_var, NULL);
     /*========== SEMAPHORES ==========*/
 
     // First start the NFS and Client TCP servers to listen to their requests
@@ -53,11 +55,14 @@ int main(int argc, char *argv[])
     register_ss();
 
     // Creating the thread that would keep updating the paths.txt file with the current state of the accessible paths array regularly after some time interval
-    pthread_t store_filepaths_thread;
-    pthread_create(&store_filepaths_thread, NULL, &store_filepaths, NULL);
+    // pthread_t store_filepaths_thread;
+    pthread_t check_and_store_filepaths_thread;
+    // pthread_create(&store_filepaths_thread, NULL, &store_filepaths, NULL);
+    pthread_create(&check_and_store_filepaths_thread, NULL, &check_and_store_filepaths, NULL);
 
     // Waiting for threads to complete
-    pthread_join(store_filepaths_thread, NULL);
+    pthread_join(check_and_store_filepaths_thread, NULL);
+    // pthread_join(store_filepaths_thread, NULL);
     pthread_join(nfs_thread, NULL);
     pthread_join(client_thread, NULL);
 
@@ -70,7 +75,7 @@ int main(int argc, char *argv[])
         pthread_mutex_destroy(&file_mutex_arr[i]);
     }
     /*========== COND VARS ==========*/
-    pthread_cond_destroy(&update_paths_txt_cond_var);
+    // pthread_cond_destroy(&update_paths_txt_cond_var);
     /*========== SEMAPHORES ==========*/
 
     // Freeing Memory

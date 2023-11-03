@@ -5,13 +5,14 @@ import shutil
 import re
 
 # Updates the "headers.h" file to assign each individual SS a unique port number for NFS and client communication
-def update_header_and_config_files(i: int, base_dir: str) -> None:
+def update_header_and_config_files(i: int, base_dir: str, cwd: str) -> None:
     # Now assigning the port numbers to this Storage server
     input_file = base_dir + "/headers.h"    # File in which these macros are stored
     # Defining regex to identify the line
     pattern1 = r'^\s*#define\s*MY_NFS_PORT_NO.*$'   
     pattern2 = r'^\s*#define\s*MY_CLIENT_PORT_NO.*$'
     pattern3 = r'^\s*#define\s*MY_SS_ID.*$'
+    pattern4 = r'^\s*#define\s*PWD.*$'
 
     # Read the content of the input file
     with open(input_file, 'r') as file:
@@ -21,6 +22,7 @@ def update_header_and_config_files(i: int, base_dir: str) -> None:
     modified_lines = [re.sub(pattern1, f'#define MY_NFS_PORT_NO {1000 * (i + 1) + 500}', line) for line in lines]
     modified_lines = [re.sub(pattern2, f'#define MY_CLIENT_PORT_NO {1000 * (i + 1) + 501}', line) for line in modified_lines]
     modified_lines = [re.sub(pattern3, f'#define MY_SS_ID {i + 1}', line) for line in modified_lines]
+    modified_lines = [re.sub(pattern4, f'#define PWD "{cwd + f"/SS{i + 1}"}"', line) for line in modified_lines]
     
     # Write the modified content back to the same file
     with open(input_file, 'w') as file:
@@ -116,13 +118,12 @@ copy_folder_n_times(num_of_ss, cwd)
 for i in range(num_of_ss):
     # If run_clean is 0 then we run the makefile to compile the code
     if clear == 0:
-        paths_to_be_stored: list = list()  # Stores the list of all the paths accessible to the SS which will later be written onto the paths.txt file
         
         curr_file_index: int = 1
         
         base_dir = os.path.join(cwd, f"SS{i + 1}")
         
-        update_header_and_config_files(i, base_dir)
+        update_header_and_config_files(i, base_dir, cwd)
         
         test_dir_path = os.path.join(base_dir, f"SS{i + 1}_test_dir")
         create_dir(test_dir_path)
@@ -137,18 +138,8 @@ for i in range(num_of_ss):
                 file_path = os.path.join(dir_path, f"SS{i + 1}_file{curr_file_index}.txt")
                 if curr_file_index <= total_num_of_files:
                     
-                    path_to_store = f"./SS{i + 1}_dir{j + 1}/SS{i + 1}_file{curr_file_index}.txt"
-                    paths_to_be_stored.append(path_to_store)
                     create_file(file_path, curr_file_index)
                     curr_file_index += 1
-        
-        # Writing stored paths onto the file
-        with open(f"./SS{i + 1}/paths.txt", "w") as paths_file:
-            paths_file.write(str(total_num_of_files))
-            paths_file.write("\n")
-            for path in paths_to_be_stored:
-                paths_file.write(path)
-                paths_file.write("\n")
                 
         # Compiling all the makefiles
         compile_make(i)

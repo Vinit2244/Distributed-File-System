@@ -12,9 +12,10 @@ extern pthread_mutex_t* file_mutex_arr;             // Used to lock a particular
 extern pthread_cond_t update_paths_txt_cond_var;    // Whenever the accesible paths array is updated, this condition variable is used to signal the store_filepaths thread to store the updated file path into the text file
 
 // Thread functions
-void* store_filepaths(void* args);
+// void* store_filepaths(void* args);
 void* serve_request(void* args);
 void* start_nfs_port(void* args);
 void* start_client_port(void* args);
+void* check_and_store_filepaths(void* args);
 
 #endif
