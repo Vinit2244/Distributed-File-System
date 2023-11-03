@@ -66,7 +66,9 @@
 #define DELETE_PATHS         14
 #define COPY_TO              15
 #define COPY_FROM            16
-#define COPY_REQUESt         17
+#define COPY_REQUEST         17
+#define RETRIEVE_INFO        19
+#define INFO                 20
 
 // ============================= Statuses =============================
 #define NOT_REGISTERED 0

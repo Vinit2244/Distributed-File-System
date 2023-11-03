@@ -231,6 +231,42 @@ void* serve_request(void* args)
         fclose(fptr);
 
         send_ack(APPEND_SUCCESSFUL, sock_fd);
+    } else if (recvd_request.request_type == RETRIEVE_INFO)
+    {
+        // Path of the file whose information has to be retrieved
+        char* path = recvd_request.data;
+        struct stat file_stat;
+
+        st_request send_info;
+        send_info.request_type = INFO;
+        memset(send_info.data, 0, MAX_DATA_LENGTH);
+
+        if (!stat(path, &file_stat)) {
+            strcpy(send_info.data, (S_ISDIR(file_stat.st_mode))  ? "d" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IRUSR) ? "r" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IWUSR) ? "w" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IXUSR) ? "x" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IRGRP) ? "r" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IWGRP) ? "w" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IXGRP) ? "x" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IROTH) ? "r" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IWOTH) ? "w" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IXOTH) ? "x" : "-");
+        } else {
+            fprintf(stderr, "\033[1;31mpeek: error in stat\033[1;0m\n");
+            return 0;
+        }
+        strcat(send_info.data, " ");
+        char size_str[10] = {0};
+        sprintf(size_str, "%d", file_stat.st_blocks);
+        strcat(send_info.data, size_str);
+
+        int sent_msg_size;
+        if ((sent_msg_size = send(sock_fd, (request) &send_info, sizeof(st_request), 0)) <= 0)
+        {
+            fprintf(stderr, RED("send : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
     }
 
     free_tokens(request_tkns);
