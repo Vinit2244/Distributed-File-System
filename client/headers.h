@@ -59,11 +59,12 @@
 #define READ_REQ_DATA        12
 #define ADD_PATHS            13
 #define DELETE_PATHS         14
-#define COPY_TO 15
-#define COPY_FROM 16
-#define COPY_REQ 17
-#define FILE_NOT_FOUND 18
-#define RETRIEVE_INFO 19
+#define COPY_TO              15
+#define COPY_FROM            16
+#define COPY_REQ             17
+#define FILE_NOT_FOUND       18
+#define RETRIEVE_INFO        19
+#define INFO                 20
 
 // ============================= Statuses =============================
 #define NOT_REGISTERED 0
