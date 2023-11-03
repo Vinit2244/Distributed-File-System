@@ -3,8 +3,6 @@
 // Initiating global variables
 pthread_mutex_t accessible_paths_mutex;
 pthread_mutex_t threads_arr_mutex;
-pthread_mutex_t* file_mutex_arr;              // Used to lock a particular file path when some client is performing write operation on it, so that no two clients can write on the same file at the same time
-
 
 char**  accessible_paths         = NULL;           // Stores the RELATIVE PATH (relative to the directory in which the storage server c file resides) of all the files that are accessible by clients on this storage server
 int     num_of_paths_stored      = 0;              // Initially no paths are stored
@@ -23,7 +21,6 @@ int main(int argc, char *argv[])
     // Allocating memory
     requests_serving_threads_arr = (pthread_t*) malloc(MAX_PENDING * sizeof(pthread_t));
     thread_slot_empty_arr        = (int*) calloc(MAX_PENDING, sizeof(int));    // 0 indicates slot is empty and 1 indicates slot is busy
-    file_mutex_arr               = (pthread_mutex_t*) malloc(MAX_FILES * sizeof(pthread_mutex_t));
 
     accessible_paths = (char**) malloc(MAX_FILES * sizeof(char*));
     for (int i = 0; i < MAX_FILES; i++)
@@ -35,10 +32,6 @@ int main(int argc, char *argv[])
     /*========== MUTEX ==========*/
     pthread_mutex_init(&accessible_paths_mutex, NULL);
     pthread_mutex_init(&threads_arr_mutex, NULL);
-    for (int i = 0; i < MAX_FILES; i++)
-    {
-        pthread_mutex_init(&file_mutex_arr[i], NULL);
-    }
     /*========== COND VARS ==========*/
     /*========== SEMAPHORES ==========*/
 
@@ -63,10 +56,6 @@ int main(int argc, char *argv[])
     /*========== MUTEX ==========*/
     pthread_mutex_destroy(&accessible_paths_mutex);
     pthread_mutex_destroy(&threads_arr_mutex);
-    for (int i = 0; i < MAX_FILES; i++)
-    {
-        pthread_mutex_destroy(&file_mutex_arr[i]);
-    }
     /*========== COND VARS ==========*/
     /*========== SEMAPHORES ==========*/
 
