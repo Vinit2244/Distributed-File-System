@@ -23,6 +23,8 @@ void process(request req)
         char* reference = (char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
         for(int i=0;i<server_count;i++){
             
+            pthread_mutex_lock(&ss_list[i]->lock);
+
             for(int i=0;i<ss_list[i]->path_count;i++){
                 if(strcmp(ss_list[i]->paths[i],req->data)==0){
                     snprintf(reference,MAX_DATA_LENGTH,"%s|%s",ss_list[i]->ip,ss_list[i]->client_port);
@@ -34,6 +36,9 @@ void process(request req)
             if(flag==1){
                 break;
             }
+
+            pthread_mutex_unlock(&ss_list[i]->lock);
+
         }
         pthread_mutex_unlock(&server_lock);
 
@@ -66,6 +71,8 @@ void process(request req)
         ss found_server;
         for(int i=0;i<server_count;i++){
             
+            pthread_mutex_lock(&ss_list[i]->lock);
+
             for(int i=0;i<ss_list[i]->path_count;i++){
                 if(strcmp(ss_list[i]->paths[i],req->data)==0){
                     
@@ -81,6 +88,9 @@ void process(request req)
             if(flag==1){
                 break;
             }
+
+            pthread_mutex_unlock(&ss_list[i]->lock);
+
         }
         pthread_mutex_unlock(&server_lock);
             
@@ -134,7 +144,11 @@ void process(request req)
          int flag=0;
 
         pthread_mutex_lock(&server_lock);
+
             for(int i=0;i<server_count;i++){
+
+                pthread_mutex_lock(&ss_list[i]->lock);
+
                 for(int j=0;j<ss_list[i]->path_count;j++){
                     if(strcmp(ss_list[i]->paths[j],source)==0){
                         source_no=ss_list[i];
@@ -151,12 +165,15 @@ void process(request req)
                 if(flag==2){
                     break;
                 }
+
+                pthread_mutex_unlock(&ss_list[i]->lock);
+
         }
         pthread_mutex_unlock(&server_lock);
 
         if(flag<2){
 
-            request r = (request)malloc(sizeof(request));
+            request r = (request)malloc(sizeof(st_request));
             r->request_type=FILE_NOT_FOUND;
             strcpy(r->data,"File not found");
             send(client_socket_tcp, r, sizeof(st_request), 0);
@@ -187,7 +204,73 @@ void process(request req)
 
     }
 
-    
+    else if (req->request_type == ADD_PATHS){
+        char * ss_id = (char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+        char** path = (char**)malloc(sizeof(char*)*MAX_CONNECTIONS);
+        for(int i=0;i<MAX_CONNECTIONS;i++){
+            path[i]=(char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+        }
+        int ind=0;
+        char* token = strtok(req->data,"|");
+        while(token!=NULL){
+            if(ind==0){
+                strcpy(ss_id,token);
+            }
+            else{
+                strcpy(path[ind-1],token);
+            }
+            ind++;
+            token = strtok(NULL,"|");
+        }
 
+        ss found_server = ss_list[atoi(ss_id)];
+
+        pthread_mutex_lock(&found_server->lock);
+        for(int i=0;i<ind-1;i++){
+            strcpy(found_server->paths[found_server->path_count+i],path[i]);
+        }
+        found_server->path_count = found_server->path_count + ind-1;
+        pthread_mutex_unlock(&found_server->lock);
+
+
+
+    }
+
+    else if (req->request_type == DELETE_PATHS){
+        char * ss_id = (char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+        char** path = (char**)malloc(sizeof(char*)*MAX_CONNECTIONS);
+        for(int i=0;i<MAX_CONNECTIONS;i++){
+            path[i]=(char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+        }
+        int ind=0;
+        char* token = strtok(req->data,"|");
+        while(token!=NULL){
+            if(ind==0){
+                strcpy(ss_id,token);
+            }
+            else{
+                strcpy(path[ind-1],token);
+            }
+            ind++;
+            token = strtok(NULL,"|");
+        }
+
+        ss found_server = ss_list[atoi(ss_id)];
+        pthread_mutex_lock(&found_server->lock);
+        for(int i=0;i<ind-1;i++){
+            for(int j=0;j<found_server->path_count;j++){
+                if(strcmp(found_server->paths[j],path[i])==0){
+                    for(int k=j;k<found_server->path_count-1;k++){
+                        strcpy(found_server->paths[k],found_server->paths[k+1]);
+                    }
+                    found_server->path_count--;
+                    break;
+                }
+            }
+        }
+        pthread_mutex_unlock(&found_server->lock);
+
+
+    }
     // Yet to work on depending on type of requests
 }

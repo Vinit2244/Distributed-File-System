@@ -30,8 +30,10 @@
 #define RETRIEVE_INFO 10
 #define FILE_NOT_FOUND 11
 #define COPY_REQUEST 12
-#define COPY_FROM 13
-#define COPY_TO 14
+#define ADD_PATHS 13
+#define DELETE_PATHS 14
+#define COPY_FROM 15
+#define COPY_TO 16
 
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
@@ -81,6 +83,8 @@ typedef struct ss_info
     int server_socket, client_socket;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len;
+    pthread_mutex_t lock;
+    
 
 } ss_info;
 
@@ -105,10 +109,11 @@ extern ss ss_list[100];
 extern int server_count;
 extern packet send_buffer[100];
 extern int send_count;
-extern int sockfd_udp;
-extern struct sockaddr_in server_addr_udp, client_addr_udp;
-extern socklen_t addr_size_udp;
+extern int server_socket_tcp;
+extern struct sockaddr_in server_addr_tcp, client_addr_tcp;
+extern socklen_t addr_size_tcp;
 extern pthread_cond_t send_signal;
+
 
 
 //Defined functions

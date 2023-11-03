@@ -59,21 +59,22 @@ void init_storage(char data[])
     // tokenise the string and create a new server object with extracted attributes
 
     char **tokens = (char **)malloc(sizeof(char *) * 5);
-    tokens = processstring(data, 6);
+    tokens = processstring(data, 2);
     ss new_ss = (ss)malloc(sizeof(ss_info));
 
     strcpy(new_ss->ip, tokens[1]);
     strcpy(new_ss->port, tokens[3]);
     strcpy(new_ss->client_port, tokens[2]);
+    new_ss->path_count=0;
+    pthread_mutex_init(&new_ss->lock, NULL);
+    // new_ss->path_count = atoi(tokens[4]);
+    // char **paths = (char **)malloc(sizeof(char *) * new_ss->path_count);
+    // paths = processstring(tokens[5], new_ss->path_count);
 
-    new_ss->path_count = atoi(tokens[4]);
-    char **paths = (char **)malloc(sizeof(char *) * new_ss->path_count);
-    paths = processstring(tokens[5], new_ss->path_count);
-
-    for (int i = 0; i < new_ss->path_count; i++)
-    {
-        strcpy(new_ss->paths[i], paths[i]);
-    }
+    // for (int i = 0; i < new_ss->path_count; i++)
+    // {
+    //     strcpy(new_ss->paths[i], paths[i]);
+    // }
 
     // Locking CS and entering server storage list then updating the list
     pthread_mutex_lock(&server_lock);
@@ -89,7 +90,7 @@ void init_storage(char data[])
     r->request_type = REGISTRATION_ACK;
     p->r = r;
     p->status = 0;
-    int x = sendto(sockfd_udp, p->r, sizeof(st_request), 0, (struct sockaddr *)&client_addr_udp, sizeof(client_addr_udp));
+    int x = sendto(server_socket_tcp, p->r, sizeof(st_request), 0, (struct sockaddr *)&client_addr_tcp, sizeof(client_addr_tcp));
 
     pthread_t server_thread;
     pthread_create(&server_thread, NULL, &server_handler, (void *)new_ss);
