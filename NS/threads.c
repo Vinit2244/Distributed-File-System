@@ -3,10 +3,14 @@
 pthread_mutex_t server_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t send_buffer_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t send_signal = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t status_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int server_socket_tcp, client_socket_tcp;
 struct sockaddr_in server_addr_tcp, client_addr_tcp;
 socklen_t client_addr_len_tcp = sizeof(client_addr_tcp);
+
+server_status connections[100];
+int connection_count=0;
 
 void *send_handler()
 {
@@ -109,6 +113,11 @@ void *receive_handler()
         client_socket_tcp = accept(server_socket_tcp, (struct sockaddr *)&client_addr_len_tcp, &client_addr_len_tcp);
         request req = (request)malloc(sizeof(st_request));
         int x=recv(client_socket_tcp,req,sizeof(st_request),0);
+
+        // if(x>0){
+        //     printf("%s\n",req->data);
+        // }
+
         process(req);
         free(req);
         close(client_socket_tcp);
@@ -135,63 +144,39 @@ void *server_handler(void *p)
     pack->server_addr.sin_port = htons(atoi(pack->port));
     pack->server_addr.sin_addr.s_addr = INADDR_ANY;
 
-    // if(bind(pack->server_socket,(struct sockaddr*)(&pack->server_addr),sizeof(pack->server_addr))<0){
-    //     perror("Binding to port failed");
-    // }
 
-
-    // if(listen(pack->server_socket,5)<0){
-    //     perror("Listening on port failed");
-    // }
-
-    // pack->client_addr_len=sizeof(pack->client_addr);
-
-    // if(accept(pack->server_socket,(struct sockaddr*)(&pack->client_addr),&pack->client_addr_len)<0){
-    //     perror("Accepting connection failed");
-    // }
-
+    int x=connect(pack->server_socket, (struct sockaddr *)&pack->server_addr, sizeof(pack->server_addr));
+    if(x==0)printf("Connected to server succesfully!\n");
     
     while (1)
     {
+
+        request r=(request)malloc(sizeof(st_request));
+        r->request_type=PING;
+        strcpy(r->data,"");
+        send(pack->server_socket,r,sizeof(st_request),0);
+        recv(pack->server_socket,r,sizeof(st_request),MSG_DONTWAIT);
+        sleep(3);
+        if(strcmp(r->data,"")==0){
+            printf("Server %s disconnected!\n",pack->port);
+            pthread_mutex_lock(&status_lock);
+            for(int i=0;i<connection_count;i++){
+                if(strcmp(pack->port,connections[i].port)==0 && connections[i].status==1){
+                    connections[i].status=0;
+                    break;
+                }
+            }
+            pthread_mutex_unlock(&status_lock);
+            break;
+        }
+        else{
+            sleep(7);
+        }
+        free(r);
+
 
         //yet to write
     }
     close(pack->client_socket);
     close(pack->server_socket);
 }
-
-// void* udp_handler(){
-
-//     printf("------------------------UDP handler started--------------------------------\n");
-
-//     int n;
-
-//     sockfd_udp = socket(AF_INET, SOCK_DGRAM, 0);
-//     if (sockfd_udp < 0){
-//         perror("[-]socket error");
-//         exit(1);
-//     }
-
-//     memset(&server_addr_udp, '\0', sizeof(server_addr_udp));
-//     server_addr_udp.sin_family = AF_INET;
-//     server_addr_udp.sin_port = htons(NS_PORT);
-//     server_addr_udp.sin_addr.s_addr = INADDR_ANY;
-
-//     n = bind(sockfd_udp, (struct sockaddr*)&server_addr_udp, sizeof(server_addr_udp));
-//     if (n < 0) {
-//         perror("[-]bind error");
-//         exit(1);
-//     }
-//     request prev=NULL;
-//     while(1){
-
-//     // printf("Checking for new servers!\n");
-//     request req = (request)malloc(sizeof(st_request));
-//     recvfrom(sockfd_udp,req, sizeof(st_request), 0, (struct sockaddr*)&client_addr_udp, &addr_size_udp);
-//     process(req);
-//     free(req);
-
-//     }
-//     close(sockfd_udp);
-//     return NULL;
-// }

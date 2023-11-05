@@ -32,12 +32,13 @@
 #define READ_REQ_DATA        12
 #define ADD_PATHS            13
 #define DELETE_PATHS         14
-#define COPY_TO 15
-#define COPY_FROM 16
+#define COPY 15
+#define PASTE 16
 #define COPY_REQUEST 17
 #define FILE_NOT_FOUND 18
 #define RETRIEVE_INFO 19
-
+#define LIST 20
+#define PING 21
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
 #define GREEN_COLOR  "\033[0;32m"
@@ -104,7 +105,12 @@ typedef struct send_packet{
 
 typedef send_packet* packet;
 
+typedef struct server_status{
 
+    char port[10];
+    int status;
+
+} server_status;
 
 
 //Global variables
@@ -116,7 +122,9 @@ extern int server_socket_tcp;
 extern struct sockaddr_in server_addr_tcp, client_addr_tcp;
 extern socklen_t addr_size_tcp;
 extern pthread_cond_t send_signal;
-
+extern server_status connections[100];
+extern int connection_count;
+pthread_mutex_t status_lock;
 
 
 //Defined functions

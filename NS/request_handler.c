@@ -26,6 +26,7 @@ void process(request req)
         for(int i=0;i<server_count;i++){
             
             pthread_mutex_lock(&ss_list[i]->lock);
+    
 
             for(int j=0;j<ss_list[i]->path_count;j++){
                 // printf("%s\n",ss_list[i]->paths[j]);
@@ -37,9 +38,9 @@ void process(request req)
             }
 
             if(flag==1){
+                pthread_mutex_unlock(&ss_list[i]->lock);
                 break;
             }
-
             pthread_mutex_unlock(&ss_list[i]->lock);
 
         }
@@ -185,13 +186,13 @@ void process(request req)
         else{
 
             request get_r = (request)malloc(sizeof(st_request));
-            get_r->request_type = COPY_FROM;
+            get_r->request_type = COPY;
             strcpy(get_r->data,source);
             send(source_no->client_socket, get_r, sizeof(st_request), 0);
             request put_r = (request)malloc(sizeof(st_request));
             while(get_r->request_type != ACK){
                 recv(source_no->client_socket, get_r, sizeof(st_request), 0);
-                put_r->request_type=COPY_TO;
+                put_r->request_type=PASTE;
                 strcpy(put_r->data,get_r->data);
                 send(dest_no->client_socket,put_r,sizeof(st_request),0);
 
@@ -279,4 +280,23 @@ void process(request req)
 
     }
     // Yet to work on depending on type of requests
+    else if (req->request_type == LIST){
+
+        char* list = (char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+        strcpy(list,"");
+        for(int i=0;i<server_count;i++){
+            pthread_mutex_lock(&ss_list[i]->lock);
+            for(int j=0;j<ss_list[i]->path_count;j++){
+                strcat(list,ss_list[i]->paths[j]);
+                strcat(list,"|");
+            }
+            pthread_mutex_unlock(&ss_list[i]->lock);
+        }
+        request r = (request)malloc(sizeof(st_request));
+        r->request_type = RES;
+        strcpy(r->data,list);
+        send(client_socket_tcp, r, sizeof(st_request), 0);
+
+    }
+    
 }
