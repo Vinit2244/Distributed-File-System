@@ -50,17 +50,43 @@ void client_handler(char data[])
     strcpy(path, tokens[0]);
 }
 
-void make_backup(){
+void make_backup(int ss_id){
 
-    
+    if(ss_id>=server_count){
+        printf("Invalid server id\n");
+        return;
+    }
+
+    else{
+
+        ss found_server = ss_list[ss_id];
+        pthread_mutex_lock(&found_server->lock);
+        int count=0;
+        for(int i=0;i<found_server->path_count;i++){
+
+            if(ss_list[i]->has_backup==0){
+            count++;
+            for(int j=0;j<found_server->path_count;j++){
+                strcpy(ss_list[i]->backup_paths[j],found_server->paths[j]);
+            }
+            ss_list[i]->has_backup=1;
+            strcpy(ss_list[i]->port,found_server->port);
+            if(count==2)break;
+
+
+            }
+
+        }
+        // found_server->has_backup=1;
+        pthread_mutex_unlock(&found_server->lock);
+
+    }
 
 }
 // Code to add a new storage server in naming server list
 void init_storage(char data[])
 {
     // tokenise the string and create a new server object with extracted attributes
-
-
 
     char **tokens = (char **)malloc(sizeof(char *) * 5);
 
@@ -77,12 +103,11 @@ void init_storage(char data[])
     strcpy(new_ss->client_port, tokens[2]);
     new_ss->path_count = 0;
     pthread_mutex_init(&new_ss->lock, NULL);
-    // printf("%s\n",new_ss->port);
-    // printf("hi\n");
 
     pthread_mutex_lock(&server_lock);
     ss_list[server_count] = new_ss;
     server_count++;
+    int id=server_count-1;
     pthread_mutex_unlock(&server_lock);
 
     pthread_t server_thread;
@@ -98,7 +123,7 @@ void init_storage(char data[])
         }
     }
 
-    if(backup_flag==0)make_backup();
+    if(backup_flag==0 && server_count>3)make_backup(id);
 
     pthread_mutex_unlock(&status_lock);
     return;

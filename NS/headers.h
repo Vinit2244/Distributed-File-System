@@ -88,6 +88,9 @@ typedef struct ss_info
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len;
     pthread_mutex_t lock;
+    char backup_paths[1000][100];
+    int has_backup;
+    char backup_port[10];
     
 
 } ss_info;
