@@ -263,7 +263,7 @@ void* serve_request(void* args)
         char size_str[10] = {0};
 
         // Storing file size with a space
-        sprintf(size_str, "%d", file_stat.st_blocks);
+        sprintf(size_str, "%lld", file_stat.st_blocks);
         strcat(send_info.data, size_str);
         strcat(send_info.data, " ");
 
@@ -351,7 +351,7 @@ void* serve_request(void* args)
 
         // Creating intermediate directories if not already present
         // First tokenising the file_path on "/"
-        char** dirs = tokenize(file_path, "/");
+        char** dirs = tokenize(file_path, '/');
 
         // Calculating the number of intermediate dirs
         int n_tkns = 0;
