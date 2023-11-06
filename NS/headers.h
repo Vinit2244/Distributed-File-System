@@ -32,13 +32,17 @@
 #define READ_REQ_DATA        12
 #define ADD_PATHS            13
 #define DELETE_PATHS         14
-#define COPY 15
-#define PASTE 16
-#define COPY_REQUEST 17
-#define FILE_NOT_FOUND 18
-#define RETRIEVE_INFO 19
-#define LIST 20
-#define PING 21
+#define COPY                 15
+#define PASTE                16
+#define COPY_REQUEST         17
+#define FILE_NOT_FOUND       18
+#define RETRIEVE_INFO        19
+#define LIST                 20
+#define PING                 21
+#define CREATE_FILE          23
+#define CREATE_FOLDER        24
+#define DELETE_FILE          25
+#define DELETE_FOLDER        26
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
 #define GREEN_COLOR  "\033[0;32m"
@@ -127,7 +131,7 @@ extern socklen_t addr_size_tcp;
 extern pthread_cond_t send_signal;
 extern server_status connections[100];
 extern int connection_count;
-pthread_mutex_t status_lock;
+extern pthread_mutex_t status_lock;
 
 
 //Defined functions

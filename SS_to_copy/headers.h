@@ -31,7 +31,7 @@
 #define NFS_IP              "127.0.0.1" // IP address of the naming server
 #define MAX_PENDING         10          // Maximum number of connections the TCP socket can have in queue waiting
 #define MY_SS_ID            1           // Each storage server is assigned a unique SS_ID (used to distinguish between different servers)
-#define PWD                 "/home/divyansh/Music/final-project-43/SS_to_copy"
+#define PWD                 "/home/ayush/Desktop/final-project-43/SS_to_copy"
 
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
@@ -71,6 +71,10 @@
 #define INFO                 20
 #define DATA_TO_BE_COPIED    21
 #define PING                 22
+#define CREATE_FILE          23
+#define CREATE_FOLDER        24
+#define DELETE_FILE          25
+#define DELETE_FOLDER        26
 
 // ============================= Statuses =============================
 #define NOT_REGISTERED 0

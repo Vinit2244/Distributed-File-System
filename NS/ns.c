@@ -88,14 +88,14 @@ void init_storage(char data[])
 {
     // tokenise the string and create a new server object with extracted attributes
 
-    char **tokens = (char **)malloc(sizeof(char *) * 5);
+    // char **tokens = (char **)malloc(sizeof(char *) * 5);
 
-    for (int i = 0; i < 5; i++)
-    {
-        tokens[i] = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
-    }
+    // for (int i = 0; i < 5; i++)
+    // {
+    //     tokens[i] = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
+    // }
 
-    tokens = processstring(data, 4);
+    char** tokens = processstring(data, 4);
     ss new_ss = (ss)malloc(sizeof(ss_info));
 
     strcpy(new_ss->ip, tokens[1]);

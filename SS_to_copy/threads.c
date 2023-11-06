@@ -243,9 +243,11 @@ void* serve_request(void* args)
         send_info.request_type = INFO;
         memset(send_info.data, 0, MAX_DATA_LENGTH);
 
+        strcpy(send_info.data, "Permission : ");
+
         // Retrieving file permissions
         if (!stat(path, &file_stat)) {
-            strcpy(send_info.data, (S_ISDIR(file_stat.st_mode))  ? "d" : "-");
+            strcat(send_info.data, (S_ISDIR(file_stat.st_mode))  ? "d" : "-");
             strcat(send_info.data, (file_stat.st_mode & S_IRUSR) ? "r" : "-");
             strcat(send_info.data, (file_stat.st_mode & S_IWUSR) ? "w" : "-");
             strcat(send_info.data, (file_stat.st_mode & S_IXUSR) ? "x" : "-");
@@ -263,9 +265,12 @@ void* serve_request(void* args)
         char size_str[10] = {0};
 
         // Storing file size with a space
+        strcat(send_info.data, " Size : ");
         sprintf(size_str, "%lld", file_stat.st_blocks);
         strcat(send_info.data, size_str);
         strcat(send_info.data, " ");
+
+        strcat(send_info.data, "Last Modified : ");
 
         // Storing last modification time
         time_t modificationTime = file_stat.st_mtime;
@@ -309,7 +314,7 @@ void* serve_request(void* args)
         year[4] = '\0';
         
         char timestamp[100] = {0};
-        sprintf(timestamp, "%s %s %s %s ", month, date, hour, mins);
+        sprintf(timestamp, "Date : %s %s  Time : %s:%s ", month, date, hour, mins);
         strcat(send_info.data, timestamp);
 
         int sent_msg_size;
@@ -390,6 +395,69 @@ void* serve_request(void* args)
         // Received a ping request from NFS to check if my SS is still responding or not so sending back the PING to say that I am active and listening
         st_request ping_request;
         send_ack(PING, sock_fd);
+    }
+    else if (recvd_request.request_type == DELETE_FILE)
+    {
+        if (remove(recvd_request.data) != 0)
+        {
+            // If there was some error in deleting the file
+            fprintf(stderr, RED("remove : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+        send_ack(ACK, sock_fd);
+    } 
+    else if (recvd_request.request_type == DELETE_FOLDER)
+    {
+        // Hacked rmdir so won't delete the base storage folder
+        if (rmdir(recvd_request.data) != 0)
+        {
+            // If there was some error in deleting the directory
+            fprintf(stderr, RED("rmdir : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+        send_ack(ACK, sock_fd);
+    }
+    else if (recvd_request.request_type == CREATE_FILE)
+    {
+        FILE* fptr = fopen(recvd_request.data, "w");
+        fclose(fptr);
+        send_ack(ACK, sock_fd);
+    }
+    else if (recvd_request.request_type == CREATE_FOLDER)
+    {
+        char* file_path = request_tkns[0];
+
+        // Creating intermediate directories if not already present
+        // First tokenising the file_path on "/"
+        char** dirs = tokenize(file_path, '/');
+
+        // Calculating the number of intermediate dirs
+        int n_tkns = 0;
+        while (dirs[n_tkns] != NULL)
+        {
+            n_tkns++;
+        }
+        // Final number of dirs is 1 less than the number of tokens as the last one is the file
+        int n_dirs = n_tkns;
+
+        // Now creating all the intermediate dirs one by one
+        for (int i = 0; i < n_dirs; i++)
+        {
+            if (mkdir(dirs[i], 0777) == -1)
+            {
+                // If the directory already exitsts do nothing
+            }
+            // Moving into that directory to create the next directory in hierarchy
+            chdir(dirs[i]);
+        }
+        // Moving out of all dirs again to the home dir
+        for (int i = 0; i < n_dirs; i++)
+        {
+            chdir("..");
+        }
+
+
+        send_ack(ACK, sock_fd);
     }
     
     free_tokens(request_tkns);

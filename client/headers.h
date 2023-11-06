@@ -65,6 +65,11 @@
 #define FILE_NOT_FOUND       18
 #define RETRIEVE_INFO        19
 #define INFO                 20
+#define PING                 21
+#define CREATE_FILE          23
+#define CREATE_FOLDER        24
+#define DELETE_FILE          25
+#define DELETE_FOLDER        26 
 
 // ============================= Statuses =============================
 #define NOT_REGISTERED 0

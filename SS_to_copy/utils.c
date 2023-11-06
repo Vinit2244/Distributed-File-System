@@ -68,6 +68,8 @@ void send_update_paths_request(int request_type, char* paths_string)
     // Storing all the file paths to be updated
     sprintf(update_request.data, "%d|%s", MY_SS_ID, paths_string); // <My ss_id>|[<paths>]
 
+    printf(ORANGE("%s\n"), update_request.data);
+    
     // Connecting to the NFS through TCP
     struct sockaddr_in address;
     memset(&address, 0, sizeof(address));
@@ -212,8 +214,9 @@ void seek(char* path_to_base_dir, linked_list_head paths) {
     struct stat dir_stat;
     stat(path_to_base_dir, &dir_stat);
 
+    insert_in_linked_list(paths, path_to_base_dir);
+
     if (S_ISDIR(dir_stat.st_mode) == 0) {
-        insert_in_linked_list(paths, path_to_base_dir);
         return;
     }
 

@@ -104,22 +104,23 @@ void *receive_handler()
         exit(EXIT_FAILURE);
     }
 
-    if (client_socket_tcp == -1)
-    {
-        perror("Accepting connection failed");
-    }
     while (1)
     {
         client_socket_tcp = accept(server_socket_tcp, (struct sockaddr *)&client_addr_len_tcp, &client_addr_len_tcp);
+        if (client_socket_tcp == -1)
+        {
+            perror("Accepting connection failed");
+        }
         request req = (request)malloc(sizeof(st_request));
         int x=recv(client_socket_tcp,req,sizeof(st_request),0);
-
+        printf("%s\n",req->data);
         // if(x>0){
         //     printf("%s\n",req->data);
         // }
 
         process(req);
         free(req);
+        printf("Request served\n");
         close(client_socket_tcp);
         
     }

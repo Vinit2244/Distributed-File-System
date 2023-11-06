@@ -77,14 +77,21 @@ void communicate_with_ss_info(char *ipaddress, char *port, char *path)
     free(req);
     close(client_socket);
 }
-void communicate_with_ss_write(char *ipaddress, char *port, char *path)
+void communicate_with_ss_write(char *ipaddress, char *port, char *path,int f)
 {
     int client_socket = connect_with_ss(ipaddress, port);
     printf("-----Storage     Server      Connected------\n");
     char input = 'a'; // Junk to initialise so that goes into loop
     int dataread = 0;
     st_request *packet = malloc(sizeof(st_request));
-    packet->request_type = WRITE_REQ;
+    if(f==1)
+    {
+        packet->request_type = WRITE_REQ;
+    }
+    else
+    {
+        packet->request_type = APPEND_REQ;
+    }
     snprintf(packet->data, sizeof(packet->data), "%s|", path);
     while (input != '\n')
     {
@@ -210,11 +217,18 @@ void reading_operation(char *path)
     communicate_with_ss(ipaddress, port, path);
 }
 
-void writing_operation(char *path)
+void writing_append_operation(char *path,int f)
 {
     int client_socket = connect_with_ns();
     st_request *readerpacket = malloc(sizeof(st_request));
-    readerpacket->request_type = WRITE_REQ;
+    if(f==1)
+    {
+        readerpacket->request_type = WRITE_REQ;
+    }
+    else
+    {
+        readerpacket->request_type = APPEND_REQ;
+    }
     strcpy(readerpacket->data, path);
     ssize_t bytes_sent = send(client_socket, readerpacket, sizeof(st_request), 0);
     if (bytes_sent == -1)
@@ -242,14 +256,14 @@ void writing_operation(char *path)
     printf("%s %s \n", ipaddress, port);
     close(client_socket);
     // communicate_with_ss(ipaddress,port,path);
-    communicate_with_ss_write(ipaddress, port, path);
+    communicate_with_ss_write(ipaddress, port, path,f);
 }
 
-void create_operation(char *path, char *name)
+void create_operation(char *path, char *name,int macro)
 {
     int client_socket = connect_with_ns();
     st_request *packet = malloc(sizeof(st_request));
-    packet->request_type = CREATE_REQ;
+    packet->request_type = macro;
     snprintf(packet->data, sizeof(packet->data), "%s|%s", path, name);
     ssize_t bytes_sent = send(client_socket, packet, sizeof(st_request), 0);
     if (bytes_sent == -1)
@@ -258,22 +272,22 @@ void create_operation(char *path, char *name)
     }
     st_request *response = (st_request *)malloc(sizeof(st_request));
     ssize_t bytes_received = recv(client_socket, response, sizeof(st_request), 0);
-    if (strcmp(response->data, "STOP") == 0)
+    if (response->request_type==ACK)
     {
-        printf("Creation of Directory or File succesfull \n");
+        printf("Deletion of Directory or File succesfull \n");
     }
     else
     {
-        printf("Creation of Directory or File not succesfull \n"); // Error Not succesfull
+        printf("Deletion of Directory or File not succesfull \n"); // Error Not succesfull
     }
     close(client_socket);
 }
-void delete_operation(char *path, char *name)
+void delete_operation(char *path,int macro)
 {
     int client_socket = connect_with_ns();
     st_request *packet = malloc(sizeof(st_request));
-    packet->request_type = DELETE_REQ;
-    snprintf(packet->data, sizeof(packet->data), "%s|%s", path, name);
+    packet->request_type = macro;
+    snprintf(packet->data, sizeof(packet->data), "%s", path);
     ssize_t bytes_sent = send(client_socket, packet, sizeof(st_request), 0);
     if (bytes_sent == -1)
     {
@@ -281,7 +295,7 @@ void delete_operation(char *path, char *name)
     }
     st_request *response = (st_request *)malloc(sizeof(st_request));
     ssize_t bytes_received = recv(client_socket, response, sizeof(st_request), 0);
-    if (strcmp(response->data, "STOP") == 0)
+    if (response->request_type==ACK)
     {
         printf("Deletion of Directory or File succesfull \n");
     }
@@ -367,19 +381,41 @@ int main()
         else if (strcmp("WRITE", operation) == 0)
         {
             char *path = strtok(NULL, " ");
-            writing_operation(path); // Writing Function Gets Called
+            writing_append_operation(path,1); // Writing Function Gets Called
+        }
+        else if (strcmp("APPEND", operation) == 0)
+        {
+            char *path = strtok(NULL, " ");
+            writing_append_operation(path,0); // Writing Function Gets Called
         }
         else if (strcmp("CREATE", operation) == 0)
         {
+            char *type = strtok(NULL, " ");
             char *path = strtok(NULL, " ");
             char *name = strtok(NULL, " ");
-            create_operation(path, name);
+            if(strcmp(type,"FOLDER")==0)
+            {
+                create_operation(path, name,CREATE_FOLDER);
+            }
+            else if(strcmp(type,"FILE")==0)
+            {
+                create_operation(path, name,CREATE_FILE);
+            }
+            
         }
         else if (strcmp("DELETE", operation) == 0)
         {
+            char *type = strtok(NULL, " ");
             char *path = strtok(NULL, " ");
-            char *name = strtok(NULL, " ");
-            delete_operation(path, name);
+            if(strcmp(type,"FOLDER")==0)
+            {
+                delete_operation(path,DELETE_FOLDER);
+            }
+            else if(strcmp(type,"FILE")==0)
+            {
+                delete_operation(path,DELETE_FILE);
+            }
+            
         }
         else if (strcmp("COPY", operation) == 0)
         {
