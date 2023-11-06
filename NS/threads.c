@@ -179,4 +179,5 @@ void *server_handler(void *p)
     }
     close(pack->client_socket);
     close(pack->server_socket);
+    pthread_exit(NULL);
 }

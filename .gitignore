@@ -1,1 +1,4 @@
 .DS_Store
+./SS_to_copy/ss.o
+./NS/ns.o
+./client/client.o
