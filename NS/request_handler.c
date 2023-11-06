@@ -19,6 +19,7 @@ void process(request req)
         
 
         // printf("%d\n",server_count);
+        //printf("%s\n",req->data);
         pthread_mutex_lock(&server_lock);
         int flag=0;
         request r = (request)malloc(sizeof(st_request));
