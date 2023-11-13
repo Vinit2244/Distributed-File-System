@@ -52,6 +52,7 @@ void client_handler(char data[])
 
 void make_backup(int ss_id){
 
+    printf("Backing up!\n");
     if(ss_id>=server_count){
         printf("Invalid server id\n");
         return;
@@ -111,13 +112,14 @@ void init_storage(char data[])
     pthread_mutex_unlock(&server_lock);
 
     pthread_t server_thread;
-    pthread_create(&server_thread, NULL, &server_handler, (void *)new_ss);
+    pthread_create(&server_thread, NULL, &server_handler, (void *)ss_list[id]);
 
     int backup_flag=0;
     pthread_mutex_lock(&status_lock);
 
     for(int i=0;i<connection_count;i++){
         if(strcmp(connections[i].port,tokens[3])==0){
+            printf("Already backed up!\n");
             backup_flag=1;
             break;
         }

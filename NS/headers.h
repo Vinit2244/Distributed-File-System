@@ -38,7 +38,7 @@
 #define FILE_NOT_FOUND       18
 #define RETRIEVE_INFO        19
 #define LIST                 20
-#define PING                 21
+#define PING                 22
 #define CREATE_FILE          23
 #define CREATE_FOLDER        24
 #define DELETE_FILE          25

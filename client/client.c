@@ -421,6 +421,7 @@ int main()
         {
             char *path1 = strtok(NULL, " ");
             char *path2 = strtok(NULL, " ");
+            printf("%s %s\n", path1, path2);
             copy_operation(path1, path2);
         }
         else if (strcmp("INFO", operation) == 0)

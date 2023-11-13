@@ -20,7 +20,7 @@ void process(request req)
 
         // printf("%d\n",server_count);
         // printf("%s\n",req->data);
-        //pthread_mutex_lock(&server_lock);
+        pthread_mutex_lock(&server_lock);
         int flag = 0;
         request r = (request)malloc(sizeof(st_request));
         char *reference = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
@@ -42,12 +42,12 @@ void process(request req)
 
             if (flag == 1)
             {
-                //pthread_mutex_unlock(&ss_list[i]->lock);
+                pthread_mutex_unlock(&ss_list[i]->lock);
                 break;
             }
-            //pthread_mutex_unlock(&ss_list[i]->lock);
+            pthread_mutex_unlock(&ss_list[i]->lock);
         }
-        //pthread_mutex_unlock(&server_lock);
+        pthread_mutex_unlock(&server_lock);
 
         if (flag == 0)
         {
@@ -70,7 +70,7 @@ void process(request req)
     {
 
         // printf("delete req received\n");
-        //pthread_mutex_lock(&server_lock);
+        pthread_mutex_lock(&server_lock);
         int flag = 0;
         request r = (request)malloc(sizeof(st_request));
         memset(r->data, 0, MAX_DATA_LENGTH);
@@ -80,7 +80,7 @@ void process(request req)
         for (int i = 0; i < server_count; i++)
         {
 
-            //pthread_mutex_lock(&ss_list[i]->lock);
+            pthread_mutex_lock(&ss_list[i]->lock);
 
             for (int j = 0; j < ss_list[i]->path_count; j++)
             {
@@ -98,11 +98,12 @@ void process(request req)
 
             if (flag == 1)
             {
+                pthread_mutex_unlock(&ss_list[i]->lock);
                 break;
             }
-            //pthread_mutex_unlock(&ss_list[i]->lock);
+            pthread_mutex_unlock(&ss_list[i]->lock);
         }
-        //pthread_mutex_unlock(&server_lock);
+        pthread_mutex_unlock(&server_lock);
 
         if (flag == 0)
         {
@@ -151,10 +152,11 @@ void process(request req)
         char *name=strtok(NULL,"|");
         
         ss found_server;
+        pthread_mutex_lock(&server_lock);
         for (int i = 0; i < server_count; i++)
         {
 
-            //pthread_mutex_lock(&ss_list[i]->lock);
+            pthread_mutex_lock(&ss_list[i]->lock);
 
             for (int j = 0; j < ss_list[i]->path_count; j++)
             {
@@ -172,11 +174,11 @@ void process(request req)
 
             if (flag == 1)
             {
+                pthread_mutex_unlock(&ss_list[i]->lock);
                 break;
             }
-            //pthread_mutex_unlock(&ss_list[i]->lock);
         }
-        //pthread_mutex_unlock(&server_lock);
+        pthread_mutex_unlock(&server_lock);
 
         if (flag == 0)
         {
@@ -222,16 +224,18 @@ void process(request req)
     }
     else if (req->request_type == COPY_REQUEST)
     {
+        // printf("1\n");
         char *source = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
         char *desti = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
 
         char *token = strtok(req->data, "|");
-        while (token != NULL)
-        {
-            strcpy(source, token);
-            token = strtok(NULL, "|");
-            strcpy(desti, token);
-        }
+        // printf("2\n");
+        
+        strcpy(source, token);
+        token = strtok(NULL, "|");
+        strcpy(desti, token);
+        // printf("%s\n", source);
+        // printf("%s\n", desti);
 
         ss source_no, dest_no;
         int flag = 0;
@@ -262,16 +266,15 @@ void process(request req)
             }
             if (flag == 2)
             {
+                pthread_mutex_unlock(&ss_list[i]->lock);
                 break;
             }
-
             pthread_mutex_unlock(&ss_list[i]->lock);
         }
         pthread_mutex_unlock(&server_lock);
-
         if (flag < 2)
         {
-
+            // printf("3\n");
             request r = (request)malloc(sizeof(st_request));
             r->request_type = FILE_NOT_FOUND;
             strcpy(r->data, "File not found");
@@ -279,11 +282,12 @@ void process(request req)
         }
         else
         {
-
+            // printf("4\n");
             request get_r = (request)malloc(sizeof(st_request));
             get_r->request_type = COPY;
             strcpy(get_r->data, source);
-            send(source_no->client_socket, get_r, sizeof(st_request), 0);
+            int x=send(source_no->server_socket, get_r, sizeof(st_request), 0);
+            // printf("%d\n",x);
             request put_r = (request)malloc(sizeof(st_request));
             while (get_r->request_type != ACK)
             {
@@ -362,7 +366,7 @@ void process(request req)
         }
 
         ss found_server = ss_list[atoi(ss_id) - 1];
-        // pthread_mutex_lock(&found_server->lock);
+        pthread_mutex_lock(&found_server->lock);
         for (int i = 0; i < tkn_cnt - 1; i++)
         {
             for (int j = 0; j < found_server->path_count; j++)
@@ -378,7 +382,7 @@ void process(request req)
                 }
             }
         }
-        // pthread_mutex_unlock(&found_server->lock);
+        pthread_mutex_unlock(&found_server->lock);
 
         printf("return\n");
     }

@@ -113,10 +113,7 @@ void *receive_handler()
         }
         request req = (request)malloc(sizeof(st_request));
         int x=recv(client_socket_tcp,req,sizeof(st_request),0);
-        printf("%s\n",req->data);
-        // if(x>0){
-        //     printf("%s\n",req->data);
-        // }
+        
 
         process(req);
         free(req);
@@ -146,19 +143,26 @@ void *server_handler(void *p)
     pack->server_addr.sin_addr.s_addr = INADDR_ANY;
 
 
+    // if(send(pack->server_socket,r,sizeof(st_request),0)<0){
+    //     perror("Send error");
+    // }
+    
+    // recv(pack->server_socket,r,sizeof(st_request),0);
     int x=connect(pack->server_socket, (struct sockaddr *)&pack->server_addr, sizeof(pack->server_addr));
     if(x==0)printf("Connected to server succesfully!\n");
-    
+    else perror("Connection error");
     while (1)
     {
 
         request r=(request)malloc(sizeof(st_request));
         r->request_type=PING;
         strcpy(r->data,"");
-        send(pack->server_socket,r,sizeof(st_request),0);
-        recv(pack->server_socket,r,sizeof(st_request),MSG_DONTWAIT);
-        sleep(3);
-        if(strcmp(r->data,"")==0){
+        int x=send(pack->server_socket,r,sizeof(st_request),0);
+    
+        if(x<0)perror("Send error");
+        recv(pack->server_socket,r,sizeof(st_request),0);
+        if(r->request_type!=ACK){
+            // printf("%d\n",r->request_type);
             printf("Server %s disconnected!\n",pack->port);
             pthread_mutex_lock(&status_lock);
             for(int i=0;i<connection_count;i++){
@@ -168,17 +172,18 @@ void *server_handler(void *p)
                 }
             }
             pthread_mutex_unlock(&status_lock);
-            break;
+            // break;
         }
         else{
-            sleep(7);
+            printf("Server %s is active!\n",pack->port);
         }
+       
         free(r);
 
-
+        sleep(5);
         //yet to write
     }
-    close(pack->client_socket);
+    // close(pack->client_socket);
     close(pack->server_socket);
-    pthread_exit(NULL);
+    return NULL;
 }

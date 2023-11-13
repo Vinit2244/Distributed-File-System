@@ -64,6 +64,8 @@ void* serve_request(void* args)
         exit(EXIT_FAILURE);
     }
 
+    
+
     // Closing client socket as all the communication is done
     if (close(sock_fd) < 0) {
         fprintf(stderr, RED("close : failed to close the client socket!\n"));
