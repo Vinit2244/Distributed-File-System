@@ -164,8 +164,8 @@ void* serve_request(void* args)
     free(args);
 
     // Accepting the request
+    while(1){
     st_request recvd_request;
-
     memset(&(recvd_request.data), 0, MAX_DATA_LENGTH);
 
     // Receiving the request
@@ -175,9 +175,12 @@ void* serve_request(void* args)
         fprintf(stderr, RED("recv : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
+    // printf("Hi\n");
 
+   
     // Process request
-    printf(BLUE("\nRequest received : %s\n"), recvd_request.data);
+
+    if(strcmp(recvd_request.data,"")!=0)printf(BLUE("\nRequest received : %s\n"), recvd_request.data);
     char** request_tkns = tokenize(recvd_request.data, '|');
     /*
         READ data format : <path>
@@ -327,74 +330,85 @@ void* serve_request(void* args)
     else if (recvd_request.request_type == COPY)
     {
         // Read the data in the file given
+        // printf("Copying file : %s\n", recvd_request.data);
         char* path = recvd_request.data;
 
         st_request copy_data_request;
         copy_data_request.request_type = DATA_TO_BE_COPIED;
         memset(copy_data_request.data, 0, MAX_DATA_LENGTH);
+        // printf("1\n");
 
         FILE* fptr = fopen(path, "r");
         char buffer[MAX_DATA_LENGTH - 1026] = {0};
         int bytes_read = fread(buffer, sizeof(char), MAX_DATA_LENGTH - 1027, fptr);
-
+        // printf("2\n");
         // <path>|<data in file>
         strcpy(copy_data_request.data, path);
         strcat(copy_data_request.data, "|");
         strcat(copy_data_request.data, buffer);
-
+        // printf("3\n");
         int sent_msg_size;
         if ((sent_msg_size = send(sock_fd, (request) &copy_data_request, sizeof(st_request), 0)) <= 0)
         {
             fprintf(stderr, RED("send : %s\n"), strerror(errno));
             exit(EXIT_FAILURE);
         }
+        send_ack(ACK, sock_fd);
+        // printf("4\n");
     }
     else if (recvd_request.request_type == PASTE)
     {
+        printf("Pasting file : %s\n", recvd_request.data);
+        
         char* file_path = request_tkns[0];
         char* file_content = request_tkns[1];
 
         // Creating intermediate directories if not already present
         // First tokenising the file_path on "/"
-        char** dirs = tokenize(file_path, '/');
+        
+        // char** dirs = tokenize(file_path, '/');
 
-        // Calculating the number of intermediate dirs
-        int n_tkns = 0;
-        while (dirs[n_tkns] != NULL)
-        {
-            n_tkns++;
-        }
-        // Final number of dirs is 1 less than the number of tokens as the last one is the file
-        int n_dirs = n_tkns - 1;
+        // // Calculating the number of intermediate dirs
+        // int n_tkns = 0;
+        // while (dirs[n_tkns] != NULL)
+        // {
+        //     n_tkns++;
+        // }
+        
+        // // Final number of dirs is 1 less than the number of tokens as the last one is the file
+        // int n_dirs = n_tkns - 1;
 
-        // Now creating all the intermediate dirs one by one
-        for (int i = 0; i < n_dirs; i++)
-        {
-            if (mkdir(dirs[i], 0777) == -1)
-            {
-                // If the directory already exitsts do nothing
-            }
-            // Moving into that directory to create the next directory in hierarchy
-            chdir(dirs[i]);
-        }
-        // Moving out of all dirs again to the home dir
-        for (int i = 0; i < n_dirs; i++)
-        {
-            chdir("..");
-        }
-
+        // // Now creating all the intermediate dirs one by one
+        // for (int i = 0; i < n_dirs; i++)
+        // {
+        //     if (mkdir(dirs[i], 0777) == -1)
+        //     {
+        //         // If the directory already exitsts do nothing
+        //     }
+        //     // Moving into that directory to create the next directory in hierarchy
+        //     chdir(dirs[i]);
+        // }
+    
+        // // Moving out of all dirs again to the home dir
+        // for (int i = 0; i < n_dirs; i++)
+        // {
+        //     chdir("..");
+        // }
+        
+        
         // Now opening the file in write mode, if it does not exist it would be created otherwise the old data would be overwritten
         FILE* fptr = fopen(file_path, "w");
-        fprintf(fptr, "%s", file_content);
+        
+        fprintf(fptr, "%s" ,file_content);
+        
         fclose(fptr);
-
         // Can send pasted acknowledgement
     }
     else if (recvd_request.request_type == PING)
     {
         // Received a ping request from NFS to check if my SS is still responding or not so sending back the PING to say that I am active and listening
         st_request ping_request;
-        send_ack(PING, sock_fd);
+        send_ack(ACK, sock_fd);
     }
     else if (recvd_request.request_type == DELETE_FILE)
     {
@@ -459,8 +473,9 @@ void* serve_request(void* args)
         send_ack(ACK, sock_fd);
     }
     
-    free_tokens(request_tkns);
-
+    // free_tokens(request_tkns);
+    }
+    // printf("hi\n");
     // Closing client socket as all the communication is done
     if (close(sock_fd) < 0)
     {

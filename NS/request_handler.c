@@ -283,23 +283,42 @@ void process(request req)
         else
         {
             // printf("4\n");
+            // printf("%s\n", source);
             request get_r = (request)malloc(sizeof(st_request));
             get_r->request_type = COPY;
             strcpy(get_r->data, source);
+            
             int x=send(source_no->server_socket, get_r, sizeof(st_request), 0);
-            // printf("%d\n",x);
+            
             request put_r = (request)malloc(sizeof(st_request));
             while (get_r->request_type != ACK)
             {
-                recv(source_no->client_socket, get_r, sizeof(st_request), 0);
+                recv(source_no->server_socket, get_r, sizeof(st_request), 0);
+                
                 put_r->request_type = PASTE;
-                strcpy(put_r->data, get_r->data);
-                send(dest_no->client_socket, put_r, sizeof(st_request), 0);
+                char** token = (char**)malloc(sizeof(char*)*2);
+                for(int i=0;i<2;i++)
+                {
+                    token[i]=(char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+                }
+                int tkn_cnt=0;
+                char* tkn=strtok(get_r->data,"|");
+                while(tkn!=NULL)
+                {
+                    strcpy(token[tkn_cnt],tkn);
+                    tkn_cnt++;
+                    tkn=strtok(NULL,"|");
+                }
+                sprintf(put_r->data,"%s|%s",desti,token[1]);
+                
+                send(dest_no->server_socket, put_r, sizeof(st_request), 0);
             }
+            
 
             request r = (request)malloc(sizeof(st_request));
             r->request_type = ACK;
             strcpy(r->data, "Copying succesful!\n");
+            printf("Copying succesful!\n");
             send(client_socket_tcp, r, sizeof(st_request), 0);
         }
     }

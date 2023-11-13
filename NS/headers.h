@@ -32,8 +32,8 @@
 #define READ_REQ_DATA        12
 #define ADD_PATHS            13
 #define DELETE_PATHS         14
-#define COPY                 15
-#define PASTE                16
+#define COPY                 16
+#define PASTE                15
 #define COPY_REQUEST         17
 #define FILE_NOT_FOUND       18
 #define RETRIEVE_INFO        19
