@@ -172,9 +172,10 @@ void* serve_request(void* args)
     int recvd_msg_size;
     if ((recvd_msg_size = recv(sock_fd, &recvd_request, sizeof(st_request), 0)) <= 0)
     {
-        fprintf(stderr, RED("recv : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
+        fprintf(stderr, RED("recv  : %s\n"), strerror(errno));
+        return NULL;
     }
+
     // printf("Hi\n");
 
    
@@ -398,7 +399,7 @@ void* serve_request(void* args)
         
         // Now opening the file in write mode, if it does not exist it would be created otherwise the old data would be overwritten
         FILE* fptr = fopen(file_path, "w");
-        
+    
         fprintf(fptr, "%s" ,file_content);
         
         fclose(fptr);

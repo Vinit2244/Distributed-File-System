@@ -98,4 +98,18 @@ typedef struct st_request* request;
 
 
 
+
+void create_operation(char *path, char *name,int macro);
+int connect_with_ss(char *ipaddress, char *port);
+void communicate_with_ss(char *ipaddress, char *port, char *path);
+int connect_with_ns();
+void reading_operation(char *path);
+void communicate_with_ss_write(char *ipaddress, char *port, char *path,int f);
+void writing_append_operation(char *path,int f);
+void communicate_with_ss_info(char *ipaddress, char *port, char *path);
+void info(char *path);
+void delete_operation(char *path,int macro);
+void copy_operation(char *path1, char *path2);
+
+
 #endif
