@@ -31,7 +31,7 @@
 #define NFS_IP              "127.0.0.1" // IP address of the naming server
 #define MAX_PENDING         10          // Maximum number of connections the TCP socket can have in queue waiting
 #define MY_SS_ID            1           // Each storage server is assigned a unique SS_ID (used to distinguish between different servers)
-#define PWD                 "/home/divyansh/Music/final-project-43/SS_to_copy"
+#define PWD                 "/Users/vinitmehta/Desktop/IIITH_Main/Sem3/OSN/mini_projects/final-project-43/SS_to_copy"
 
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
@@ -77,11 +77,11 @@
 #define DELETE_FOLDER        26
 
 // ============================= Statuses =============================
-#define NOT_REGISTERED 0
-#define REGISTERED     1
-#define WRITE_SUCCESSFUL 2
+#define NOT_REGISTERED    0
+#define REGISTERED        1
+#define WRITE_SUCCESSFUL  2
 #define APPEND_SUCCESSFUL 2
-#define SUCCESSFUL 2    // Keep all three successes to have the same value
+#define SUCCESSFUL        2    // Keep all three successes to have the same value
 
 // ============================ Structures ============================
 // All the network communication happens in this structure form

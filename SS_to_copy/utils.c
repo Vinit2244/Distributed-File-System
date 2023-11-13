@@ -194,7 +194,6 @@ void register_ss(void)
 void send_ack(const int status_code, const int sock_fd)
 {
     // Send acknowledgement
-    // printf("hi\n");
     st_request ack_st;
     ack_st.request_type = status_code;
 

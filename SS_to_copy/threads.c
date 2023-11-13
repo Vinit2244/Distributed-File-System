@@ -169,17 +169,15 @@ void* serve_request(void* args)
     memset(&(recvd_request.data), 0, MAX_DATA_LENGTH);
 
     // Receiving the request
-    while(1){
     int recvd_msg_size;
     if ((recvd_msg_size = recv(sock_fd, &recvd_request, sizeof(st_request), 0)) <= 0)
     {
         fprintf(stderr, RED("recv : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
-    
+
     // Process request
-    if(strcmp(recvd_request.data,"")!=0){
-    printf(BLUE("\nRequest received : %s\n"), recvd_request.data);}
+    printf(BLUE("\nRequest received : %s\n"), recvd_request.data);
     char** request_tkns = tokenize(recvd_request.data, '|');
     /*
         READ data format : <path>
@@ -260,8 +258,8 @@ void* serve_request(void* args)
             strcat(send_info.data, (file_stat.st_mode & S_IWOTH) ? "w" : "-");
             strcat(send_info.data, (file_stat.st_mode & S_IXOTH) ? "x" : "-");
         } else {
-            fprintf(stderr, "\033[1;31mpeek: error in stat\033[1;0m\n");
-            return 0;
+            fprintf(stderr, RED("peek : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
         }
         strcat(send_info.data, " ");
         char size_str[10] = {0};
@@ -337,7 +335,7 @@ void* serve_request(void* args)
 
         FILE* fptr = fopen(path, "r");
         char buffer[MAX_DATA_LENGTH - 1026] = {0};
-        int bytes_read = fread(buffer, 1, MAX_DATA_LENGTH, fptr);
+        int bytes_read = fread(buffer, sizeof(char), MAX_DATA_LENGTH - 1027, fptr);
 
         // <path>|<data in file>
         strcpy(copy_data_request.data, path);
@@ -395,9 +393,8 @@ void* serve_request(void* args)
     else if (recvd_request.request_type == PING)
     {
         // Received a ping request from NFS to check if my SS is still responding or not so sending back the PING to say that I am active and listening
-        printf(GREEN("Received ping request from NFS.\n"));
         st_request ping_request;
-        send_ack(ACK, sock_fd);
+        send_ack(PING, sock_fd);
     }
     else if (recvd_request.request_type == DELETE_FILE)
     {
@@ -459,13 +456,12 @@ void* serve_request(void* args)
             chdir("..");
         }
 
-
         send_ack(ACK, sock_fd);
     }
     
     free_tokens(request_tkns);
-    }
-    //Closing client socket as all the communication is done
+
+    // Closing client socket as all the communication is done
     if (close(sock_fd) < 0)
     {
         fprintf(stderr, RED("close : failed to close the client socket!\n"));
