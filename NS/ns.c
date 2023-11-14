@@ -61,17 +61,23 @@ void make_backup(int ss_id){
     else{
 
         ss found_server = ss_list[ss_id];
+        printf("Backing up server %s\n",found_server->port);
         pthread_mutex_lock(&found_server->lock);
         int count=0;
-        for(int i=0;i<found_server->path_count;i++){
+        for(int i=0;i<server_count;i++){
 
-            if(ss_list[i]->has_backup==0){
+            if(ss_list[i]->has_backup==0 && strcmp(ss_list[i]->port,found_server->port)){
+
+
+            
+            printf("Backing up in port %s\n",ss_list[i]->port);
             count++;
             for(int j=0;j<found_server->path_count;j++){
                 strcpy(ss_list[i]->backup_paths[j],found_server->paths[j]);
             }
             ss_list[i]->has_backup=1;
-            strcpy(ss_list[i]->port,found_server->port);
+            found_server->is_backedup=1;
+            strcpy(ss_list[i]->backup_port,found_server->port);
             if(count==2)break;
 
 
@@ -95,39 +101,46 @@ void init_storage(char data[])
     // {
     //     tokens[i] = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
     // }
-
     char** tokens = processstring(data, 4);
     ss new_ss = (ss)malloc(sizeof(ss_info));
-
     strcpy(new_ss->ip, tokens[1]);
     strcpy(new_ss->port, tokens[3]);
     strcpy(new_ss->client_port, tokens[2]);
     new_ss->path_count = 0;
+    new_ss->is_backedup=0;
+    new_ss->has_backup=0;
+    new_ss->status=1;
     pthread_mutex_init(&new_ss->lock, NULL);
 
     pthread_mutex_lock(&server_lock);
-    ss_list[server_count] = new_ss;
-    server_count++;
-    int id=server_count-1;
-    pthread_mutex_unlock(&server_lock);
 
-    pthread_t server_thread;
-    pthread_create(&server_thread, NULL, &server_handler, (void *)ss_list[id]);
-
-    int backup_flag=0;
-    pthread_mutex_lock(&status_lock);
-
-    for(int i=0;i<connection_count;i++){
-        if(strcmp(connections[i].port,tokens[3])==0){
-            printf("Already backed up!\n");
-            backup_flag=1;
+    int check_flag=0;
+    int id=-1;
+    for(int i=0;i<server_count;i++){
+        if(strcmp(ss_list[i]->port,new_ss->port)==0){
+            check_flag=1;
+            id=i;
             break;
         }
     }
+    if(check_flag==1){
+        printf(GREEN("%s is back online!\n"),new_ss->port);
+        ss_list[id]=new_ss;
+           
+    }
+    else{
 
-    if(backup_flag==0 && server_count>3)make_backup(id);
+    // printf("hi\n");
+    ss_list[server_count] = new_ss;
+    server_count++;
+    id=server_count-1;
+    
+    }
+    pthread_mutex_unlock(&server_lock);
+    
+    pthread_t server_thread;
+    pthread_create(&server_thread, NULL, &server_handler, (void *)ss_list[id]);
 
-    pthread_mutex_unlock(&status_lock);
     return;
 }
 
@@ -137,20 +150,21 @@ int main()
     init_nfs(); // initialises ns server
 
     // declaring thread variables
-    pthread_t send_thread;
+    
     pthread_t receive_thread;
-    // pthread_t udp_thread;
+    pthread_t backup_thread_idx;
 
     // TCP socket to check for new requests
 
     // constructing threads for listening to TCP sockets
-    pthread_create(&send_thread, NULL, &send_handler, NULL);
+    
     pthread_create(&receive_thread, NULL, &receive_handler, NULL);
-
+    pthread_create(&backup_thread_idx, NULL, &backup_thread, NULL);
     // joining threads
-    pthread_join(send_thread, NULL);
     pthread_join(receive_thread, NULL);
-    // pthread_join(udp_thread, NULL);
+    pthread_join(backup_thread_idx, NULL);
+    
+    while(1){}
 
     return 0;
 }

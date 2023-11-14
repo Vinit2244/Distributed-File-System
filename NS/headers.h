@@ -10,12 +10,12 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <pthread.h>
-
+#include <time.h>
 //Relevant Macros
 #define NS_PORT 2000
 #define NS_IP "0.0.0.0"
 #define MAX_DATA_LENGTH 100000
-#define MAX_CONNECTIONS 10
+#define MAX_CONNECTIONS 100
 
 //Request types
 #define ACK                  1
@@ -83,6 +83,7 @@ typedef struct ss_info* ss;
 //Storage server info
 typedef struct ss_info
 {
+    int status;
     char ip[20];
     char port[10];
     char client_port[10];
@@ -94,6 +95,7 @@ typedef struct ss_info
     pthread_mutex_t lock;
     char backup_paths[1000][100];
     int has_backup;
+    int is_backedup;
     char backup_port[10];
     
 
@@ -143,5 +145,5 @@ void process(request req);
 void* send_handler();
 void* receive_handler();
 void* server_handler(void* p);
-// void* udp_handler();
+void *backup_thread();
 

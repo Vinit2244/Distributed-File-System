@@ -54,7 +54,7 @@ void process(request req)
 
             r->request_type = FILE_NOT_FOUND;
             strcpy(r->data, "File not found");
-            printf("No files found , informing client\n");
+            printf(RED("No files found , informing client\n\n\n"));
             send(client_socket_tcp, r, sizeof(st_request), 0);
         }
         else
@@ -318,7 +318,7 @@ void process(request req)
             request r = (request)malloc(sizeof(st_request));
             r->request_type = ACK;
             strcpy(r->data, "Copying succesful!\n");
-            printf("Copying succesful!\n");
+            printf(BLUE("Copying succesful!\n\n\n"));
             send(client_socket_tcp, r, sizeof(st_request), 0);
         }
     }
@@ -347,7 +347,7 @@ void process(request req)
             ind++;
             token = strtok(NULL, "|");
         }
-
+        
         ss found_server = ss_list[atoi(ss_id) - 1];
         pthread_mutex_lock(&found_server->lock);
         for (int i = 0; i < ind - 1; i++)
@@ -357,7 +357,7 @@ void process(request req)
         found_server->path_count = found_server->path_count + ind - 1;
         pthread_mutex_unlock(&found_server->lock);
 
-        printf("Added new files/directories from server number %d\n", atoi(ss_id));
+        printf(BLUE("Added new files/directories from server number %d\n\n\n"), atoi(ss_id));
     }
 
     else if (req->request_type == DELETE_PATHS)
@@ -403,7 +403,7 @@ void process(request req)
         }
         pthread_mutex_unlock(&found_server->lock);
 
-        printf("return\n");
+        
     }
     // Yet to work on depending on type of requests
     else if (req->request_type == LIST)
