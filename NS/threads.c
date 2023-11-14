@@ -96,10 +96,17 @@ void *server_handler(void *p)
         int x=send(pack->server_socket,r,sizeof(st_request),0);
     
         if(x<0)perror("Send error");
-        recv(pack->server_socket,r,sizeof(st_request),0);
-        if(r->request_type!=ACK){
-            // printf("%d\n",r->request_type);
+        
+        while(r->request_type!=ACK){
+            int x=recv(pack->server_socket,r,sizeof(st_request),0);
+            // printf("x: %d\n",x);
+            if(x==0)
+            {
             printf(RED("Server %s disconnected!\n\n\n"),pack->port);
+            return NULL;
+
+            }
+            // printf("%d\n",r->request_type);
             pthread_mutex_lock(&status_lock);
             for(int i=0;i<connection_count;i++){
                 if(strcmp(pack->port,connections[i].port)==0 && connections[i].status==1){
@@ -108,12 +115,10 @@ void *server_handler(void *p)
                 }
             }
             pthread_mutex_unlock(&status_lock);
-            return NULL;
+            // return NULL;
             // break;
         }
-        else{
-            continue;
-        }
+        
        
         free(r);
         time_t current=time(NULL);
