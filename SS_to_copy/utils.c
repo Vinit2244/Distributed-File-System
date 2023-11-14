@@ -124,8 +124,6 @@ void send_update_paths_request(int request_type, char* paths_string)
 // Send registration request to the NFS using TCP socket and waits for registration ack
 void register_ss(void)
 {
-    // while (read_initial_paths != 1) {}  // Keep waiting till the initial paths are read before sending the registration request
-
     // Preparing the request to be sent
     st_request registration_request_st;
     registration_request_st.request_type = REGISTRATION_REQUEST;
