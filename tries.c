@@ -24,7 +24,8 @@ struct trie_node *create_trie_node()
 }
 
 // A function to insert a string into the trie
-void insert_path(struct trie_node *root, char *key)
+// Returns 1 if successfull else 0
+int insert_path(struct trie_node *root, char *key)
 {
     struct trie_node *current = root;
     for (int i = 0; key[i] != '\0'; i++)
@@ -39,10 +40,12 @@ void insert_path(struct trie_node *root, char *key)
     }
     current->key = key;
     current->end = 1;
+    return 1;
 }
 
 // A function to search for a string in the trie
-struct trie_node *search_path(struct trie_node *root, char *key)
+// Returns 1 if path is found else 0
+int search_path(struct trie_node *root, char *key)
 {
     struct trie_node *current = root;
     for (int i = 0; key[i] != '\0'; i++)
@@ -51,23 +54,21 @@ struct trie_node *search_path(struct trie_node *root, char *key)
 
         if (current->children[index] == NULL)
         {
-            return NULL;
+            return 0;
         }
         current = current->children[index];
     }
 
     if (current->end == 1)
     {
-        return current;
+        return 1;
     }
-    else
-    {
-        return NULL;
-    }
+    return 0;
 }
 
 // A function to delete a string from the trie
-void delete_path(struct trie_node *root, char *key)
+// Returns 1 if successfull else 0
+int delete_path(struct trie_node *root, char *key)
 {
     struct trie_node *current = root;
     for (int i = 0; key[i] != '\0'; i++)
@@ -76,15 +77,16 @@ void delete_path(struct trie_node *root, char *key)
 
         if (current->children[index] == NULL)
         {
-            return;
+            return 0;
         }
         current = current->children[index];
     }
     current->key = NULL;
     current->end = 0;
+    return 1;
 }
 
-// A function to print the trie
+// Prints all the paths present in the trie
 void print_paths(struct trie_node *root)
 {
     if (root == NULL)
@@ -111,13 +113,28 @@ int main()
     // Create a trie
     struct trie_node *root = create_trie_node();
 
-    // Insert some strings into the trie
-    insert_path(root, "./abcd/efgh/temp.txt");
-    insert_path(root, "./abcd/efgh/temp.txt");
+    int result = insert_path(root, "./abcd/efgh/temp.txt");
+    if (result == 1)
+    {
+        printf("Path inserted successfully.\n");
+    }
+    else
+    {
+        printf("Error in inserting path.\n");
+    }
 
-    // Search for a string in the trie
-    struct trie_node *node = search_path(root, "./abcd/efgh/temp.txt");
-    if (node != NULL)
+    int result1 = insert_path(root, "./abcd/efgh/temp.txt");
+    if (result1 == 1)
+    {
+        printf("Path inserted successfully.\n");
+    }
+    else
+    {
+        printf("Error in inserting path.\n");
+    }
+
+    int present = search_path(root, "./abcd/efgh/temp.txt");
+    if (present == 1)
     {
         printf("Path is in the trie\n");
     }
@@ -126,40 +143,26 @@ int main()
         printf("Path is not in the trie\n");
     }
 
-    delete_path(root, "./abcd/efgh/temp.txt");
-
-    struct trie_node *node2 = search_path(root, "./abcd/efgh/temp.txt");
-    if (node2 != NULL)
+    int result2 = delete_path(root, "./abcd/efgh/temp.txt");
+    if (result2 == 1)
     {
-        printf("Path is in the trie\n");
+        printf("Deleted successfully.\n");
     }
     else
     {
-        printf("Path is not in the trie\n");
-    }
-
-    struct trie_node *node3 = search_path(root, "./storage/abcd/efgh/temp.txt");
-    if (node3 != NULL)
-    {
-        printf("Path is in the trie\n");
-    }
-    else
-    {
-        printf("Path is not in the trie\n");
-    }
-
-    delete_path(root, "./storage/abcd/efgh/temp.txt");
-
-    struct trie_node *node4 = search_path(root, "./storage/abcd/efgh/temp.txt");
-    if (node4 != NULL)
-    {
-        printf("Path is in the trie\n");
-    }
-    else
-    {
-        printf("Path is not in the trie\n");
+        printf("Error in deleting path, path DNE.\n");
     }
     
+    int present2 = search_path(root, "./abcd/efgh/temp.txt");
+    if (present2 == 1)
+    {
+        printf("Path is in the trie\n");
+    }
+    else
+    {
+        printf("Path is not in the trie\n");
+    }
+
     print_paths(root);
 
     return 0;
