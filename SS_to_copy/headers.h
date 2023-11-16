@@ -75,6 +75,8 @@
 #define CREATE_FOLDER        24
 #define DELETE_FILE          25
 #define DELETE_FOLDER        26
+#define BACKUP_PASTE         27
+#define BACKUP_READ_REQ      28
 
 // ============================= Statuses =============================
 #define NOT_REGISTERED    0
@@ -104,7 +106,9 @@ typedef struct st_thread_data* thread_data;
 
 // ========================= Global variables =========================
 extern char**  accessible_paths;                // Stores all the RELATIVE PATHS (relative to the directory in which the storage server c file resides) of all the files that are accessible by clients on this storage server
+extern char**  backup_paths;                    // Stores the relative path of backup files
 extern int     num_of_paths_stored;             // Stores the number of paths which are currently stored in the accessible_paths array
+extern int     num_of_backup_paths_stored;      // Stores the number of all the backup paths
 extern int     nfs_registrations_status;        // Stores the status whether our server has been registered with NFS or not
 extern int     client_server_socket_fd;         // Socket file descriptor to receive client requests
 extern int     nfs_server_socket_fd;            // Socket file descriptot to receive NFS requests

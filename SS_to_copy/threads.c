@@ -153,6 +153,164 @@ void *check_and_store_filepaths(void *args)
     return NULL;
 }
 
+// Periodically keeps checking for all the file paths and if some new file path is created/deleted then immediately signals the NFS to add/delete that path
+void *check_and_store_backup_paths(void *args)
+{
+    while (1)
+    {
+        pthread_mutex_lock(&backup_paths_mutex);
+
+        char base_dir_path[MAX_PATH_LEN] = {0};
+        sprintf(base_dir_path, "%s/backup", PWD);
+
+        // Linked list to store the paths found as we don't know in advance how many paths will be found
+        linked_list_head paths = create_linked_list_head();
+
+        // Searching the SS_test_dir recursively to obtain the absolute paths of all the files
+        seek(base_dir_path, paths);
+
+        // Print the number of paths found for debugging
+        printf("\nChecked backup_paths : %d\n", paths->number_of_nodes);
+
+        // Number of paths found
+        int num_backup_paths_found = paths->number_of_nodes;
+
+        // Storing the copy of accessible paths array to match with the files found
+        // char **backup_paths_copy = (char **)malloc(MAX_FILES * sizeof(char *));
+
+        // for (int i = 0; i < MAX_FILES; i++)
+        // {
+        //     backup_paths_copy[i] = NULL;
+        // }
+        // for (int k = 0; k < num_of_paths_stored; k++)
+        // {
+        //     backup_paths_copy[k] = calloc(MAX_PATH_LEN, sizeof(char));
+        //     strcpy(backup_paths_copy[k], backup_paths[k]);
+        // }
+
+        // Storing relative paths of the files found in the found_paths array
+        // char **found_paths = (char **)malloc(num_paths_found * sizeof(char *));
+        // Storing a copy of found_paths as well so after comparing if there are some new paths or some paths are deleted then we can create a new accessible paths array
+        // char **found_paths_copy = (char **)malloc(paths->number_of_nodes * sizeof(char *));
+
+        linked_list_node n = paths->first;
+        int idx = 0;
+        while (n != NULL)
+        {
+            memset(backup_paths[idx], 0, MAX_PATH_LEN);
+            strcpy(backup_paths[idx], ".");
+            strcat(backup_paths[idx], &n->path[strlen(PWD)]);
+            
+            // found_paths[idx] = (char *)calloc(MAX_PATH_LEN, sizeof(char));
+            // found_paths_copy[idx] = (char *)calloc(MAX_PATH_LEN, sizeof(char));
+            // strcpy(found_paths_copy[idx], ".");
+            // strcat(found_paths_copy[idx], &n->path[strlen(PWD)]);
+            // strcpy(found_paths[idx], ".");
+            // strcat(found_paths[idx++], &n->path[strlen(PWD)]);
+            n = n->next;
+        }
+        num_of_backup_paths_stored = num_backup_paths_found;
+        // Have copied all the found paths in the array so now we can free the linked list
+        free_linked_list(paths);
+
+        // Now go and match each paths in found_paths and backup_paths
+        // for (int k = 0; k < num_paths_found; k++)
+        // {
+        //     char *curr_found_path = found_paths[k];
+        //     for (int j = 0; j < num_of_paths_stored; j++)
+        //     {
+        //         char *curr_backup_path = backup_paths_copy[j];
+        //         if (curr_found_path != NULL && curr_backup_path != NULL)
+        //         {
+        //             if (strcmp(curr_found_path, curr_backup_path) == 0)
+        //             {
+        //                 free(found_paths[k]);
+        //                 free(backup_paths_copy[j]);
+        //                 found_paths[k] = NULL;
+        //                 backup_paths_copy[j] = NULL;
+        //                 break;
+        //             }
+        //         }
+        //     }
+        // }
+
+        // Now all the not null paths in found_paths are the paths that are newly added while all the not null paths in accessible paths copy are deleted paths
+        // Checking for new paths
+        // int num_new_paths = 0;
+        // char new_paths[MAX_DATA_LENGTH - 1000] = {0};
+        // for (int i = 0; i < num_paths_found; i++)
+        // {
+        //     if (found_paths[i] != NULL)
+        //     {
+        //         strcat(new_paths, found_paths[i]);
+        //         strcat(new_paths, "|");
+        //     }
+        // }
+        // Removing the last | from the concatenation of paths
+        // if (strlen(new_paths) > 0)
+        // {
+        //     new_paths[strlen(new_paths) - 1] = '\0';
+        //     send_update_paths_request(ADD_PATHS, new_paths);
+        // }
+
+        // Checking for deleted paths
+        // char deleted_paths[MAX_DATA_LENGTH - 1000] = {0};
+        // for (int i = 0; i < num_of_paths_stored; i++)
+        // {
+        //     if (backup_paths_copy[i] != NULL)
+        //     {
+        //         strcat(deleted_paths, backup_paths_copy[i]);
+        //         strcat(deleted_paths, "|");
+        //     }
+        // }
+        // // Removing the last | from the concatenation of paths
+        // if (strlen(deleted_paths) > 0)
+        // {
+        //     deleted_paths[strlen(deleted_paths) - 1] = '\0';
+        //     send_update_paths_request(DELETE_PATHS, deleted_paths);
+        // }
+
+        // Freeing all the memory allocated except the found paths copy array
+        // for (int i = 0; i < num_paths_found; i++)
+        // {
+        //     if (found_paths[i] != NULL)
+        //     {
+        //         free(found_paths[i]);
+        //         found_paths[i] = NULL;
+        //     }
+        // }
+        // free(found_paths);
+
+        // for (int i = 0; i < num_of_paths_stored; i++)
+        // {
+        //     if (backup_paths_copy[i] != NULL)
+        //     {
+        //         free(backup_paths_copy[i]);
+        //         backup_paths_copy[i] = NULL;
+        //     }
+        // }
+        // free(backup_paths_copy);
+
+        // // Copying all the found paths into the accessible paths array
+        // for (int i = 0; i < num_paths_found; i++)
+        // {
+        //     memset(backup_paths[i], 0, MAX_PATH_LEN);
+        //     strcpy(backup_paths[i], found_paths_copy[i]);
+        //     free(found_paths_copy[i]);
+        // }
+
+        // num_of_paths_stored = num_paths_found;
+        // free(found_paths_copy);
+
+        pthread_mutex_unlock(&backup_paths_mutex);
+
+        // Keep checking every 5 seconds
+        sleep(5);
+    }
+
+    return NULL;
+}
+
 // Processes the request allocated to it in the allocated thread and then returns
 void *serve_request(void *args)
 {
@@ -194,6 +352,47 @@ void *serve_request(void *args)
             char *path_to_read = request_tkns[0];
 
             FILE *fptr = fopen(path_to_read, "r");
+
+            st_request send_read_data;
+            send_read_data.request_type = READ_REQ_DATA;
+            memset(send_read_data.data, 0, MAX_DATA_LENGTH);
+
+            // Reading data onto the data buffer of read request
+            int bytes_read = fread(send_read_data.data, 1, MAX_DATA_LENGTH, fptr);
+
+            int sent_msg_size;
+            if ((sent_msg_size = send(sock_fd, (request)&send_read_data, sizeof(st_request), 0)) <= 0)
+            {
+                fprintf(stderr, RED("send : %s\n"), strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+        }
+        else if (recvd_request.request_type == BACKUP_READ_REQ)
+        {
+            printf(YELLOW("Backup Read request received.\n"));
+            // Read the data in the file specified (Assuming that all the data can be read within the size of the request data buffer)
+            char *path_to_read = request_tkns[0];
+            char new_path_to_read[MAX_PATH_LEN] = {0};
+            
+            char** tkns = tokenize(path_to_read, '/');
+            int idx = 0;
+            while (tkns[idx] != NULL)
+            {
+                if (idx == 1 && (strcmp(tkns[idx], "storage") == 0))
+                {
+                    strcat(new_path_to_read, "backup");
+                }
+                else
+                {
+                    strcat(new_path_to_read, tkns[idx]);
+                }
+                strcat(new_path_to_read, "/");
+                idx++;
+            }
+            new_path_to_read[strlen(new_path_to_read) - 1] = '\0';
+            free_tokens(tkns);
+
+            FILE *fptr = fopen(new_path_to_read, "r");
 
             st_request send_read_data;
             send_read_data.request_type = READ_REQ_DATA;
@@ -409,6 +608,88 @@ void *serve_request(void *args)
 
             // Now opening the file in write mode, if it does not exist it would be created otherwise the old data would be overwritten
             FILE *fptr = fopen(file_path, "w");
+            if (fptr == NULL)
+            {
+                fprintf(stderr, RED("fopen : %s\n"), strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+
+            fprintf(fptr, "%s", file_content);
+
+            fclose(fptr);
+        }
+        else if (recvd_request.request_type == BACKUP_PASTE)
+        {
+            printf(YELLOW("Backup Paste request received.\n"));
+            printf("Pasting backup file : %s\n", recvd_request.data);
+
+            char *file_path = request_tkns[0];
+            char *file_content = request_tkns[1];
+
+            // Creating intermediate directories if not already present
+            // First tokenising the file_path on "/"
+
+            char** dirs = tokenize(file_path, '/');
+
+            // Calculating the number of intermediate dirs
+            int n_tkns = 0;
+            while (dirs[n_tkns] != NULL)
+            {
+                n_tkns++;
+            }
+
+            // Final number of dirs is 1 less than the number of tokens as the last one is the file
+            int n_dirs = n_tkns - 1;
+
+            char new_file_path[MAX_PATH_LEN] = {0};
+            for (int i = 0; i < n_tkns; i++)
+            {
+                if (i == 1 && (strcmp(dirs[i], "storage") == 0))
+                {
+                    strcat(new_file_path, "backup");
+                }
+                else
+                {
+                    strcat(new_file_path, dirs[i]);
+                }
+                if (i != n_tkns - 1)
+                {
+                    strcat(new_file_path, "/");
+                }
+            }
+
+            // Now creating all the intermediate dirs one by one
+            for (int i = 0; i < n_dirs; i++)
+            {
+                if (i == 1 && (strcmp(dirs[i], "storage") == 0))
+                {
+                    strcpy(dirs[i], "backup");
+                    dirs[i][6] = '\0';
+                }
+
+                if (mkdir(dirs[i], 0777) == 0)
+                {
+                    // If the directory did not exist already then it got created
+                }
+                else if (errno == EEXIST)
+                {
+                    // If the directory already exists then do nothing and just move into it
+                }
+                else
+                {
+                    // Error creating the directory
+                    fprintf(stderr, RED("mkdir : %s\n"), strerror(errno));
+                    exit(EXIT_FAILURE);
+                }
+                // Moving into that directory to create the next directory in hierarchy
+                chdir(dirs[i]);
+            }
+
+            // Moving out back to the pwd
+            chdir(PWD);
+
+            // Now opening the file in write mode, if it does not exist it would be created otherwise the old data would be overwritten
+            FILE *fptr = fopen(new_file_path, "w");
             if (fptr == NULL)
             {
                 fprintf(stderr, RED("fopen : %s\n"), strerror(errno));
