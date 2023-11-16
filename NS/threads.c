@@ -167,9 +167,8 @@ void *backup_thread(){
 
         for(int i=0;i<server_count;i++){
 
-            if(ss_list[i]->is_backedup==0 && ss_list[i]->status==1){
-                // printf(ORANGE("Searching backup for server %s\n\n\n"),ss_list[i]->port);
-                //search for two free online servers
+            if(ss_list[i]->is_backedup==0 && ss_list[i]->status==1 && ss_list[i]->added==1){
+                
                 int flag=0;
                 int id1=-1,id2=-1;
                 for(int j=0;j<server_count;j++){
@@ -202,14 +201,13 @@ void *backup_thread(){
 
                     strcpy(ss_list[id1]->backup_paths[j],ss_list[i]->paths[j]);
                     strcpy(ss_list[id2]->backup_paths[j],ss_list[i]->paths[j]);
-                    //check if the current path is to a file , if yes make a copy request 
+                     
                     if(strstr(ss_list[i]->paths[j],".txt")!=NULL){
                             // printf("path: %s\n",ss_list[i]->paths[j]);
                             request r=(request)malloc(sizeof(st_request));
                             request put_r=(request)malloc(sizeof(st_request));
                             struct sockaddr_in addr;
                             // int sock=connect_ss(ss_list[i]->port,&addr);
-
                             int sock = socket(AF_INET, SOCK_STREAM, 0);
                             if (sock == -1)
                             {
@@ -269,6 +267,12 @@ void *backup_thread(){
                             }
 
                             
+                            for(int i=0;i<tkn_cnt1-1;i++)
+                            {
+                                strcat(desti,tokens[i]);
+                                strcat(desti,"/");
+                            }
+
                             strcat(desti,"backup_");
                             strcat(desti,tokens[tkn_cnt1-1]);
                             
@@ -315,18 +319,7 @@ void *backup_thread(){
                             
                             x=send(sock_two,put_r,sizeof(st_request),0);
                             close(sock_two);
-                            // sprintf(put_r->data,"%s|%s",desti,token[1]);
 
-                            // send(ss_list[id2]->server_socket,put_r,sizeof(st_request),0);
-                            // recv(ss_list[id2]->server_socket,r,sizeof(st_request),0);
-                // }}}
-                            
-                            
-                            
-                        
-
-
-                        // free(r);
                     }
 
                 }
@@ -334,43 +327,43 @@ void *backup_thread(){
 
             }
             else if(ss_list[i]->status==1){
-                // printf(ORANGE("Checking new files for %s\n\n\n"),ss_list[i]->port);
-                int id=-1;
-                for(int j=0;j<server_count;j++){
-                    if(strcmp(ss_list[i]->port,ss_list[j]->backup_port)==0){
-                        id=j;
-                        break;
-                    }
-                }
+                // // printf(ORANGE("Checking new files for %s\n\n\n"),ss_list[i]->port);
+                // int id=-1;
+                // for(int j=0;j<server_count;j++){
+                //     if(strcmp(ss_list[i]->port,ss_list[j]->backup_port)==0){
+                //         id=j;
+                //         break;
+                //     }
+                // }
 
-                if(id!=-1){
-                int m_flag=0;
-                for(int j=0;j<ss_list[i]->path_count;j++){
-                    int flag=0;
-                    for(int k=0;k<ss_list[id]->backup_path_count;k++){
-                        if(strcmp(ss_list[i]->paths[j],ss_list[id]->backup_paths[k])==0 && (strstr(ss_list[i]->paths[j],".txt")!=NULL)){
-                            // printf("%s\n",ss_list[i]->paths[j]);
+                // if(id!=-1){
+                // int m_flag=0;
+                // for(int j=0;j<ss_list[i]->path_count;j++){
+                //     int flag=0;
+                //     for(int k=0;k<ss_list[id]->backup_path_count;k++){
+                //         if(strcmp(ss_list[i]->paths[j],ss_list[id]->backup_paths[k])==0 && (strstr(ss_list[i]->paths[j],".txt")!=NULL)){
+                //             // printf("%s\n",ss_list[i]->paths[j]);
                             
-                            flag=1;
-                            break;
-                        }
-                    }
-                    if(flag==0  && (strstr(ss_list[i]->paths[j],".txt")!=NULL)){
-                            m_flag=1;
-                            break;
+                //             flag=1;
+                //             break;
+                //         }
+                //     }
+                //     if(flag==0  && (strstr(ss_list[i]->paths[j],".txt")!=NULL)){
+                //             m_flag=1;
+                //             break;
                         
-                    }
+                //     }
 
-                }
+                // }
 
-                if(m_flag==1 || (ss_list[i]->path_count!=ss_list[id]->backup_path_count)){
-                    // printf("%d\n",m_flag);
-                    printf(ORANGE("Server %s is not backed up properly\n\n\n"),ss_list[i]->port);
-                    // ss_list[i]->is_backedup=0;
+                // if(m_flag==1 || (ss_list[i]->path_count!=ss_list[id]->backup_path_count)){
+                //     // printf("%d\n",m_flag);
+                //     printf(ORANGE("Server %s is not backed up properly\n\n\n"),ss_list[i]->port);
+                //     // ss_list[i]->is_backedup=0;
                     
-                }
+                // }
 
-                }
+                // }
                 
 
             }

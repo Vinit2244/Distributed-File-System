@@ -22,6 +22,7 @@ void process(request req)
         // printf("%s\n",req->data);
         pthread_mutex_lock(&server_lock);
         int flag = 0;
+        int id=0;
         request r = (request)malloc(sizeof(st_request));
         char *reference = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
         for (int i = 0; i < server_count; i++)
@@ -36,6 +37,7 @@ void process(request req)
                 {
                     snprintf(reference, MAX_DATA_LENGTH, "%s|%s", ss_list[i]->ip, ss_list[i]->client_port);
                     flag = 1;
+                    id=i;
                     break;
                 }
             }
@@ -61,9 +63,30 @@ void process(request req)
         {
 
             // send to server
+            if(ss_list[id]->status==1){
             r->request_type = RES;
             strcpy(r->data, reference);
-            send(client_socket_tcp, r, sizeof(st_request), 0);
+            send(client_socket_tcp, r, sizeof(st_request), 0);}
+
+            else{
+
+                //server offline look for backup
+                if(r->request_type==READ_REQ){
+                    //allow
+                    
+                }
+                else{
+
+                     r->request_type = FILE_NOT_FOUND;
+                    strcpy(r->data, "File not found");
+                    printf(RED("No files found , informing client\n\n\n"));
+                    send(client_socket_tcp, r, sizeof(st_request), 0);
+
+
+                }
+
+            }
+
         }
     }
     else if (req->request_type == DELETE_FOLDER || req->request_type == DELETE_FILE)
@@ -349,6 +372,7 @@ void process(request req)
         }
         
         ss found_server = ss_list[atoi(ss_id) - 1];
+        found_server->added=1;
         pthread_mutex_lock(&found_server->lock);
         for (int i = 0; i < ind - 1; i++)
         {
@@ -358,6 +382,7 @@ void process(request req)
         pthread_mutex_unlock(&found_server->lock);
 
         printf(BLUE("Added new files/directories from server number %d\n\n\n"), atoi(ss_id));
+
     }
 
     else if (req->request_type == DELETE_PATHS)
