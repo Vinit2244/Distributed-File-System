@@ -240,6 +240,32 @@ void seek(char* path_to_base_dir, linked_list_head paths) {
     return;
 }
 
+// Creates new path with "storage" replaced by "backup"
+char* replace_storage_by_backup(char* path)
+{
+    char *new_path = (char*) calloc(MAX_PATH_LEN, sizeof(char));
+
+    char **tkns = tokenize(path, '/');
+    int idx = 0;
+    while (tkns[idx] != NULL)
+    {
+        if (idx == 1 && (strcmp(tkns[idx], "storage") == 0))
+        {
+            strcat(new_path, "backup");
+        }
+        else
+        {
+            strcat(new_path, tkns[idx]);
+        }
+        strcat(new_path, "/");
+        idx++;
+    }
+    new_path[strlen(new_path) - 1] = '\0';
+    free_tokens(tkns);
+
+    return new_path;
+}
+
 // ===================================== LINKED LIST FUNC ===========================================
 linked_list_head create_linked_list_head() {
     linked_list_head linked_list = (linked_list_head) malloc(sizeof(linked_list_head_struct));

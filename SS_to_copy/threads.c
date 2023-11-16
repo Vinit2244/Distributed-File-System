@@ -200,7 +200,7 @@ void *check_and_store_backup_paths(void *args)
             memset(backup_paths[idx], 0, MAX_PATH_LEN);
             strcpy(backup_paths[idx], ".");
             strcat(backup_paths[idx], &n->path[strlen(PWD)]);
-            
+
             // found_paths[idx] = (char *)calloc(MAX_PATH_LEN, sizeof(char));
             // found_paths_copy[idx] = (char *)calloc(MAX_PATH_LEN, sizeof(char));
             // strcpy(found_paths_copy[idx], ".");
@@ -322,463 +322,455 @@ void *serve_request(void *args)
     free(args);
 
     // Receiving and serving the request
-    // while (1)
-    // {
-        st_request recvd_request;
-        memset(&(recvd_request.data), 0, MAX_DATA_LENGTH);
+    st_request recvd_request;
+    memset(&(recvd_request.data), 0, MAX_DATA_LENGTH);
 
-        // Receiving the request
-        int recvd_msg_size;
-        if ((recvd_msg_size = recv(sock_fd, &recvd_request, sizeof(st_request), 0)) <= 0)
-        {
-            fprintf(stderr, RED("recv  : %s\n"), strerror(errno));
-            return NULL;
-        }
+    // Receiving the request
+    int recvd_msg_size;
+    if ((recvd_msg_size = recv(sock_fd, &recvd_request, sizeof(st_request), 0)) <= 0)
+    {
+        fprintf(stderr, RED("recv  : %s\n"), strerror(errno));
+        return NULL;
+    }
 
-        // printf("%d\n",recvd_msg_size);
-        
-        char **request_tkns = tokenize(recvd_request.data, '|');
-        /*
-            READ data format : <path>
-            WRITE data format : <path>|<content to write> (Keep sending write data in this format and when all the data to be written is sent send the stop request)
-            APPEND data format : same as write
-        */
+    char **request_tkns = tokenize(recvd_request.data, '|');
+    /*
+        READ data format : <path>
+        WRITE data format : <path>|<content to write> (Keep sending write data in this format and when all the data to be written is sent send the stop request)
+        APPEND data format : same as write
+    */
 
-        // Selecting the type of request sent
+    // Selecting the type of request sent
+    if (recvd_request.request_type == READ_REQ || BACKUP_READ_REQ)
+    {
+        char* path_to_read;
         if (recvd_request.request_type == READ_REQ)
         {
             printf(YELLOW("Read request received.\n"));
             // Read the data in the file specified (Assuming that all the data can be read within the size of the request data buffer)
-            char *path_to_read = request_tkns[0];
-
-            FILE *fptr = fopen(path_to_read, "r");
-
-            st_request send_read_data;
-            send_read_data.request_type = READ_REQ_DATA;
-            memset(send_read_data.data, 0, MAX_DATA_LENGTH);
-
-            // Reading data onto the data buffer of read request
-            int bytes_read = fread(send_read_data.data, 1, MAX_DATA_LENGTH, fptr);
-
-            int sent_msg_size;
-            if ((sent_msg_size = send(sock_fd, (request)&send_read_data, sizeof(st_request), 0)) <= 0)
-            {
-                fprintf(stderr, RED("send : %s\n"), strerror(errno));
-                exit(EXIT_FAILURE);
-            }
+            path_to_read = request_tkns[0];
         }
-        else if (recvd_request.request_type == BACKUP_READ_REQ)
+        else
         {
             printf(YELLOW("Backup Read request received.\n"));
             // Read the data in the file specified (Assuming that all the data can be read within the size of the request data buffer)
-            char *path_to_read = request_tkns[0];
-            char new_path_to_read[MAX_PATH_LEN] = {0};
-            
-            char** tkns = tokenize(path_to_read, '/');
-            int idx = 0;
-            
-            while (tkns[idx] != NULL)
-            {
-                if (idx == 1 && (strcmp(tkns[idx], "storage") == 0))
-                {
-                    strcat(new_path_to_read, "backup");
-                }
-                else
-                {
-                    strcat(new_path_to_read, tkns[idx]);
-                }
-                strcat(new_path_to_read, "/");
-                idx++;
-            }
-            
-            new_path_to_read[strlen(new_path_to_read) - 1] = '\0';
-            // free_tokens(tkns);
-
-            FILE *fptr = fopen(new_path_to_read, "r");
-            
-            st_request send_read_data;
-            send_read_data.request_type = READ_REQ_DATA;
-            memset(send_read_data.data, 0, MAX_DATA_LENGTH);
-
-            // Reading data onto the data buffer of read request
-            int bytes_read = fread(send_read_data.data, 1, MAX_DATA_LENGTH, fptr);
-
-            int sent_msg_size;
-            if ((sent_msg_size = send(sock_fd, (request)&send_read_data, sizeof(st_request), 0)) <= 0)
-            {
-                fprintf(stderr, RED("send : %s\n"), strerror(errno));
-                exit(EXIT_FAILURE);
-            }
+            path_to_read = request_tkns[0];
         }
-        else if (recvd_request.request_type == WRITE_REQ)
+
+        FILE *fptr = fopen(path_to_read, "r");
+
+        st_request send_read_data;
+        send_read_data.request_type = READ_REQ_DATA;
+        memset(send_read_data.data, 0, MAX_DATA_LENGTH);
+
+        // Reading data onto the data buffer of read request
+        int bytes_read = fread(send_read_data.data, 1, MAX_DATA_LENGTH, fptr);
+
+        int sent_msg_size;
+        if ((sent_msg_size = send(sock_fd, (request)&send_read_data, sizeof(st_request), 0)) <= 0)
+        {
+            fprintf(stderr, RED("send : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+
+        if (recvd_request.request_type == READ_REQ)
+        {
+            free(path_to_read);
+        }
+    }
+    else if (recvd_request.request_type == WRITE_REQ || BACKUP_WRITE_REQ)
+    {
+        char* path_to_write;
+        if (recvd_request.request_type == WRITE_REQ)
         {
             printf(YELLOW("Write request received.\n"));
-            // Extracting the path to write and content to write
-            char *path_to_write = request_tkns[0];
-            char *data_to_write = request_tkns[1];
-
-            // Opening file in write mode and writing onto the file (Assuming that the path is always correct and the file already exits)
-            FILE *fptr;
-            fptr = fopen(path_to_write, "w");
-            fprintf(fptr, "%s", data_to_write);
-            fclose(fptr);
-
-            send_ack(WRITE_SUCCESSFUL, sock_fd);
+            path_to_write = request_tkns[0];
         }
-        else if (recvd_request.request_type == APPEND_REQ)
+        else
+        {
+            printf(YELLOW("Backup Write request received.\n"));
+            path_to_write = replace_storage_by_backup(request_tkns[0]);
+        }
+        
+        char *data_to_write = request_tkns[1];
+
+        // Opening file in write mode and writing onto the file (Assuming that the path is always correct and the file already exits)
+        FILE *fptr;
+        fptr = fopen(path_to_write, "w");
+        fprintf(fptr, "%s", data_to_write);
+        fclose(fptr);
+
+        send_ack(WRITE_SUCCESSFUL, sock_fd);
+
+        if (recvd_request.request_type == BACKUP_WRITE_REQ)
+        {
+            free(path_to_write);
+        }
+    }
+    else if (recvd_request.request_type == APPEND_REQ || recvd_request.request_type == BACKUP_APPEND_REQ)
+    {
+        char* path_to_write;
+        if (recvd_request.request_type == APPEND_REQ)
         {
             printf(YELLOW("Append request received.\n"));
-            char *path_to_write = request_tkns[0];
-            char *data_to_write = request_tkns[1];
-
-            FILE *fptr;
-            fptr = fopen(path_to_write, "a");
-            fprintf(fptr, "%s", data_to_write);
-            fclose(fptr);
-
-            send_ack(APPEND_SUCCESSFUL, sock_fd);
+            path_to_write = request_tkns[0];
         }
-        else if (recvd_request.request_type == RETRIEVE_INFO)
+        else
         {
-            printf(YELLOW("Retrieve Information request received.\n"));
-            // Path of the file whose information has to be retrieved
-            char *path = recvd_request.data;
-            struct stat file_stat;
+            printf(YELLOW("Backup Append request received.\n"));
+            path_to_write = replace_storage_by_backup(request_tkns[0]);
+        }
+        
+        char *data_to_write = request_tkns[1];
 
-            st_request send_info;
-            send_info.request_type = INFO;
-            memset(send_info.data, 0, MAX_DATA_LENGTH);
+        FILE *fptr;
+        fptr = fopen(path_to_write, "a");
+        fprintf(fptr, "%s", data_to_write);
+        fclose(fptr);
 
-            strcpy(send_info.data, "Permission : ");
+        send_ack(APPEND_SUCCESSFUL, sock_fd);
 
-            // Retrieving file permissions
-            if (!stat(path, &file_stat))
+        if (recvd_request.request_type == BACKUP_APPEND_REQ)
+        {
+            free(path_to_write);
+        }
+    }
+    else if (recvd_request.request_type == RETRIEVE_INFO)
+    {
+        printf(YELLOW("Retrieve Information request received.\n"));
+        char* path = recvd_request.data;
+
+        // Path of the file whose information has to be retrieved
+        struct stat file_stat;
+
+        st_request send_info;
+        send_info.request_type = INFO;
+        memset(send_info.data, 0, MAX_DATA_LENGTH);
+
+        strcpy(send_info.data, "Permission : ");
+
+        // Retrieving file permissions
+        if (!stat(path, &file_stat))
+        {
+            strcat(send_info.data, (S_ISDIR(file_stat.st_mode)) ? "d" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IRUSR) ? "r" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IWUSR) ? "w" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IXUSR) ? "x" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IRGRP) ? "r" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IWGRP) ? "w" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IXGRP) ? "x" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IROTH) ? "r" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IWOTH) ? "w" : "-");
+            strcat(send_info.data, (file_stat.st_mode & S_IXOTH) ? "x" : "-");
+        }
+        else
+        {
+            fprintf(stderr, RED("peek : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+        strcat(send_info.data, " ");
+        char size_str[10] = {0};
+
+        // Storing file size with a space
+        strcat(send_info.data, " Size : ");
+        sprintf(size_str, "%lld", file_stat.st_blocks);
+        strcat(send_info.data, size_str);
+        strcat(send_info.data, " ");
+
+        strcat(send_info.data, "Last Modified : ");
+
+        // Storing last modification time
+        time_t modificationTime = file_stat.st_mtime;
+
+        // Convert time to a formatted string and print it
+        char *time_string;
+        time_string = ctime(&modificationTime);
+        char month[4];
+        char date[3];
+        char hour[3];
+        char mins[3];
+        char year[5];
+        for (int i = 4; i < 7; i++)
+        {
+            month[i - 4] = time_string[i];
+        }
+        month[3] = '\0';
+
+        for (int i = 8; i < 10; i++)
+        {
+            date[i - 8] = time_string[i];
+        }
+        date[2] = '\0';
+
+        for (int i = 11; i < 13; i++)
+        {
+            hour[i - 11] = time_string[i];
+        }
+        hour[2] = '\0';
+
+        for (int i = 14; i < 16; i++)
+        {
+            mins[i - 14] = time_string[i];
+        }
+        mins[2] = '\0';
+
+        for (int i = 20; i < 24; i++)
+        {
+            year[i - 20] = time_string[i];
+        }
+        year[4] = '\0';
+
+        char timestamp[100] = {0};
+        sprintf(timestamp, "Date : %s %s  Time : %s:%s ", month, date, hour, mins);
+        strcat(send_info.data, timestamp);
+
+        int sent_msg_size;
+        if ((sent_msg_size = send(sock_fd, (request)&send_info, sizeof(st_request), 0)) <= 0)
+        {
+            fprintf(stderr, RED("send : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+    }
+    else if (recvd_request.request_type == COPY)
+    {
+        printf(YELLOW("Copy request received.\n"));
+        char* path = recvd_request.data;
+
+        st_request copy_data_request;
+        copy_data_request.request_type = DATA_TO_BE_COPIED;
+        memset(copy_data_request.data, 0, MAX_DATA_LENGTH);
+
+        FILE *fptr = fopen(path, "r");
+        char buffer[MAX_DATA_LENGTH - 1026] = {0};
+        int bytes_read = fread(buffer, sizeof(char), MAX_DATA_LENGTH - 1027, fptr);
+
+        // <path>|<data in file>
+        strcpy(copy_data_request.data, path);
+        strcat(copy_data_request.data, "|");
+        strcat(copy_data_request.data, buffer);
+
+        int sent_msg_size;
+        if ((sent_msg_size = send(sock_fd, (request)&copy_data_request, sizeof(st_request), 0)) <= 0)
+        {
+            fprintf(stderr, RED("send : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+        send_ack(ACK, sock_fd);
+    }
+    else if (recvd_request.request_type == PASTE || recvd_request.request_type == BACKUP_PASTE)
+    {
+        char* file_path;
+        if (recvd_request.request_type == PASTE)
+        {
+            printf(YELLOW("Paste request received.\n"));
+            printf("Pasting file : %s\n", recvd_request.data);
+
+            file_path = request_tkns[0];
+        }
+        else
+        {
+            printf(YELLOW("Backup Paste request received.\n"));
+            printf("Pasting file : %s\n", recvd_request.data);
+
+            file_path = replace_storage_by_backup(request_tkns[0]);
+        }
+
+        char *file_content = request_tkns[1];
+
+        // Creating intermediate directories if not already present
+        // First tokenising the file_path on "/"
+
+        char **dirs = tokenize(file_path, '/');
+
+        // Calculating the number of intermediate dirs
+        int n_tkns = 0;
+        while (dirs[n_tkns] != NULL)
+        {
+            n_tkns++;
+        }
+
+        // Final number of dirs is 1 less than the number of tokens as the last one is the file
+        int n_dirs = n_tkns - 1;
+
+        // Now creating all the intermediate dirs one by one
+        for (int i = 0; i < n_dirs; i++)
+        {
+            if (mkdir(dirs[i], 0777) == 0)
             {
-                strcat(send_info.data, (S_ISDIR(file_stat.st_mode)) ? "d" : "-");
-                strcat(send_info.data, (file_stat.st_mode & S_IRUSR) ? "r" : "-");
-                strcat(send_info.data, (file_stat.st_mode & S_IWUSR) ? "w" : "-");
-                strcat(send_info.data, (file_stat.st_mode & S_IXUSR) ? "x" : "-");
-                strcat(send_info.data, (file_stat.st_mode & S_IRGRP) ? "r" : "-");
-                strcat(send_info.data, (file_stat.st_mode & S_IWGRP) ? "w" : "-");
-                strcat(send_info.data, (file_stat.st_mode & S_IXGRP) ? "x" : "-");
-                strcat(send_info.data, (file_stat.st_mode & S_IROTH) ? "r" : "-");
-                strcat(send_info.data, (file_stat.st_mode & S_IWOTH) ? "w" : "-");
-                strcat(send_info.data, (file_stat.st_mode & S_IXOTH) ? "x" : "-");
+                // If the directory did not exist already then it got created
+            }
+            else if (errno == EEXIST)
+            {
+                // If the directory already exists then do nothing and just move into it
             }
             else
             {
-                fprintf(stderr, RED("peek : %s\n"), strerror(errno));
+                // Error creating the directory
+                fprintf(stderr, RED("mkdir : %s\n"), strerror(errno));
                 exit(EXIT_FAILURE);
             }
-            strcat(send_info.data, " ");
-            char size_str[10] = {0};
-
-            // Storing file size with a space
-            strcat(send_info.data, " Size : ");
-            sprintf(size_str, "%lld", file_stat.st_blocks);
-            strcat(send_info.data, size_str);
-            strcat(send_info.data, " ");
-
-            strcat(send_info.data, "Last Modified : ");
-
-            // Storing last modification time
-            time_t modificationTime = file_stat.st_mtime;
-
-            // Convert time to a formatted string and print it
-            char *time_string;
-            time_string = ctime(&modificationTime);
-            char month[4];
-            char date[3];
-            char hour[3];
-            char mins[3];
-            char year[5];
-            for (int i = 4; i < 7; i++)
-            {
-                month[i - 4] = time_string[i];
-            }
-            month[3] = '\0';
-
-            for (int i = 8; i < 10; i++)
-            {
-                date[i - 8] = time_string[i];
-            }
-            date[2] = '\0';
-
-            for (int i = 11; i < 13; i++)
-            {
-                hour[i - 11] = time_string[i];
-            }
-            hour[2] = '\0';
-
-            for (int i = 14; i < 16; i++)
-            {
-                mins[i - 14] = time_string[i];
-            }
-            mins[2] = '\0';
-
-            for (int i = 20; i < 24; i++)
-            {
-                year[i - 20] = time_string[i];
-            }
-            year[4] = '\0';
-
-            char timestamp[100] = {0};
-            sprintf(timestamp, "Date : %s %s  Time : %s:%s ", month, date, hour, mins);
-            strcat(send_info.data, timestamp);
-
-            int sent_msg_size;
-            if ((sent_msg_size = send(sock_fd, (request)&send_info, sizeof(st_request), 0)) <= 0)
-            {
-                fprintf(stderr, RED("send : %s\n"), strerror(errno));
-                exit(EXIT_FAILURE);
-            }
+            // Moving into that directory to create the next directory in hierarchy
+            chdir(dirs[i]);
         }
-        else if (recvd_request.request_type == COPY)
+
+        // Moving out back to the pwd
+        chdir(PWD);
+
+        // Now opening the file in write mode, if it does not exist it would be created otherwise the old data would be overwritten
+        FILE *fptr = fopen(file_path, "w");
+        if (fptr == NULL)
         {
-            printf(YELLOW("Copy request received.\n"));
-            // Read the data in the file given
-            printf("Copying file : %s\n", recvd_request.data);
-            char *path = recvd_request.data;
-
-            st_request copy_data_request;
-            copy_data_request.request_type = DATA_TO_BE_COPIED;
-            memset(copy_data_request.data, 0, MAX_DATA_LENGTH);
-
-            FILE *fptr = fopen(path, "r");
-            char buffer[MAX_DATA_LENGTH - 1026] = {0};
-            int bytes_read = fread(buffer, sizeof(char), MAX_DATA_LENGTH - 1027, fptr);
-
-            // <path>|<data in file>
-            strcpy(copy_data_request.data, path);
-            strcat(copy_data_request.data, "|");
-            strcat(copy_data_request.data, buffer);
-
-            int sent_msg_size;
-            if ((sent_msg_size = send(sock_fd, (request)&copy_data_request, sizeof(st_request), 0)) <= 0)
-            {
-                fprintf(stderr, RED("send : %s\n"), strerror(errno));
-                exit(EXIT_FAILURE);
-            }
-            send_ack(ACK, sock_fd);
+            fprintf(stderr, RED("fopen : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
         }
-        else if (recvd_request.request_type == PASTE)
+
+        fprintf(fptr, "%s", file_content);
+
+        fclose(fptr);
+
+        if (recvd_request.request_type == BACKUP_PASTE)
         {
-            printf(YELLOW("Paster request received.\n"));
-            printf("Pasting file : %s\n", recvd_request.data);
-
-            char *file_path = request_tkns[0];
-            char *file_content = request_tkns[1];
-
-            // Creating intermediate directories if not already present
-            // First tokenising the file_path on "/"
-
-            char** dirs = tokenize(file_path, '/');
-
-            // Calculating the number of intermediate dirs
-            int n_tkns = 0;
-            while (dirs[n_tkns] != NULL)
-            {
-                n_tkns++;
-            }
-
-            // Final number of dirs is 1 less than the number of tokens as the last one is the file
-            int n_dirs = n_tkns - 1;
-
-            // Now creating all the intermediate dirs one by one
-            for (int i = 0; i < n_dirs; i++)
-            {
-                if (mkdir(dirs[i], 0777) == 0)
-                {
-                    // If the directory did not exist already then it got created
-                }
-                else if (errno == EEXIST)
-                {
-                    // If the directory already exists then do nothing and just move into it
-                }
-                else
-                {
-                    // Error creating the directory
-                    fprintf(stderr, RED("mkdir : %s\n"), strerror(errno));
-                    exit(EXIT_FAILURE);
-                }
-                // Moving into that directory to create the next directory in hierarchy
-                chdir(dirs[i]);
-            }
-
-            // Moving out back to the pwd
-            chdir(PWD);
-
-            // Now opening the file in write mode, if it does not exist it would be created otherwise the old data would be overwritten
-            FILE *fptr = fopen(file_path, "w");
-            if (fptr == NULL)
-            {
-                fprintf(stderr, RED("fopen : %s\n"), strerror(errno));
-                exit(EXIT_FAILURE);
-            }
-
-            fprintf(fptr, "%s", file_content);
-
-            fclose(fptr);
+            free(file_path);
         }
-        else if (recvd_request.request_type == BACKUP_PASTE)
-        {
-            printf(YELLOW("Backup Paste request received.\n"));
-            printf("Pasting backup file : %s\n", recvd_request.data);
-
-            char *file_path = request_tkns[0];
-            char *file_content = request_tkns[1];
-
-            // Creating intermediate directories if not already present
-            // First tokenising the file_path on "/"
-
-            char** dirs = tokenize(file_path, '/');
-
-            // Calculating the number of intermediate dirs
-            int n_tkns = 0;
-            while (dirs[n_tkns] != NULL)
-            {
-                n_tkns++;
-            }
-
-            // Final number of dirs is 1 less than the number of tokens as the last one is the file
-            int n_dirs = n_tkns - 1;
-
-            char new_file_path[MAX_PATH_LEN] = {0};
-            for (int i = 0; i < n_tkns; i++)
-            {
-                if (i == 1 && (strcmp(dirs[i], "storage") == 0))
-                {
-                    strcat(new_file_path, "backup");
-                }
-                else
-                {
-                    strcat(new_file_path, dirs[i]);
-                }
-                if (i != n_tkns - 1)
-                {
-                    strcat(new_file_path, "/");
-                }
-            }
-
-            // Now creating all the intermediate dirs one by one
-            for (int i = 0; i < n_dirs; i++)
-            {
-                if (i == 1 && (strcmp(dirs[i], "storage") == 0))
-                {
-                    strcpy(dirs[i], "backup");
-                    dirs[i][6] = '\0';
-                }
-
-                if (mkdir(dirs[i], 0777) == 0)
-                {
-                    // If the directory did not exist already then it got created
-                }
-                else if (errno == EEXIST)
-                {
-                    // If the directory already exists then do nothing and just move into it
-                }
-                else
-                {
-                    // Error creating the directory
-                    fprintf(stderr, RED("mkdir : %s\n"), strerror(errno));
-                    exit(EXIT_FAILURE);
-                }
-                // Moving into that directory to create the next directory in hierarchy
-                chdir(dirs[i]);
-            }
-
-            // Moving out back to the pwd
-            chdir(PWD);
-            printf(CYAN("%s\n\n\n"),new_file_path);
-            // Now opening the file in write mode, if it does not exist it would be created otherwise the old data would be overwritten
-            FILE *fptr = fopen(new_file_path, "w");
-            if (fptr == NULL)
-            {
-                fprintf(stderr, RED("fopen : %s\n"), strerror(errno));
-                exit(EXIT_FAILURE);
-            }
-
-            fprintf(fptr, "%s", file_content);
-
-            fclose(fptr);
-        }
-        else if (recvd_request.request_type == PING)
-        {
-            printf(YELLOW("Ping request received.\n"));
-            // Received a ping request from NFS to check if my SS is still responding or not so sending back the PING to say that I am active and listening
-            st_request ping_request;
-            send_ack(ACK, sock_fd);
-        }
-        else if (recvd_request.request_type == DELETE_FILE)
+    }
+    else if (recvd_request.request_type == PING)
+    {
+        printf(YELLOW("Ping request received.\n"));
+        // Received a ping request from NFS to check if my SS is still responding or not so sending back the PING to say that I am active and listening
+        st_request ping_request;
+        send_ack(ACK, sock_fd);
+    }
+    else if (recvd_request.request_type == DELETE_FILE || recvd_request.request_type == BACKUP_DELETE_FILE)
+    {
+        char* file_path;
+        if (recvd_request.request_type == DELETE_FILE)
         {
             printf(YELLOW("Delete file request received.\n"));
-            if (remove(recvd_request.data) != 0)
-            {
-                // If there was some error in deleting the file
-                fprintf(stderr, RED("remove : %s\n"), strerror(errno));
-                exit(EXIT_FAILURE);
-            }
-            send_ack(ACK, sock_fd);
+            file_path = recvd_request.data;
         }
-        else if (recvd_request.request_type == DELETE_FOLDER)
+        else
+        {
+            printf(YELLOW("Backup Delete file request received.\n"));
+            file_path = replace_storage_by_backup(recvd_request.data);
+        }
+        
+        if (remove(file_path) != 0)
+        {
+            // If there was some error in deleting the file
+            fprintf(stderr, RED("remove : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+        send_ack(ACK, sock_fd);
+
+        if (recvd_request.request_type == BACKUP_DELETE_FILE)
+        {
+            free(file_path);
+        }
+    }
+    else if (recvd_request.request_type == DELETE_FOLDER || recvd_request.request_type == BACKUP_DELETE_FOLDER)
+    {
+        char* dir_path;
+        if (recvd_request.request_type == DELETE_FOLDER)
         {
             printf(YELLOW("Delete folder request received.\n"));
-            // Hacked rmdir so won't delete the base storage folder
-            if (rmdir(recvd_request.data) != 0)
-            {
-                // If there was some error in deleting the directory
-                fprintf(stderr, RED("rmdir : %s\n"), strerror(errno));
-                exit(EXIT_FAILURE);
-            }
-            send_ack(ACK, sock_fd);
+            dir_path = recvd_request.data;
         }
-        else if (recvd_request.request_type == CREATE_FILE)
+        else
+        {
+            printf(YELLOW("Backup Delete folder request received.\n"));
+            dir_path = replace_storage_by_backup(recvd_request.data);
+        }
+        
+        // Hacked rmdir so won't delete the base storage folder
+        if (rmdir(dir_path) != 0)
+        {
+            // If there was some error in deleting the directory
+            fprintf(stderr, RED("rmdir : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+        send_ack(ACK, sock_fd);
+
+        if (recvd_request.request_type == BACKUP_DELETE_FOLDER)
+        {
+            free(dir_path);
+        }
+    }
+    else if (recvd_request.request_type == CREATE_FILE || recvd_request.request_type == BACKUP_CREATE_FILE)
+    {
+        char* file_path;
+        if (recvd_request.request_type == CREATE_FILE)
         {
             printf(YELLOW("Create file request received.\n"));
-            FILE *fptr = fopen(recvd_request.data, "w");
-            fclose(fptr);
-            send_ack(ACK, sock_fd);
+            file_path = recvd_request.data;
         }
-        else if (recvd_request.request_type == CREATE_FOLDER)
+        else
+        {
+            printf(YELLOW("Backup Create file request received.\n"));
+            file_path = replace_storage_by_backup(recvd_request.data);
+        }
+        
+        FILE *fptr = fopen(file_path, "w");
+        fclose(fptr);
+        send_ack(ACK, sock_fd);
+
+        if (recvd_request.request_type == BACKUP_CREATE_FILE)
+        {
+            free(file_path);
+        }
+    }
+    else if (recvd_request.request_type == CREATE_FOLDER || recvd_request.request_type == BACKUP_CREATE_FOLDER)
+    {
+        char* file_path;
+        if (recvd_request.request_type == CREATE_FOLDER)
         {
             printf(YELLOW("Create folder request received.\n"));
-            char *file_path = request_tkns[0];
-
-            // Creating intermediate directories if not already present
-            // First tokenising the file_path on "/"
-            char **dirs = tokenize(file_path, '/');
-
-            // Calculating the number of intermediate dirs
-            int n_tkns = 0;
-            while (dirs[n_tkns] != NULL)
-            {
-                n_tkns++;
-            }
-            // Final number of dirs is 1 less than the number of tokens as the last one is the file
-            int n_dirs = n_tkns;
-
-            // Now creating all the intermediate dirs one by one
-            for (int i = 0; i < n_dirs; i++)
-            {
-                if (mkdir(dirs[i], 0777) == -1)
-                {
-                    // If the directory already exitsts do nothing
-                }
-                // Moving into that directory to create the next directory in hierarchy
-                chdir(dirs[i]);
-            }
-            // Moving out of all dirs again to the home dir
-            for (int i = 0; i < n_dirs; i++)
-            {
-                chdir("..");
-            }
-
-            send_ack(ACK, sock_fd);
+            file_path = request_tkns[0];
+        }
+        else
+        {
+            printf(YELLOW("Backup Create folder request received.\n"));
+            file_path = replace_storage_by_backup(request_tkns[0]);
         }
 
-        // Freeing tokens created at the start from request data
-        // free_tokens(request_tkns);
-    
+        // Creating intermediate directories if not already present
+        // First tokenising the file_path on "/"
+        char **dirs = tokenize(file_path, '/');
+
+        // Calculating the number of intermediate dirs
+        int n_tkns = 0;
+        while (dirs[n_tkns] != NULL)
+        {
+            n_tkns++;
+        }
+        // Final number of dirs is 1 less than the number of tokens as the last one is the file
+        int n_dirs = n_tkns;
+
+        // Now creating all the intermediate dirs one by one
+        for (int i = 0; i < n_dirs; i++)
+        {
+            if (mkdir(dirs[i], 0777) == -1)
+            {
+                // If the directory already exitsts do nothing
+            }
+            // Moving into that directory to create the next directory in hierarchy
+            chdir(dirs[i]);
+        }
+        // Moving out of all dirs again to the home dir
+        for (int i = 0; i < n_dirs; i++)
+        {
+            chdir("..");
+        }
+
+        send_ack(ACK, sock_fd);
+
+        if (recvd_request.request_type == BACKUP_CREATE_FOLDER)
+        {
+            free(file_path);
+        }
+    }
+
+    // Freeing tokens created at the start from request data
+    free_tokens(request_tkns);
 
     // Closing client socket as all the communication is done
     if (close(sock_fd) < 0)

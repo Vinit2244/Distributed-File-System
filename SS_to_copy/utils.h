@@ -30,5 +30,6 @@ void send_ack(const int status_code, const int sock_fd);
 void seek(char* path_to_base_dir, linked_list_head paths);
 char* remove_extension(char* file_name);
 void update_path(char* path, char* next_dir);
+char* replace_storage_by_backup(char* path);
 
 #endif

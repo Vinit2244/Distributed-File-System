@@ -77,6 +77,12 @@
 #define DELETE_FOLDER        26
 #define BACKUP_PASTE         27
 #define BACKUP_READ_REQ      28
+#define BACKUP_WRITE_REQ     29
+#define BACKUP_APPEND_REQ    30
+#define BACKUP_DELETE_FILE   31
+#define BACKUP_DELETE_FOLDER 32
+#define BACKUP_CREATE_FILE   33
+#define BACKUP_CREATE_FOLDER 34
 
 // ============================= Statuses =============================
 #define NOT_REGISTERED    0

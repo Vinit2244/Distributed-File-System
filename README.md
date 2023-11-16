@@ -18,3 +18,4 @@
 - Assuming if a file is being copied, there won't be already a file with exactly the same relative path, and if there is it's data will be overwritten
 - Assuming all the files ends with .txt (all are text files) and no folder name ends with .txt
 - Got the basic tries code from chatGPT prompt : "Write me a tries code in C to store directory structure such that each node of trie contains name of a file/directory and points to next files in the directory. Write code for effective search, insert and delete", and then changed it according to our requirement.
+- Manually can't change backup folder.
