@@ -72,17 +72,10 @@ void process(request req)
             else{
 
                 //server offline look for backup
-                if(req->request_type==READ_REQ){
+                if(req->request_type==READ_REQ && ss_list[id]->is_backedup==1){
                     //allow
-                    for(int i=0;i<server_count;i++){
-                        if(ss_list[i]->has_backup==1 && strcmp(ss_list[i]->backup_port,ss_list[id]->port)==0){
-                            r->request_type = BACKUP_READ_REQ;
-                            snprintf(r->data,MAX_DATA_LENGTH,"%s|%s",ss_list[i]->ip,ss_list[i]->client_port);
-                            // strcpy(r->data, ss_list[i]->backup_port);
-                            send(client_socket_tcp, r, sizeof(st_request), 0);
-                            break;
-                        }
-                    }
+                    r->request_type = BACKUP_READ_REQ;
+                    snprintf(r->data,MAX_DATA_LENGTH,"%s|%s",ss_list[id]->ip,ss_list[id]->backup_port[0]);
 
                 }
                 else{
@@ -264,19 +257,17 @@ void process(request req)
     }
     else if (req->request_type == COPY_REQUEST)
     {
-        // printf("1\n");
+        
         char *source = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
         char *desti = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
 
         char *token = strtok(req->data, "|");
-        // printf("2\n");
+        
         
         strcpy(source, token);
         token = strtok(NULL, "|");
         strcpy(desti, token);
-        // printf("%s\n", source);
-        // printf("%s\n", desti);
-
+        
         ss source_no, dest_no;
         int flag = 0;
 
@@ -322,8 +313,7 @@ void process(request req)
         }
         else
         {
-            // printf("4\n");
-            // printf("%s\n", source);
+            
             request get_r = (request)malloc(sizeof(st_request));
             get_r->request_type = COPY;
             strcpy(get_r->data, source);

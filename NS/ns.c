@@ -50,46 +50,7 @@ void client_handler(char data[])
     strcpy(path, tokens[0]);
 }
 
-void make_backup(int ss_id){
 
-    printf("Backing up!\n");
-    if(ss_id>=server_count){
-        printf("Invalid server id\n");
-        return;
-    }
-
-    else{
-
-        ss found_server = ss_list[ss_id];
-        printf("Backing up server %s\n",found_server->port);
-        pthread_mutex_lock(&found_server->lock);
-        int count=0;
-        for(int i=0;i<server_count;i++){
-
-            if(ss_list[i]->has_backup==0 && strcmp(ss_list[i]->port,found_server->port)){
-
-
-            
-            printf("Backing up in port %s\n",ss_list[i]->port);
-            count++;
-            for(int j=0;j<found_server->path_count;j++){
-                strcpy(ss_list[i]->backup_paths[j],found_server->paths[j]);
-            }
-            ss_list[i]->has_backup=1;
-            found_server->is_backedup=1;
-            strcpy(ss_list[i]->backup_port,found_server->port);
-            if(count==2)break;
-
-
-            }
-
-        }
-        // found_server->has_backup=1;
-        pthread_mutex_unlock(&found_server->lock);
-
-    }
-
-}
 // Code to add a new storage server in naming server list
 void init_storage(char data[])
 {
@@ -131,7 +92,8 @@ void init_storage(char data[])
     }
     else{
 
-    
+    new_ss->backup_path_count=0;
+
     new_ss->is_backedup=0;
     new_ss->has_backup=0;
     ss_list[server_count] = new_ss;
@@ -146,9 +108,7 @@ void init_storage(char data[])
     pthread_t sync_backup_thread;
     pthread_create(&sync_backup_thread,NULL,&sync_backup,(void*)ss_list[id]);
     
-    // pthread_join(server_thread, NULL);
-    // pthread_join(sync_backup_thread,NULL);
-
+    
     return;
 }
 

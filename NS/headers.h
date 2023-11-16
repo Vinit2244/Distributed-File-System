@@ -100,7 +100,8 @@ typedef struct ss_info
     int has_backup;
     int is_backedup;
     int backup_path_count;
-    char backup_port[10];
+    char backup_port[2][10];
+    int total_backups;
     int added;
     
 
