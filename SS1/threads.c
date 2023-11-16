@@ -164,8 +164,8 @@ void *serve_request(void *args)
     free(args);
 
     // Receiving and serving the request
-    while (1)
-    {
+    // while (1)
+    // {
         st_request recvd_request;
         memset(&(recvd_request.data), 0, MAX_DATA_LENGTH);
 
@@ -177,10 +177,8 @@ void *serve_request(void *args)
             return NULL;
         }
 
-        // Process request
-
-        if (strcmp(recvd_request.data, "") != 0)
-            printf(BLUE("\nRequest received : %s\n"), recvd_request.data);
+        // printf("%d\n",recvd_msg_size);
+        
         char **request_tkns = tokenize(recvd_request.data, '|');
         /*
             READ data format : <path>
@@ -191,6 +189,7 @@ void *serve_request(void *args)
         // Selecting the type of request sent
         if (recvd_request.request_type == READ_REQ)
         {
+            printf(YELLOW("Read request received.\n"));
             // Read the data in the file specified (Assuming that all the data can be read within the size of the request data buffer)
             char *path_to_read = request_tkns[0];
 
@@ -212,6 +211,7 @@ void *serve_request(void *args)
         }
         else if (recvd_request.request_type == WRITE_REQ)
         {
+            printf(YELLOW("Write request received.\n"));
             // Extracting the path to write and content to write
             char *path_to_write = request_tkns[0];
             char *data_to_write = request_tkns[1];
@@ -226,6 +226,7 @@ void *serve_request(void *args)
         }
         else if (recvd_request.request_type == APPEND_REQ)
         {
+            printf(YELLOW("Append request received.\n"));
             char *path_to_write = request_tkns[0];
             char *data_to_write = request_tkns[1];
 
@@ -238,6 +239,7 @@ void *serve_request(void *args)
         }
         else if (recvd_request.request_type == RETRIEVE_INFO)
         {
+            printf(YELLOW("Retrieve Information request received.\n"));
             // Path of the file whose information has to be retrieved
             char *path = recvd_request.data;
             struct stat file_stat;
@@ -332,6 +334,7 @@ void *serve_request(void *args)
         }
         else if (recvd_request.request_type == COPY)
         {
+            printf(YELLOW("Copy request received.\n"));
             // Read the data in the file given
             printf("Copying file : %s\n", recvd_request.data);
             char *path = recvd_request.data;
@@ -359,6 +362,7 @@ void *serve_request(void *args)
         }
         else if (recvd_request.request_type == PASTE)
         {
+            printf(YELLOW("Paster request received.\n"));
             printf("Pasting file : %s\n", recvd_request.data);
 
             char *file_path = request_tkns[0];
@@ -405,6 +409,11 @@ void *serve_request(void *args)
 
             // Now opening the file in write mode, if it does not exist it would be created otherwise the old data would be overwritten
             FILE *fptr = fopen(file_path, "w");
+            if (fptr == NULL)
+            {
+                fprintf(stderr, RED("fopen : %s\n"), strerror(errno));
+                exit(EXIT_FAILURE);
+            }
 
             fprintf(fptr, "%s", file_content);
 
@@ -412,12 +421,14 @@ void *serve_request(void *args)
         }
         else if (recvd_request.request_type == PING)
         {
+            printf(YELLOW("Ping request received.\n"));
             // Received a ping request from NFS to check if my SS is still responding or not so sending back the PING to say that I am active and listening
             st_request ping_request;
             send_ack(ACK, sock_fd);
         }
         else if (recvd_request.request_type == DELETE_FILE)
         {
+            printf(YELLOW("Delete file request received.\n"));
             if (remove(recvd_request.data) != 0)
             {
                 // If there was some error in deleting the file
@@ -428,6 +439,7 @@ void *serve_request(void *args)
         }
         else if (recvd_request.request_type == DELETE_FOLDER)
         {
+            printf(YELLOW("Delete folder request received.\n"));
             // Hacked rmdir so won't delete the base storage folder
             if (rmdir(recvd_request.data) != 0)
             {
@@ -439,12 +451,14 @@ void *serve_request(void *args)
         }
         else if (recvd_request.request_type == CREATE_FILE)
         {
+            printf(YELLOW("Create file request received.\n"));
             FILE *fptr = fopen(recvd_request.data, "w");
             fclose(fptr);
             send_ack(ACK, sock_fd);
         }
         else if (recvd_request.request_type == CREATE_FOLDER)
         {
+            printf(YELLOW("Create folder request received.\n"));
             char *file_path = request_tkns[0];
 
             // Creating intermediate directories if not already present
@@ -479,8 +493,9 @@ void *serve_request(void *args)
             send_ack(ACK, sock_fd);
         }
 
+        // Freeing tokens created at the start from request data
         // free_tokens(request_tkns);
-    }
+    
 
     // Closing client socket as all the communication is done
     if (close(sock_fd) < 0)

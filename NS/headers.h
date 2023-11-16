@@ -89,13 +89,14 @@ typedef struct ss_info
     char client_port[10];
     char paths[1000][100];
     int path_count;
-    int server_socket, client_socket;
+    int server_socket, client_socket,ping_server_socket;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len;
     pthread_mutex_t lock;
     char backup_paths[1000][100];
     int has_backup;
     int is_backedup;
+    int backup_path_count;
     char backup_port[10];
     
 

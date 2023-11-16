@@ -107,9 +107,9 @@ void init_storage(char data[])
     strcpy(new_ss->port, tokens[3]);
     strcpy(new_ss->client_port, tokens[2]);
     new_ss->path_count = 0;
-    new_ss->is_backedup=0;
-    new_ss->has_backup=0;
-    new_ss->status=1;
+    // new_ss->is_backedup=0;
+    // new_ss->has_backup=0;
+    // new_ss->status=1;
     pthread_mutex_init(&new_ss->lock, NULL);
 
     pthread_mutex_lock(&server_lock);
@@ -125,12 +125,18 @@ void init_storage(char data[])
     }
     if(check_flag==1){
         printf(GREEN("%s is back online!\n"),new_ss->port);
+
+        new_ss->status=1;
+        
         ss_list[id]=new_ss;
+        
            
     }
     else{
 
     // printf("hi\n");
+    new_ss->is_backedup=0;
+    new_ss->has_backup=0;
     ss_list[server_count] = new_ss;
     server_count++;
     id=server_count-1;
@@ -140,6 +146,8 @@ void init_storage(char data[])
     
     pthread_t server_thread;
     pthread_create(&server_thread, NULL, &server_handler, (void *)ss_list[id]);
+
+    // pthread_join(server_thread, NULL);
 
     return;
 }

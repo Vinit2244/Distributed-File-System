@@ -176,7 +176,9 @@ void *serve_request(void *args)
             fprintf(stderr, RED("recv  : %s\n"), strerror(errno));
             return NULL;
         }
-    
+
+        // printf("%d\n",recvd_msg_size);
+        
         char **request_tkns = tokenize(recvd_request.data, '|');
         /*
             READ data format : <path>
@@ -493,7 +495,7 @@ void *serve_request(void *args)
 
         // Freeing tokens created at the start from request data
         // free_tokens(request_tkns);
-    // }
+    
 
     // Closing client socket as all the communication is done
     if (close(sock_fd) < 0)
