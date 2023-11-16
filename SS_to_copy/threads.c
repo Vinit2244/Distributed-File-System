@@ -376,6 +376,7 @@ void *serve_request(void *args)
             
             char** tkns = tokenize(path_to_read, '/');
             int idx = 0;
+            
             while (tkns[idx] != NULL)
             {
                 if (idx == 1 && (strcmp(tkns[idx], "storage") == 0))
@@ -389,11 +390,12 @@ void *serve_request(void *args)
                 strcat(new_path_to_read, "/");
                 idx++;
             }
+            
             new_path_to_read[strlen(new_path_to_read) - 1] = '\0';
-            free_tokens(tkns);
+            // free_tokens(tkns);
 
             FILE *fptr = fopen(new_path_to_read, "r");
-
+            
             st_request send_read_data;
             send_read_data.request_type = READ_REQ_DATA;
             memset(send_read_data.data, 0, MAX_DATA_LENGTH);
@@ -687,7 +689,7 @@ void *serve_request(void *args)
 
             // Moving out back to the pwd
             chdir(PWD);
-
+            printf(CYAN("%s\n\n\n"),new_file_path);
             // Now opening the file in write mode, if it does not exist it would be created otherwise the old data would be overwritten
             FILE *fptr = fopen(new_file_path, "w");
             if (fptr == NULL)

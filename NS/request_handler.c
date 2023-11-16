@@ -12,7 +12,7 @@ void process(request req)
     else if (req->request_type == REQ)
     {
         // create a new thread for each client request here for multi client handling
-
+        
         client_handler(req->data); // Client requests handled here
     }
     else if (req->request_type == WRITE_REQ || req->request_type == READ_REQ || req->request_type == RETRIEVE_INFO || req->request_type == APPEND_REQ)
@@ -36,6 +36,7 @@ void process(request req)
                 if (strcmp(ss_list[i]->paths[j], req->data) == 0)
                 {
                     snprintf(reference, MAX_DATA_LENGTH, "%s|%s", ss_list[i]->ip, ss_list[i]->client_port);
+                    
                     flag = 1;
                     id=i;
                     break;
@@ -71,13 +72,22 @@ void process(request req)
             else{
 
                 //server offline look for backup
-                if(r->request_type==READ_REQ){
+                if(req->request_type==READ_REQ){
                     //allow
-                    
+                    for(int i=0;i<server_count;i++){
+                        if(ss_list[i]->has_backup==1 && strcmp(ss_list[i]->backup_port,ss_list[id]->port)==0){
+                            r->request_type = BACKUP_READ_REQ;
+                            snprintf(r->data,MAX_DATA_LENGTH,"%s|%s",ss_list[i]->ip,ss_list[i]->client_port);
+                            // strcpy(r->data, ss_list[i]->backup_port);
+                            send(client_socket_tcp, r, sizeof(st_request), 0);
+                            break;
+                        }
+                    }
+
                 }
                 else{
 
-                     r->request_type = FILE_NOT_FOUND;
+                    r->request_type = FILE_NOT_FOUND;
                     strcpy(r->data, "File not found");
                     printf(RED("No files found , informing client\n\n\n"));
                     send(client_socket_tcp, r, sizeof(st_request), 0);
@@ -136,6 +146,8 @@ void process(request req)
         }
         else
         {
+
+            if(found_server->status==1){
             r->request_type = req->request_type;
             strcpy(r->data, path);
 
@@ -160,7 +172,12 @@ void process(request req)
                 strcpy(r->data, "File not found");
                 send(client_socket_tcp, r, sizeof(st_request), 0);
             }
-            close(s_fd);
+            close(s_fd);}
+            else{
+                r->request_type = FILE_NOT_FOUND;
+                strcpy(r->data, "File not found");
+                send(client_socket_tcp, r, sizeof(st_request), 0);
+            }
         }
     }
     else if(req->request_type == CREATE_FOLDER || req->request_type == CREATE_FILE)
@@ -203,7 +220,7 @@ void process(request req)
         }
         pthread_mutex_unlock(&server_lock);
 
-        if (flag == 0)
+        if (flag == 0 || found_server->status==0)
         {
             r->request_type = FILE_NOT_FOUND;
             strcpy(r->data, "File/Directory not found");
@@ -295,7 +312,7 @@ void process(request req)
             pthread_mutex_unlock(&ss_list[i]->lock);
         }
         pthread_mutex_unlock(&server_lock);
-        if (flag < 2)
+        if (flag < 2 || source_no->status==0 || dest_no->status==0)
         {
             // printf("3\n");
             request r = (request)malloc(sizeof(st_request));

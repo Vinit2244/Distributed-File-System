@@ -43,6 +43,9 @@
 #define CREATE_FOLDER        24
 #define DELETE_FILE          25
 #define DELETE_FOLDER        26
+#define BACKUP_PASTE         27
+#define BACKUP_READ_REQ      28
+
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
 #define GREEN_COLOR  "\033[0;32m"
@@ -148,4 +151,4 @@ void* send_handler();
 void* receive_handler();
 void* server_handler(void* p);
 void *backup_thread();
-
+void* sync_backup(void* p);

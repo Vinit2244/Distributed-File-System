@@ -3,8 +3,11 @@
 // Initiating global variables
 pthread_mutex_t accessible_paths_mutex;
 pthread_mutex_t threads_arr_mutex;
+pthread_mutex_t backup_paths_mutex;
 
 char**  accessible_paths         = NULL;           // Stores the RELATIVE PATH (relative to the directory in which the storage server c file resides) of all the files that are accessible by clients on this storage server
+char**  backup_paths             = NULL;           // Stores the relative path of backup files
+int     num_of_backup_paths_stored = 0;            // Stores the number of all the backup paths
 int     num_of_paths_stored      = 0;              // Initially no paths are stored
 int     nfs_registrations_status = NOT_REGISTERED; // Stores the status whether our server has been registered with NFS or not
 int     client_server_socket_fd;                   // TCP Socket file descriptor to receive client requests
@@ -23,15 +26,18 @@ int main(int argc, char *argv[])
     thread_slot_empty_arr        = (int*) calloc(MAX_PENDING, sizeof(int));    // 0 indicates slot is empty and 1 indicates slot is busy
 
     accessible_paths = (char**) malloc(MAX_FILES * sizeof(char*));
+    backup_paths     = (char**) malloc(MAX_FILES * sizeof(char*));
     for (int i = 0; i < MAX_FILES; i++)
     {
         accessible_paths[i] = (char*) calloc(MAX_PATH_LEN, sizeof(char));
+        backup_paths[i]     = (char*) calloc(MAX_PATH_LEN, sizeof(char));
     }
 
     // Initializing mutexes, condition variables and semaphores
     /*========== MUTEX ==========*/
     pthread_mutex_init(&accessible_paths_mutex, NULL);
     pthread_mutex_init(&threads_arr_mutex, NULL);
+    pthread_mutex_init(&backup_paths_mutex, NULL);
     /*========== COND VARS ==========*/
     /*========== SEMAPHORES ==========*/
 
@@ -45,9 +51,12 @@ int main(int argc, char *argv[])
 
     // Creating the thread that would keep updating the paths.txt file with the current state of the accessible paths array regularly after some time interval
     pthread_t check_and_store_filepaths_thread;
+    pthread_t check_and_store_backup_paths_thread;
     pthread_create(&check_and_store_filepaths_thread, NULL, &check_and_store_filepaths, NULL);
+    pthread_create(&check_and_store_backup_paths_thread, NULL, &check_and_store_backup_paths, NULL);
 
     // Waiting for threads to complete
+    pthread_join(check_and_store_backup_paths_thread, NULL);
     pthread_join(check_and_store_filepaths_thread, NULL);
     pthread_join(nfs_thread, NULL);
     pthread_join(client_thread, NULL);
@@ -56,6 +65,7 @@ int main(int argc, char *argv[])
     /*========== MUTEX ==========*/
     pthread_mutex_destroy(&accessible_paths_mutex);
     pthread_mutex_destroy(&threads_arr_mutex);
+    pthread_mutex_destroy(&backup_paths_mutex);
     /*========== COND VARS ==========*/
     /*========== SEMAPHORES ==========*/
 

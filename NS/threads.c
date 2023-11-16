@@ -13,23 +13,6 @@ server_status connections[100];
 int connection_count=0;
 int ack=0;
 
-int connect_ss(char* port,struct sockaddr_in* server_addr){
-
-    int sock=-1;
-    struct sockaddr_in s=*server_addr;
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == -1)
-    {
-        perror("Socket creation failed");
-    }
-    memset(&s, '\0', sizeof(s));
-    s.sin_family = AF_INET;
-    s.sin_port = htons(atoi(port));
-    s.sin_addr.s_addr = INADDR_ANY;
-    server_addr=&s;
-    return sock;
-
-}
 
 void *receive_handler()
 {
@@ -157,13 +140,161 @@ void *server_handler(void *p)
     return NULL;
 }
 
+
+void* sync_backup(void* arg){
+
+    return NULL;
+
+    // ss pack = (ss)arg;
+
+    // while(1){
+
+    //     if(pack->status==1 && pack->is_backedup==1){
+    //     char** to_add=(char**)malloc(sizeof(char*)*MAX_CONNECTIONS);
+    //     for(int i=0;i<MAX_CONNECTIONS;i++){
+    //         to_add[i]=(char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+    //     }
+    //     int to_add_count=0;
+
+    //     // pthread_mutex_lock(&server_lock);
+    //     int id1=-1,id2=-1;
+    //     for(int i=0;i<server_count;i++){
+    //         if(strcmp(ss_list[i]->backup_port,pack->port)==0){
+
+    //             if(id1==-1){
+    //                 id1=i;
+    //             }
+    //             else if(id1!=-1&&id2==-1){
+    //                 id2=i;
+    //                 break;
+    //             }
+    //         }
+            
+    //     }
+    //     // pthread_mutex_unlock(&server_lock);
+
+    //     if(id1!=-1 && id2!=-1){
+
+    //         for(int i=0;i<pack->path_count;i++){
+
+    //             int flag=0;
+    //             for(int j=0;j<ss_list[id1]->backup_path_count;j++){
+    //                 if(strcmp(pack->paths[i],ss_list[id1]->backup_paths[j])==0){
+    //                     flag=1;
+    //                     break;
+    //                 }
+    //             }
+    //             if(flag==0){
+    //                 strcpy(to_add[to_add_count],pack->paths[i]);
+    //                 to_add_count++;
+    //             }
+    //         }
+
+    //                         if(to_add_count!=0){printf(ORANGE("Syncing server %s with servers\n\n\n"),pack->port);
+
+    //                         for(int i=0;i<to_add_count;i++){
+    //                         strcpy(ss_list[id1]->backup_paths[ss_list[id1]->backup_path_count],to_add[i]);
+    //                         strcpy(ss_list[id2]->backup_paths[ss_list[id2]->backup_path_count],to_add[i]);
+    //                         ss_list[id1]->backup_path_count++;
+    //                         ss_list[id2]->backup_path_count++;
+                            
+
+                    
+    //                         request r=(request)malloc(sizeof(st_request));
+    //                         request put_r=(request)malloc(sizeof(st_request));
+    //                         struct sockaddr_in addr;
+                            
+    //                         int sock = socket(AF_INET, SOCK_STREAM, 0);
+    //                         if (sock == -1)
+    //                         {
+    //                             perror("Socket creation failed");
+    //                         }
+    //                         memset(&addr, '\0', sizeof(addr));
+    //                         addr.sin_family = AF_INET;
+    //                         addr.sin_port = htons(atoi(pack->port));
+    //                         addr.sin_addr.s_addr = INADDR_ANY;
+
+    //                         int y=-1;
+
+    //                         while(y!=0){
+    //                         y=connect(sock, (struct sockaddr *)&addr, sizeof(addr));
+    //                         }
+                            
+    //                         r->request_type=COPY;
+    //                         strcpy(r->data,to_add[i]);
+                            
+    //                         int x=send(sock,r,sizeof(st_request),0);
+    //                         recv(sock,r,sizeof(st_request),0);
+
+    //                         close(sock);
+
+                            
+    //                         put_r->request_type = PASTE;
+    //                         strcpy(put_r->data,r->data);
+                            
+    //                         struct sockaddr_in addr1;   
+                            
+    //                         int sock_one = socket(AF_INET, SOCK_STREAM, 0);
+    //                         if (sock_one == -1)
+    //                         {
+    //                             perror("Socket creation failed");
+    //                         }
+    //                         memset(&addr1, '\0', sizeof(addr1));
+    //                         addr1.sin_family = AF_INET;
+    //                         addr1.sin_port = htons(atoi(ss_list[id1]->port));
+    //                         addr1.sin_addr.s_addr = INADDR_ANY;
+
+    //                         y=-1;
+
+    //                         while(y!=0){
+    //                         y=connect(sock_one, (struct sockaddr *)&addr1, sizeof(addr1));
+    //                         }
+    //                         send(sock_one,put_r,sizeof(st_request),0);
+    //                         close(sock_one);
+
+    //                         struct sockaddr_in addr2;   
+                            
+    //                         int sock_two = socket(AF_INET, SOCK_STREAM, 0);
+    //                         if (sock_two == -1)
+    //                         {
+    //                             perror("Socket creation failed");
+    //                         }
+    //                         memset(&addr2, '\0', sizeof(addr2));
+    //                         addr2.sin_family = AF_INET;
+    //                         addr2.sin_port = htons(atoi(ss_list[id2]->port));
+    //                         addr2.sin_addr.s_addr = INADDR_ANY;
+
+    //                         y=-1;
+    //                         // printf("hi\n");
+    //                         while(y!=0){
+    //                         y=connect(sock_two, (struct sockaddr *)&addr2, sizeof(addr2));
+    //                         }
+
+                            
+    //                         x=send(sock_two,put_r,sizeof(st_request),0);
+    //                         close(sock_two);
+
+
+    //             }
+
+    //         }
+
+    //     }
+
+    //     }
+
+
+    // }
+
+}
+
 void *backup_thread(){
 
     //this thread will check if an SS is backed up or not regularly
     // printf("hi\n");
     while(1){
 
-        pthread_mutex_lock(&server_lock);
+        // pthread_mutex_lock(&server_lock);
 
         for(int i=0;i<server_count;i++){
 
@@ -188,14 +319,13 @@ void *backup_thread(){
                 if(id1!=-1 && id2!=-1 && ss_list[id1]->status==1 && ss_list[id2]->status==1 && id1!=i && id2!=i){
 
                 printf(ORANGE("Backing up server %s in servers %s %s\n\n\n"),ss_list[i]->port,ss_list[id1]->port,ss_list[id2]->port);
-                ss_list[i]->is_backedup=1;
-                ss_list[id2]->has_backup=1;
-                ss_list[id1]->has_backup=1;
-                    strcpy(ss_list[id1]->backup_port,ss_list[i]->port);
-                    strcpy(ss_list[id2]->backup_port,ss_list[i]->port);
+                
+                strcpy(ss_list[id1]->backup_port,ss_list[i]->port);
+                strcpy(ss_list[id2]->backup_port,ss_list[i]->port);
 
                 ss_list[id1]->backup_path_count=ss_list[i]->path_count;
                 ss_list[id2]->backup_path_count=ss_list[i]->path_count;
+                
                 for(int j=0;j<ss_list[i]->path_count;j++){
 
 
@@ -233,7 +363,7 @@ void *backup_thread(){
                             close(sock);
 
                             
-                            put_r->request_type = PASTE;
+                            put_r->request_type = BACKUP_PASTE;
                             char** token = (char**)malloc(sizeof(char*)*2);
                             for(int i=0;i<2;i++)
                             {
@@ -273,7 +403,7 @@ void *backup_thread(){
                                 strcat(desti,"/");
                             }
 
-                            strcat(desti,"backup_");
+                            // strcat(desti,"backup_");
                             strcat(desti,tokens[tkn_cnt1-1]);
                             
                             sprintf(put_r->data,"%s|%s",desti,token[1]);
@@ -323,54 +453,26 @@ void *backup_thread(){
                     }
 
                 }
+
+                ss_list[i]->is_backedup=1;
+                ss_list[id2]->has_backup=1;
+                ss_list[id1]->has_backup=1;
+
+                
+
                 }
 
             }
-            else if(ss_list[i]->status==1){
-                // // printf(ORANGE("Checking new files for %s\n\n\n"),ss_list[i]->port);
-                // int id=-1;
-                // for(int j=0;j<server_count;j++){
-                //     if(strcmp(ss_list[i]->port,ss_list[j]->backup_port)==0){
-                //         id=j;
-                //         break;
-                //     }
-                // }
+        
 
-                // if(id!=-1){
-                // int m_flag=0;
-                // for(int j=0;j<ss_list[i]->path_count;j++){
-                //     int flag=0;
-                //     for(int k=0;k<ss_list[id]->backup_path_count;k++){
-                //         if(strcmp(ss_list[i]->paths[j],ss_list[id]->backup_paths[k])==0 && (strstr(ss_list[i]->paths[j],".txt")!=NULL)){
-                //             // printf("%s\n",ss_list[i]->paths[j]);
-                            
-                //             flag=1;
-                //             break;
-                //         }
-                //     }
-                //     if(flag==0  && (strstr(ss_list[i]->paths[j],".txt")!=NULL)){
-                //             m_flag=1;
-                //             break;
-                        
-                //     }
 
-                // }
-
-                // if(m_flag==1 || (ss_list[i]->path_count!=ss_list[id]->backup_path_count)){
-                //     // printf("%d\n",m_flag);
-                //     printf(ORANGE("Server %s is not backed up properly\n\n\n"),ss_list[i]->port);
-                //     // ss_list[i]->is_backedup=0;
-                    
-                // }
-
-                // }
                 
 
-            }
-        }
+        //     }
+        // }
 
-        pthread_mutex_unlock(&server_lock);
+        // pthread_mutex_unlock(&server_lock);
 
     }
 
-}
+}}

@@ -120,35 +120,12 @@ void init_storage(char data[])
 
 
         printf(GREEN("%s is back online!\n"),new_ss->port);
-        int count=0;
-        int id1=-1,id2=-1;
-        for(int j=0;j<server_count;j++){
-
-            if(strcmp(ss_list[j]->backup_port,new_ss->port)==0){
-
-            if(id1==-1)id1=j;
-            else if(id2==-1 && id1!=-1)id2=j;
-            
-            count++;
-
-            
-            }
-
-            if(count==2)break;
-
-        }
-
-        if(id1!=-1 && id2!=-1){
-            
-            ss_list[id1]->has_backup=0;
-            ss_list[id2]->has_backup=0;
-            new_ss->is_backedup=0;
-        }
         
         new_ss->status=1;
 
 
-        ss_list[id]=new_ss;
+        ss_list[id]->status=1;
+        ss_list[id]->path_count=0;
         
            
     }
@@ -166,8 +143,11 @@ void init_storage(char data[])
     
     pthread_t server_thread;
     pthread_create(&server_thread, NULL, &server_handler, (void *)ss_list[id]);
-
+    pthread_t sync_backup_thread;
+    pthread_create(&sync_backup_thread,NULL,&sync_backup,(void*)ss_list[id]);
     
+    // pthread_join(server_thread, NULL);
+    // pthread_join(sync_backup_thread,NULL);
 
     return;
 }
