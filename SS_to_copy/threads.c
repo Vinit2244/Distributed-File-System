@@ -175,24 +175,6 @@ void *check_and_store_backup_paths(void *args)
         // Number of paths found
         int num_backup_paths_found = paths->number_of_nodes;
 
-        // Storing the copy of accessible paths array to match with the files found
-        // char **backup_paths_copy = (char **)malloc(MAX_FILES * sizeof(char *));
-
-        // for (int i = 0; i < MAX_FILES; i++)
-        // {
-        //     backup_paths_copy[i] = NULL;
-        // }
-        // for (int k = 0; k < num_of_paths_stored; k++)
-        // {
-        //     backup_paths_copy[k] = calloc(MAX_PATH_LEN, sizeof(char));
-        //     strcpy(backup_paths_copy[k], backup_paths[k]);
-        // }
-
-        // Storing relative paths of the files found in the found_paths array
-        // char **found_paths = (char **)malloc(num_paths_found * sizeof(char *));
-        // Storing a copy of found_paths as well so after comparing if there are some new paths or some paths are deleted then we can create a new accessible paths array
-        // char **found_paths_copy = (char **)malloc(paths->number_of_nodes * sizeof(char *));
-
         linked_list_node n = paths->first;
         int idx = 0;
         while (n != NULL)
@@ -200,107 +182,11 @@ void *check_and_store_backup_paths(void *args)
             memset(backup_paths[idx], 0, MAX_PATH_LEN);
             strcpy(backup_paths[idx], ".");
             strcat(backup_paths[idx], &n->path[strlen(PWD)]);
-
-            // found_paths[idx] = (char *)calloc(MAX_PATH_LEN, sizeof(char));
-            // found_paths_copy[idx] = (char *)calloc(MAX_PATH_LEN, sizeof(char));
-            // strcpy(found_paths_copy[idx], ".");
-            // strcat(found_paths_copy[idx], &n->path[strlen(PWD)]);
-            // strcpy(found_paths[idx], ".");
-            // strcat(found_paths[idx++], &n->path[strlen(PWD)]);
             n = n->next;
         }
         num_of_backup_paths_stored = num_backup_paths_found;
         // Have copied all the found paths in the array so now we can free the linked list
         free_linked_list(paths);
-
-        // Now go and match each paths in found_paths and backup_paths
-        // for (int k = 0; k < num_paths_found; k++)
-        // {
-        //     char *curr_found_path = found_paths[k];
-        //     for (int j = 0; j < num_of_paths_stored; j++)
-        //     {
-        //         char *curr_backup_path = backup_paths_copy[j];
-        //         if (curr_found_path != NULL && curr_backup_path != NULL)
-        //         {
-        //             if (strcmp(curr_found_path, curr_backup_path) == 0)
-        //             {
-        //                 free(found_paths[k]);
-        //                 free(backup_paths_copy[j]);
-        //                 found_paths[k] = NULL;
-        //                 backup_paths_copy[j] = NULL;
-        //                 break;
-        //             }
-        //         }
-        //     }
-        // }
-
-        // Now all the not null paths in found_paths are the paths that are newly added while all the not null paths in accessible paths copy are deleted paths
-        // Checking for new paths
-        // int num_new_paths = 0;
-        // char new_paths[MAX_DATA_LENGTH - 1000] = {0};
-        // for (int i = 0; i < num_paths_found; i++)
-        // {
-        //     if (found_paths[i] != NULL)
-        //     {
-        //         strcat(new_paths, found_paths[i]);
-        //         strcat(new_paths, "|");
-        //     }
-        // }
-        // Removing the last | from the concatenation of paths
-        // if (strlen(new_paths) > 0)
-        // {
-        //     new_paths[strlen(new_paths) - 1] = '\0';
-        //     send_update_paths_request(ADD_PATHS, new_paths);
-        // }
-
-        // Checking for deleted paths
-        // char deleted_paths[MAX_DATA_LENGTH - 1000] = {0};
-        // for (int i = 0; i < num_of_paths_stored; i++)
-        // {
-        //     if (backup_paths_copy[i] != NULL)
-        //     {
-        //         strcat(deleted_paths, backup_paths_copy[i]);
-        //         strcat(deleted_paths, "|");
-        //     }
-        // }
-        // // Removing the last | from the concatenation of paths
-        // if (strlen(deleted_paths) > 0)
-        // {
-        //     deleted_paths[strlen(deleted_paths) - 1] = '\0';
-        //     send_update_paths_request(DELETE_PATHS, deleted_paths);
-        // }
-
-        // Freeing all the memory allocated except the found paths copy array
-        // for (int i = 0; i < num_paths_found; i++)
-        // {
-        //     if (found_paths[i] != NULL)
-        //     {
-        //         free(found_paths[i]);
-        //         found_paths[i] = NULL;
-        //     }
-        // }
-        // free(found_paths);
-
-        // for (int i = 0; i < num_of_paths_stored; i++)
-        // {
-        //     if (backup_paths_copy[i] != NULL)
-        //     {
-        //         free(backup_paths_copy[i]);
-        //         backup_paths_copy[i] = NULL;
-        //     }
-        // }
-        // free(backup_paths_copy);
-
-        // // Copying all the found paths into the accessible paths array
-        // for (int i = 0; i < num_paths_found; i++)
-        // {
-        //     memset(backup_paths[i], 0, MAX_PATH_LEN);
-        //     strcpy(backup_paths[i], found_paths_copy[i]);
-        //     free(found_paths_copy[i]);
-        // }
-
-        // num_of_paths_stored = num_paths_found;
-        // free(found_paths_copy);
 
         pthread_mutex_unlock(&backup_paths_mutex);
 
@@ -341,7 +227,7 @@ void *serve_request(void *args)
     */
 
     // Selecting the type of request sent
-    if (recvd_request.request_type == READ_REQ || BACKUP_READ_REQ)
+    if (recvd_request.request_type == READ_REQ || recvd_request.request_type == BACKUP_READ_REQ)
     {
         char* path_to_read;
         if (recvd_request.request_type == READ_REQ)
@@ -378,7 +264,7 @@ void *serve_request(void *args)
             free(path_to_read);
         }
     }
-    else if (recvd_request.request_type == WRITE_REQ || BACKUP_WRITE_REQ)
+    else if (recvd_request.request_type == WRITE_REQ || recvd_request.request_type == BACKUP_WRITE_REQ)
     {
         char* path_to_write;
         if (recvd_request.request_type == WRITE_REQ)

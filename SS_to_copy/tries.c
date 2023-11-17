@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "headers.h"
 
 // A structure to represent a node in the trie
 struct trie_node
@@ -166,4 +167,32 @@ int main()
     print_paths(root);
 
     return 0;
+}
+
+linked_list_head return_paths(struct trie_node *root)
+{
+    linked_list_head ll = create_linked_list_head();
+    add_paths(ll, root);
+    return ll;
+}
+
+void add_paths(linked_list_head ll, struct trie_node *root)
+{
+    if (root == NULL)
+    {
+        return;
+    }
+
+    if (root->end == 1)
+    {
+        insert_in_linked_list(ll, root->key);
+    }
+
+    for (int i = 0; i < 256; i++)
+    {
+        if (root->children[i] != NULL)
+        {
+            add_paths(ll, root->children[i]);
+        }
+    }
 }

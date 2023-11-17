@@ -46,3 +46,6 @@ efgh_folder
 
 
 => Merge checking and updating thread to one......................
+=> Check if recursive directories getting deleted or not (like if the directory is not empty)
+=> Check copy and pasting in the same directory
+=> Check how to copy folders recursively

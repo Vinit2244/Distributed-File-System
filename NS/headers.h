@@ -11,11 +11,19 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <time.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <signal.h>
+
 //Relevant Macros
 #define NS_PORT 2000
 #define NS_IP "0.0.0.0"
 #define MAX_DATA_LENGTH 100000
 #define MAX_CONNECTIONS 100
+
+#define SS     -1
+#define CLIENT -2
+#define BUFFER_SIZE 1024
 
 //Request types
 #define ACK                  1
@@ -143,6 +151,7 @@ extern pthread_mutex_t status_lock;
 
 
 //Defined functions
+int insert_log(const int type, const int ss_id, const int ss_or_client_port, const int request_type, const char* request_data, const int status_code);
 char** processstring(char data[],int n);
 void init_nfs();
 void client_handler(char data[]);
@@ -153,3 +162,4 @@ void* receive_handler();
 void* server_handler(void* p);
 void *backup_thread();
 void* sync_backup(void* p);
+void handleCtrlZ(int signum);
