@@ -1,43 +1,4 @@
-#include <stdio.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <signal.h>
-#include <unistd.h>
-#include <string.h>
-
-#define RED_COLOR    "\033[0;31m"
-#define GREEN_COLOR  "\033[0;32m"
-#define BLUE_COLOR   "\033[0;34m"
-#define YELLOW_COLOR "\033[0;33m"
-#define CYAN_COLOR   "\033[0;36m"
-#define ORANGE_COLOR "\e[38;2;255;85;0m"
-#define RESET_COLOR  "\033[0m"
-
-#define RED(str)    RED_COLOR    str RESET_COLOR
-#define GREEN(str)  GREEN_COLOR  str RESET_COLOR
-#define BLUE(str)   BLUE_COLOR   str RESET_COLOR
-#define YELLOW(str) YELLOW_COLOR str RESET_COLOR
-#define CYAN(str)   CYAN_COLOR   str RESET_COLOR
-#define ORANGE(str) ORANGE_COLOR str RESET_COLOR
-
-#define MAX_DATA_LENGTH     10000       // Maximum number of characters data being sent can have (query/file data)
-
-#define CACHE_SIZE 2
-
-int curr_cache_write_index;
-
-typedef struct st_cache {
-    int req_type;
-    char req_data[MAX_DATA_LENGTH];
-    int ss_id;
-    int ss_ip;
-    int ss_port;
-} st_cache;
-
-typedef st_cache* cache_array;
-
-cache_array cache = NULL;
+#include "headers.h"
 
 // Initialise the cache
 void init_cache()
@@ -71,7 +32,7 @@ void delete_cache_index(const int idx)
 }
 
 // Inserts the new information at the last index of cache (cache is like a queue in which the least recently used info is at the first spot)
-void insert_in_cache(int req_type, char* req_data, int ss_id, int ss_ip, int ss_port)
+void insert_in_cache(int req_type, char* req_data, int ss_id, char* ss_ip, int ss_port)
 {
     if (curr_cache_write_index == CACHE_SIZE)
     {
@@ -81,7 +42,8 @@ void insert_in_cache(int req_type, char* req_data, int ss_id, int ss_ip, int ss_
     memset(cache[curr_cache_write_index].req_data, 0, MAX_DATA_LENGTH);
     strcpy(cache[curr_cache_write_index].req_data, req_data);
     cache[curr_cache_write_index].ss_id = ss_id;
-    cache[curr_cache_write_index].ss_ip = ss_ip;
+    memset(cache[curr_cache_write_index].ss_ip, 0, 10);
+    strcpy(cache[curr_cache_write_index].ss_ip, ss_ip);
     cache[curr_cache_write_index].ss_port = ss_port;
 
     curr_cache_write_index++;
@@ -106,7 +68,7 @@ st_cache* search_in_cache(int req_type, char* req_data)
             to_return->req_type = cache[i].req_type;
             strcpy(to_return->req_data, cache[i].req_data);
             to_return->ss_id = cache[i].ss_id;
-            to_return->ss_ip = cache[i].ss_ip;
+            strcpy(to_return->ss_ip, cache[i].ss_ip);
             to_return->ss_port = cache[i].ss_port;
 
             delete_cache_index(i);
@@ -131,46 +93,8 @@ void print_cache()
     printf("\n");
     for (int i = 0; i < curr_cache_write_index; i++)
     {
-        printf("%d %d %d %d %s\n", cache[i].req_type, cache[i].ss_id, cache[i].ss_ip, cache[i].ss_port, cache[i].req_data);
+        printf("%d %d %s %d %s\n", cache[i].req_type, cache[i].ss_id, cache[i].ss_ip, cache[i].ss_port, cache[i].req_data);
     }
     printf("\n");
     return;
 }
-
-int main()
-{
-    init_cache();
-
-    for (int i = 0; i < 5; i++)
-    {
-        // Asking for the details to be entered
-        printf("Enter details to search in cache : ");
-        int req_type;
-        char req_data[MAX_DATA_LENGTH] = {0};
-        int ss_id;
-        int ss_ip;
-        int ss_port;
-        scanf("%d|%d|%d|%d|%s", &req_type, &ss_id, &ss_ip, &ss_port, req_data);
-
-        // Searching for the details in the cache if it is already present
-        st_cache* cc = search_in_cache(req_type, req_data);
-
-        if (cc == NULL)
-        {
-            // The details are not present in the cache so after processing inserting those details in the cache
-            printf(RED("Did not find in cache so now inserting in cache.\n"));
-            insert_in_cache(req_type, req_data, ss_id, ss_ip, ss_port);
-        }
-        else
-        {
-            // The details were found in the cache so the cache is updated accordingly and we need not re insert it again in the cache but just free the 
-            printf(GREEN("Found in cache no need to re insert.\n"));
-            free(cc);
-        }
-
-        print_cache();
-    }
-
-    return 0;
-}
-

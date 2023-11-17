@@ -1,5 +1,7 @@
 #include "headers.h"
 
+int curr_cache_write_index;
+cache_array cache = NULL;
 ss ss_list[100];         // List of all storage servers
 int server_count = 0;    // Number of storage servers
 packet send_buffer[100]; // Buffer to store packets to be sent
@@ -183,6 +185,9 @@ int insert_log(const int type, const int ss_id, const int ss_or_client_port, con
 
 int main()
 {
+    // Initialise the cache
+    init_cache();
+
     // Initialising signal handlers
     // Handling Ctrl + z (SIGTSTP) signal to print the logging (book keeping) output
     struct sigaction sa;

@@ -25,6 +25,8 @@
 #define CLIENT -2
 #define BUFFER_SIZE 1024
 
+#define CACHE_SIZE 20
+
 //Request types
 #define ACK                  1
 #define REQ                  2
@@ -135,8 +137,20 @@ typedef struct server_status{
 
 } server_status;
 
+typedef struct st_cache {
+    int req_type;
+    char req_data[MAX_DATA_LENGTH];
+    int ss_id;
+    char ss_ip[10];
+    int ss_port;
+} st_cache;
+
+typedef st_cache* cache_array;
+
 
 //Global variables
+extern cache_array cache;
+extern int curr_cache_write_index;
 extern ss ss_list[100];
 extern int server_count;
 extern packet send_buffer[100];
@@ -163,3 +177,8 @@ void* server_handler(void* p);
 void *backup_thread();
 void* sync_backup(void* p);
 void handleCtrlZ(int signum);
+void init_cache();
+void delete_cache_index(const int idx);
+void insert_in_cache(int req_type, char* req_data, int ss_id, char* ss_ip, int ss_port);
+st_cache* search_in_cache(int req_type, char* req_data);
+void print_cache();
