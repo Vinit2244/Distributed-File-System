@@ -266,6 +266,68 @@ char* replace_storage_by_backup(char* path)
     return new_path;
 }
 
+// Creates the specified folder (also creates intermediate folders if required)
+void create_folder(char* path)
+{
+    // Creating intermediate directories if not already present
+    // First tokenising the file_path on "/"
+    char **dirs = tokenize(path, '/');
+
+    // Calculating the number of intermediate dirs
+    int n_tkns = 0;
+    while (dirs[n_tkns] != NULL)
+    {
+        n_tkns++;
+    }
+    // Final number of dirs is equal to the number of tokens
+    int n_dirs = n_tkns;
+
+    // Now creating all the intermediate dirs one by one
+    for (int i = 0; i < n_dirs; i++)
+    {
+        if (mkdir(dirs[i], 0777) == -1)
+        {
+            // If the directory already exitsts do nothing
+        }
+        // Moving into that directory to create the next directory in hierarchy
+        chdir(dirs[i]);
+    }
+    free_tokens(dirs);
+
+    // Moving out of all dirs again to the home dir
+    chdir(PWD);
+    return;
+}
+
+// Creates absolute path PWD + relative path from the relative path provided
+char* create_abs_path(char* relative_path)
+{
+    char* abs_path = (char*) calloc((MAX_PATH_LEN + strlen(PWD) + 10), sizeof(char));
+    strcpy(abs_path, PWD);
+    strcat(abs_path, "/");
+
+    char** tkns = tokenize(relative_path, '/');
+    int n_tkns = 0;
+    while (tkns[n_tkns] != NULL)
+    {
+        n_tkns++;
+    }
+
+    if (n_tkns == 2 || n_tkns == 1)
+    {
+        // Trying to find abs path for the base folder or storage or backup folder which we can't allow
+        return NULL;
+    }
+    
+    for (int i = 1; i < n_tkns; i++)
+    {
+        strcat(abs_path, tkns[i]);
+        strcat(abs_path, "/");
+    }
+    abs_path[strlen(abs_path) - 1] = '\0';
+    return abs_path;
+}
+
 // ===================================== LINKED LIST FUNC ===========================================
 linked_list_head create_linked_list_head() {
     linked_list_head linked_list = (linked_list_head) malloc(sizeof(linked_list_head_struct));

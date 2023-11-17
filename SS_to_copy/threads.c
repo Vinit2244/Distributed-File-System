@@ -526,100 +526,156 @@ void *serve_request(void *args)
         st_request ping_request;
         send_ack(ACK, sock_fd);
     }
-    else if (recvd_request.request_type == DELETE_FILE || recvd_request.request_type == BACKUP_DELETE_FILE)
+    else if (recvd_request.request_type == DELETE_FILE)
     {
-        char* file_path;
-        if (recvd_request.request_type == DELETE_FILE)
+        printf(YELLOW("Delete file request received.\n"));
+        char* file_path = recvd_request.data;
+
+        // First checking if filepath exists or not
+        if (access(file_path, F_OK) != -1)
         {
-            printf(YELLOW("Delete file request received.\n"));
-            file_path = recvd_request.data;
+            // File path exists
+            if (remove(file_path) != 0)
+            {
+                // If there was some error in deleting the file
+                fprintf(stderr, RED("remove : %s\n"), strerror(errno));
+                exit(EXIT_FAILURE);
+            }
         }
         else
         {
-            printf(YELLOW("Backup Delete file request received.\n"));
-            file_path = replace_storage_by_backup(recvd_request.data);
-        }
-        
-        if (remove(file_path) != 0)
-        {
-            // If there was some error in deleting the file
-            fprintf(stderr, RED("remove : %s\n"), strerror(errno));
+            // File path does not exist
+            fprintf(stderr, RED("remove : File does not exist\n"));
             exit(EXIT_FAILURE);
         }
-        send_ack(ACK, sock_fd);
 
-        if (recvd_request.request_type == BACKUP_DELETE_FILE)
-        {
-            free(file_path);
-        }
+        send_ack(ACK, sock_fd);
     }
-    else if (recvd_request.request_type == DELETE_FOLDER || recvd_request.request_type == BACKUP_DELETE_FOLDER)
+    else if (recvd_request.request_type == BACKUP_DELETE_FILE)
     {
-        char* dir_path;
-        if (recvd_request.request_type == DELETE_FOLDER)
+        printf(YELLOW("Backup Delete file request received.\n"));
+        char* file_path = replace_storage_by_backup(recvd_request.data);
+
+        // First checking if filepath exists or not
+        if (access(file_path, F_OK) != -1)
         {
-            printf(YELLOW("Delete folder request received.\n"));
-            dir_path = recvd_request.data;
+            // File path exists
+            if (remove(file_path) != 0)
+            {
+                // If there was some error in deleting the file
+                fprintf(stderr, RED("remove : %s\n"), strerror(errno));
+                exit(EXIT_FAILURE);
+            }
         }
         else
         {
-            printf(YELLOW("Backup Delete folder request received.\n"));
-            dir_path = replace_storage_by_backup(recvd_request.data);
+            // File path does not exist
+            // Do nothing and continue;
+        }
+
+        send_ack(ACK, sock_fd);
+
+        free(file_path);
+    }
+    else if (recvd_request.request_type == DELETE_FOLDER)
+    {
+        printf(YELLOW("Delete folder request received.\n"));
+        char* dir_path = recvd_request.data;
+
+        char* absolute_path = create_abs_path(dir_path);
+        if (absolute_path == NULL)
+        {
+            fprintf(stderr, RED("rmdir : Can't remove the specified folder\n"));
+            exit(EXIT_FAILURE);
+        }
+
+        int pid = fork();
+        if (pid == 0) {
+            char* command = "rm";
+            char* args[] = {"rm", "-r", absolute_path, NULL};
+
+            execvp(command, args);
+            // execvp failed
+            fprintf(stderr, RED("rmdir : failed\n"));
+        } else if (pid > 0) {
+            wait(NULL);
+        } else {
+            fprintf(stderr, "\033[1;31mfork: could not fork\033[1;0m\n");
+            return 0;
         }
         
         // Hacked rmdir so won't delete the base storage folder
-        if (rmdir(dir_path) != 0)
+        // if (rmdir(dir_path) != 0)
+        // {
+        //     // If there was some error in deleting the directory
+        //     fprintf(stderr, RED("rmdir : %s\n"), strerror(errno));
+        //     exit(EXIT_FAILURE);
+        // }
+
+        send_ack(ACK, sock_fd);
+    }
+    else if (recvd_request.request_type == BACKUP_DELETE_FOLDER)
+    {
+        printf(YELLOW("Backup Delete folder request received.\n"));
+        char* dir_path = replace_storage_by_backup(recvd_request.data);
+
+        char* absolute_path = create_abs_path(dir_path);
+        if (absolute_path == NULL)
         {
-            // If there was some error in deleting the directory
-            fprintf(stderr, RED("rmdir : %s\n"), strerror(errno));
+            fprintf(stderr, RED("rmdir : Can't remove the specified folder\n"));
             exit(EXIT_FAILURE);
         }
-        send_ack(ACK, sock_fd);
 
-        if (recvd_request.request_type == BACKUP_DELETE_FOLDER)
-        {
-            free(dir_path);
-        }
-    }
-    else if (recvd_request.request_type == CREATE_FILE || recvd_request.request_type == BACKUP_CREATE_FILE)
-    {
-        char* file_path;
-        if (recvd_request.request_type == CREATE_FILE)
-        {
-            printf(YELLOW("Create file request received.\n"));
-            file_path = recvd_request.data;
-        }
-        else
-        {
-            printf(YELLOW("Backup Create file request received.\n"));
-            file_path = replace_storage_by_backup(recvd_request.data);
+        int pid = fork();
+        if (pid == 0) {
+            char* command = "rm";
+            char* args[] = {"rm", "-r", absolute_path, NULL};
+
+            execvp(command, args);
+            // execvp failed
+            fprintf(stderr, RED("rmdir : failed\n"));
+        } else if (pid > 0) {
+            wait(NULL);
+        } else {
+            fprintf(stderr, "\033[1;31mfork: could not fork\033[1;0m\n");
+            return 0;
         }
         
-        FILE *fptr = fopen(file_path, "w");
-        fclose(fptr);
+        // // Hacked rmdir so won't delete the base storage folder
+        // if (rmdir(dir_path) != 0)
+        // {
+        //     // If there was some error in deleting the directory
+        //     fprintf(stderr, RED("rmdir : %s\n"), strerror(errno));
+        //     exit(EXIT_FAILURE);
+        // }
+
         send_ack(ACK, sock_fd);
 
-        if (recvd_request.request_type == BACKUP_CREATE_FILE)
-        {
-            free(file_path);
-        }
+        free(dir_path);
     }
-    else if (recvd_request.request_type == CREATE_FOLDER || recvd_request.request_type == BACKUP_CREATE_FOLDER)
+    else if (recvd_request.request_type == CREATE_FILE)
     {
-        char* file_path;
-        if (recvd_request.request_type == CREATE_FOLDER)
-        {
-            printf(YELLOW("Create folder request received.\n"));
-            file_path = request_tkns[0];
-        }
-        else
-        {
-            printf(YELLOW("Backup Create folder request received.\n"));
-            file_path = replace_storage_by_backup(request_tkns[0]);
-        }
+        printf(YELLOW("Create file request received.\n"));
+        char* file_path = recvd_request.data;
 
-        // Creating intermediate directories if not already present
-        // First tokenising the file_path on "/"
+        FILE *fptr = fopen(file_path, "w");
+        if (fptr == NULL)
+        {
+            fprintf(stderr, RED("fopen : path DNE\n"));
+            exit(EXIT_FAILURE);
+        }
+        fclose(fptr);
+
+        send_ack(ACK, sock_fd);
+    }
+    else if (recvd_request.request_type == BACKUP_CREATE_FILE)
+    {
+        printf(YELLOW("Backup Create file request received.\n"));
+        char* file_path = replace_storage_by_backup(recvd_request.data);
+
+        // First calculating the path to the folder where the file is located it may so happen that the folder may not exist right now but we need to backup so first finding the folder path so that I can create the folder first before creating the file
+        char folder_path[MAX_PATH_LEN] = {0};
+
         char **dirs = tokenize(file_path, '/');
 
         // Calculating the number of intermediate dirs
@@ -629,30 +685,42 @@ void *serve_request(void *args)
             n_tkns++;
         }
         // Final number of dirs is 1 less than the number of tokens as the last one is the file
-        int n_dirs = n_tkns;
+        int n_dirs = n_tkns - 1;
 
-        // Now creating all the intermediate dirs one by one
         for (int i = 0; i < n_dirs; i++)
         {
-            if (mkdir(dirs[i], 0777) == -1)
-            {
-                // If the directory already exitsts do nothing
-            }
-            // Moving into that directory to create the next directory in hierarchy
-            chdir(dirs[i]);
+            strcat(folder_path, dirs[i]);
+            strcat(folder_path, "/");
         }
-        // Moving out of all dirs again to the home dir
-        for (int i = 0; i < n_dirs; i++)
-        {
-            chdir("..");
-        }
+        free_tokens(dirs);
+        folder_path[strlen(folder_path) - 1] = '\0';
+
+        create_folder(folder_path);
+
+        FILE *fptr = fopen(file_path, "w");
+        fclose(fptr);
+
+        free(file_path);
+    }
+    else if (recvd_request.request_type == CREATE_FOLDER)
+    {
+        printf(YELLOW("Create folder request received.\n"));
+        char* file_path = request_tkns[0];
+
+        create_folder(file_path);
+
+        send_ack(ACK, sock_fd);
+    }
+    else if (recvd_request.request_type == BACKUP_CREATE_FOLDER)
+    {
+        printf(YELLOW("Backup Create folder request received.\n"));
+        char* file_path = replace_storage_by_backup(request_tkns[0]);
+
+        create_folder(file_path);
 
         send_ack(ACK, sock_fd);
 
-        if (recvd_request.request_type == BACKUP_CREATE_FOLDER)
-        {
-            free(file_path);
-        }
+        free(file_path);
     }
 
     // Freeing tokens created at the start from request data
