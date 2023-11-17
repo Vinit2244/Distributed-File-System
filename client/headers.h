@@ -65,6 +65,7 @@
 #define FILE_NOT_FOUND       18
 #define RETRIEVE_INFO        19
 #define INFO                 20
+#define LIST                 20
 #define PING                 21
 #define CREATE_FILE          23
 #define CREATE_FOLDER        24
@@ -72,6 +73,12 @@
 #define DELETE_FOLDER        26 
 #define BACKUP_PASTE         27
 #define BACKUP_READ_REQ      28
+#define BACKUP_WRITE_REQ     29
+#define BACKUP_APPEND_REQ    30
+#define BACKUP_DELETE_FILE   31
+#define BACKUP_DELETE_FOLDER 32
+#define BACKUP_CREATE_FILE   33
+#define BACKUP_CREATE_FOLDER 34
 // ============================= Statuses =============================
 #define NOT_REGISTERED 0
 #define REGISTERED     1
@@ -111,6 +118,7 @@ void communicate_with_ss_info(char *ipaddress, char *port, char *path);
 void info(char *path);
 void delete_operation(char *path,int macro);
 void copy_operation(char *path1, char *path2);
+void list();
 
 
 #endif

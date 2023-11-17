@@ -65,13 +65,17 @@ int main()
             char *path = strtok(NULL, " ");
             info(path); 
         }
+        else if(strcmp("LIST",operation) ==0)
+        {
+            list();
+        }
         else if (strcmp("EXIT", operation) == 0)
         {
             break;
         }
         else
         {
-            printf("Invalid Operation do again\n");
+            printf(RED("Invalid Operation do again\n"));
         }
     }
     // close(client_socket);
