@@ -11,21 +11,12 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <time.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <signal.h>
-
 //Relevant Macros
 #define NS_PORT 2000
 #define NS_IP "0.0.0.0"
 #define MAX_DATA_LENGTH 100000
 #define MAX_CONNECTIONS 100
-
-#define SS     -1
-#define CLIENT -2
-#define BUFFER_SIZE 1024
-
-#define CACHE_SIZE 20
+#define MAX_PATH_LEN        1024  
 
 //Request types
 #define ACK                  1
@@ -55,6 +46,12 @@
 #define DELETE_FOLDER        26
 #define BACKUP_PASTE         27
 #define BACKUP_READ_REQ      28
+#define BACKUP_WRITE_REQ     29
+#define BACKUP_APPEND_REQ    30
+#define BACKUP_DELETE_FILE   31
+#define BACKUP_DELETE_FOLDER 32
+#define BACKUP_CREATE_FILE   33
+#define BACKUP_CREATE_FOLDER 34
 
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
@@ -101,6 +98,9 @@ typedef struct ss_info
     char port[10];
     char client_port[10];
     char paths[1000][100];
+
+    struct trie_node *root;
+    struct trie_node* backup_root;
     int path_count;
     int server_socket, client_socket,ping_server_socket;
     struct sockaddr_in server_addr, client_addr;
@@ -113,6 +113,7 @@ typedef struct ss_info
     char backup_port[2][10];
     int total_backups;
     int added;
+    int synced;
     
 
 } ss_info;
@@ -128,6 +129,13 @@ typedef struct send_packet{
 
 } send_packet;
 
+struct trie_node
+{
+    char *key;
+    int end;
+    struct trie_node *children[256];    // Total 256 characters possible that can come in any path name
+};
+
 typedef send_packet* packet;
 
 typedef struct server_status{
@@ -137,20 +145,24 @@ typedef struct server_status{
 
 } server_status;
 
-typedef struct st_cache {
-    int req_type;
-    char req_data[MAX_DATA_LENGTH];
-    int ss_id;
-    char ss_ip[10];
-    int ss_port;
-} st_cache;
+typedef struct linked_list_head_struct* linked_list_head;
+typedef struct linked_list_node_struct* linked_list_node;
 
-typedef st_cache* cache_array;
+typedef struct linked_list_head_struct {
+    int number_of_nodes;
+    struct linked_list_node_struct* first;
+    struct linked_list_node_struct* last;
+} linked_list_head_struct;
+
+typedef struct linked_list_node_struct {
+    char* path;
+    struct linked_list_node_struct* next;
+} linked_list_node_struct;
+
+
 
 
 //Global variables
-extern cache_array cache;
-extern int curr_cache_write_index;
 extern ss ss_list[100];
 extern int server_count;
 extern packet send_buffer[100];
@@ -165,7 +177,6 @@ extern pthread_mutex_t status_lock;
 
 
 //Defined functions
-int insert_log(const int type, const int ss_id, const int ss_or_client_port, const int request_type, const char* request_data, const int status_code);
 char** processstring(char data[],int n);
 void init_nfs();
 void client_handler(char data[]);
@@ -176,9 +187,13 @@ void* receive_handler();
 void* server_handler(void* p);
 void *backup_thread();
 void* sync_backup(void* p);
-void handleCtrlZ(int signum);
-void init_cache();
-void delete_cache_index(const int idx);
-void insert_in_cache(int req_type, char* req_data, int ss_id, char* ss_ip, int ss_port);
-st_cache* search_in_cache(int req_type, char* req_data);
-void print_cache();
+struct trie_node *create_trie_node();
+int insert_path(struct trie_node *root, char *key);
+int search_path(struct trie_node *root, char *key);
+int delete_path(struct trie_node *root, char *key);
+void print_paths(struct trie_node *root);
+linked_list_head create_linked_list_head();
+linked_list_node create_linked_list_node(char* path);
+void insert_in_linked_list(linked_list_head linked_list, char* path);
+void free_linked_list(linked_list_head linked_list);
+linked_list_head return_paths(struct trie_node *root);

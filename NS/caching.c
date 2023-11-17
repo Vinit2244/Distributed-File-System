@@ -24,7 +24,6 @@
 #define MAX_DATA_LENGTH     10000       // Maximum number of characters data being sent can have (query/file data)
 
 #define CACHE_SIZE 2
-
 int curr_cache_write_index;
 
 typedef struct st_cache {
@@ -45,7 +44,7 @@ void init_cache()
     cache = (cache_array) malloc(sizeof(st_cache) * CACHE_SIZE);
     if (cache == NULL)
     {
-        fprintf(stderr, RED("malloc : Failed to initialise cache : %s\n"), strerror(errno));
+        fprintf(stderr, RED("malloc : Failed to initialise cache : %s\n"), strerrror(errno));
         exit(EXIT_FAILURE);
     }
     curr_cache_write_index = 0;
@@ -71,12 +70,8 @@ void delete_cache_index(const int idx)
 }
 
 // Inserts the new information at the last index of cache (cache is like a queue in which the least recently used info is at the first spot)
-void insert_in_cache(int req_type, char* req_data, int ss_id, int ss_ip, int ss_port)
+void insert_in_cache(int req_type, int req_data, int ss_id, int ss_ip, int ss_port)
 {
-    if (curr_cache_write_index == CACHE_SIZE)
-    {
-        delete_cache_index(0);
-    }
     cache[curr_cache_write_index].req_type = req_type;
     memset(cache[curr_cache_write_index].req_data, 0, MAX_DATA_LENGTH);
     strcpy(cache[curr_cache_write_index].req_data, req_data);
@@ -89,11 +84,11 @@ void insert_in_cache(int req_type, char* req_data, int ss_id, int ss_ip, int ss_
 }
 
 // Search for the request in cache and returns the cache struct if found otherwise returns NULL (If NULL is returned which means cache miss then remember to insert into the cache this new info otherwise if there is cache hit then no need to insert again) and also remember to free the memory in case of cache hit
-st_cache* search_in_cache(int req_type, char* req_data)
+st_cache* search_in_cache(int req_type, int req_data)
 {
     for (int i = 0; i < curr_cache_write_index; i++)
     {
-        if (cache[i].req_type == req_type && (strcmp(cache[i].req_data, req_data) == 0))
+        if (cache[i].req_type == req_type && cache[i].req_data == req_data)
         {
             st_cache* to_return = (st_cache*) malloc(sizeof(st_cache));
 
@@ -118,7 +113,7 @@ st_cache* search_in_cache(int req_type, char* req_data)
     // If the cache is full then delete the least recently used info node
     if (curr_cache_write_index == CACHE_SIZE)
     {
-        // Delete the first node as it is the least recently unaccessed (assuming that since it is not found in cache then the user will insert in cache manually)
+        // Delete the first node as it is the least recently unaccessed
         delete_cache_index(0);
     }
 
@@ -128,23 +123,19 @@ st_cache* search_in_cache(int req_type, char* req_data)
 // Prints the contents of the cache
 void print_cache()
 {
-    printf("\n");
     for (int i = 0; i < curr_cache_write_index; i++)
     {
         printf("%d %d %d %d %s\n", cache[i].req_type, cache[i].ss_id, cache[i].ss_ip, cache[i].ss_port, cache[i].req_data);
     }
-    printf("\n");
     return;
 }
 
 int main()
 {
-    init_cache();
 
-    for (int i = 0; i < 5; i++)
+    while(1)
     {
-        // Asking for the details to be entered
-        printf("Enter details to search in cache : ");
+        printf("Enter details to add in cache : ");
         int req_type;
         char req_data[MAX_DATA_LENGTH] = {0};
         int ss_id;
@@ -152,25 +143,8 @@ int main()
         int ss_port;
         scanf("%d|%d|%d|%d|%s", &req_type, &ss_id, &ss_ip, &ss_port, req_data);
 
-        // Searching for the details in the cache if it is already present
-        st_cache* cc = search_in_cache(req_type, req_data);
-
-        if (cc == NULL)
-        {
-            // The details are not present in the cache so after processing inserting those details in the cache
-            printf(RED("Did not find in cache so now inserting in cache.\n"));
-            insert_in_cache(req_type, req_data, ss_id, ss_ip, ss_port);
-        }
-        else
-        {
-            // The details were found in the cache so the cache is updated accordingly and we need not re insert it again in the cache but just free the 
-            printf(GREEN("Found in cache no need to re insert.\n"));
-            free(cc);
-        }
-
         print_cache();
     }
 
-    return 0;
-}
 
+}
