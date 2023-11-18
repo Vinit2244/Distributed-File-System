@@ -33,5 +33,6 @@ void update_path(char* path, char* next_dir);
 char* replace_storage_by_backup(char* path);
 void create_folder(char* path);
 char* create_abs_path(char* relative_path);
+void send_msg_to_nfs(char* msg, int req_type);
 
 #endif

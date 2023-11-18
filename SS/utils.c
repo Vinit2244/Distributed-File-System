@@ -328,6 +328,67 @@ char* create_abs_path(char* relative_path)
     return abs_path;
 }
 
+// Sends the msg string to nfs
+void send_msg_to_nfs(char* msg, int req_type)
+{
+    // Preparing the request to be sent
+    st_request msg_req_st;
+    msg_req_st.request_type = req_type;
+    memset(msg_req_st.data, 0, MAX_DATA_LENGTH);
+
+    sprintf(msg_req_st.data, "%s", msg);
+
+    // Connecting to the NFS through TCP
+    struct sockaddr_in address;
+    memset(&address, 0, sizeof(address));
+
+    int socket_fd = socket(PF_INET, SOCK_STREAM, 0);
+    if (socket_fd < 0) 
+    { 
+        // Some error occured while creating socket
+        fprintf(stderr, RED("socket : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_port    = htons(NFS_SERVER_PORT_NO);        // port on which server side process is listening
+    address.sin_family  = AF_INET;
+
+    if (inet_pton(AF_INET, NFS_IP, &address.sin_addr.s_addr) <= 0) 
+    {   
+        fprintf(stderr, RED("inet_pton : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    // Waiting for us to connect to the NFS, it may happen that the NFS port might be busy and could not accept the connection request so sending it again and again until once it connects
+    while(1)
+    {
+        if (connect(socket_fd, (struct sockaddr *) &address, sizeof(address)) == -1) 
+        {
+            // Could not connect
+            continue;
+        }
+        // Connected
+        break;
+    }
+
+    // Sending the registration request
+    int sent_msg_size;
+    if ((sent_msg_size = send(socket_fd, (request) &msg_req_st, sizeof(st_request), 0)) < 0)
+    {
+        fprintf(stderr, RED("send : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    // Closing the socket as the communication is done
+    if (close(socket_fd) < 0) 
+    {
+        fprintf(stderr, RED("close : failed to close the socket!\n"));
+        exit(EXIT_FAILURE);
+    }
+
+    return;
+}
+
 // ===================================== LINKED LIST FUNC ===========================================
 linked_list_head create_linked_list_head() {
     linked_list_head linked_list = (linked_list_head) malloc(sizeof(linked_list_head_struct));

@@ -294,6 +294,19 @@ void *serve_request(void *args)
         }
         else
         {
+            FILE* fptr2;
+            fptr2 = fopen(path_to_write, "r");
+            char buffer[MAX_DATA_LENGTH - MAX_PATH_LEN - 1] = {0};
+            fread(buffer, sizeof(char), MAX_DATA_LENGTH - MAX_PATH_LEN - 2, fptr2);
+            fclose(fptr2);
+
+            char final_str[MAX_DATA_LENGTH] = {0};
+            strcpy(final_str, path_to_write);
+            strcat(final_str, "|");
+            strcat(final_str, buffer);
+
+            send_msg_to_nfs(final_str, CONSISTENT_WRITE);
+
             send_ack(ACK, sock_fd);
         }
     }
@@ -325,6 +338,19 @@ void *serve_request(void *args)
         }
         else
         {
+            FILE* fptr2;
+            fptr2 = fopen(path_to_write, "r");
+            char buffer[MAX_DATA_LENGTH - MAX_PATH_LEN - 1] = {0};
+            fread(buffer, sizeof(char), MAX_DATA_LENGTH - MAX_PATH_LEN - 2, fptr2);
+            fclose(fptr2);
+
+            char final_str[MAX_DATA_LENGTH] = {0};
+            strcpy(final_str, path_to_write);
+            strcat(final_str, "|");
+            strcat(final_str, buffer);
+
+            send_msg_to_nfs(final_str, CONSISTENT_WRITE);
+            
             send_ack(ACK, sock_fd);
         }
     }

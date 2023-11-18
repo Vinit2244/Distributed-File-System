@@ -83,6 +83,7 @@
 #define BACKUP_DELETE_FOLDER 32
 #define BACKUP_CREATE_FILE   33
 #define BACKUP_CREATE_FOLDER 34
+#define CONSISTENT_WRITE     35
 
 // ============================= Statuses =============================
 #define NOT_REGISTERED    0
