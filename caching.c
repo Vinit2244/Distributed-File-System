@@ -46,7 +46,7 @@ void init_cache()
     cache = (cache_array) malloc(sizeof(st_cache) * CACHE_SIZE);
     if (cache == NULL)
     {
-        fprintf(stderr, RED("malloc : Failed to initialise cache : %s\n"), strerrror(errno));
+        fprintf(stderr, RED("malloc : Failed to initialise cache : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
     curr_cache_write_index = 0;
@@ -72,7 +72,7 @@ void delete_cache_index(const int idx)
 }
 
 // Inserts the new information at the last index of cache (cache is like a queue in which the least recently used info is at the first spot)
-void insert_in_cache(int req_type, int req_data, int ss_id, int ss_ip, int ss_port)
+void insert_in_cache(int req_type, char* req_data, int ss_id, int ss_ip, int ss_port)
 {
     cache[curr_cache_write_index].req_type = req_type;
     memset(cache[curr_cache_write_index].req_data, 0, MAX_DATA_LENGTH);
@@ -86,7 +86,7 @@ void insert_in_cache(int req_type, int req_data, int ss_id, int ss_ip, int ss_po
 }
 
 // Search for the request in cache and returns the cache struct if found otherwise returns NULL (If NULL is returned which means cache miss then remember to insert into the cache this new info otherwise if there is cache hit then no need to insert again) and also remember to free the memory in case of cache hit
-st_cache* search_in_cache(int req_type, int req_data)
+st_cache* search_in_cache(int req_type, char* req_data)
 {
     for (int i = 0; i < curr_cache_write_index; i++)
     {
@@ -134,10 +134,9 @@ void print_cache()
 
 int main()
 {
-
     while(1)
     {
-        printf("Enter details to add in cache : ");
+        printf("Enter details to search in cache : ");
         int req_type;
         char req_data[MAX_DATA_LENGTH] = {0};
         int ss_id;
@@ -145,8 +144,21 @@ int main()
         int ss_port;
         scanf("%d|%d|%d|%d|%s", &req_type, &ss_id, &ss_ip, &ss_port, req_data);
 
+        st_cache* cc = search_in_cache(req_type, req_data);
+
+        if (cc == NULL)
+        {
+            printf(RED("Could not find in cache.\n"));
+            printf("Inserting in cache.\n");
+            insert_in_cache(req_type, req_data, ss_id, ss_ip, ss_port);
+        }
+        else
+        {
+            printf(GREEN("Found in cache no need to re insert.\n"));
+        }
+
         print_cache();
     }
 
-
+    return 0;
 }

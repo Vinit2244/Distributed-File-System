@@ -54,16 +54,6 @@ void handleCtrlZ(int signum) {
     fclose(fptr);
 }
 
-// Copy the code of this function in main
-// void initiate()
-// {
-//     struct sigaction sa;
-//     sa.sa_handler = &handleCtrlP; // Ctrl + Z (Windows/Linux/Mac)
-//     sa.sa_flags = SA_RESTART;        // Automatically restart the system call
-//     sigaction(SIGUSR1, &sa, NULL);   // Ctrl + Z sends SIGTSTP signal (Signal Stop) - sends foreground process to background
-//     sigfillset(&sa.sa_mask);
-// }
-
 // First argument should be whether the communication was with storage server or client (SS or CLIENT)
 // Second argument is storage server id with which the communication is happening, if communication is with a client and not a storage server then by default pass value 0 there
 // Third argument should be the port number of client or storage server that is involved in the communication whose log is being inserted

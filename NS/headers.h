@@ -226,5 +226,5 @@ int insert_log(const int type, const int ss_id, const int ss_or_client_port, con
 void init_cache();
 void print_cache();
 void delete_cache_index(const int idx);
-st_cache* search_in_cache(int req_type, int req_data);
-void insert_in_cache(int req_type, int req_data, int ss_id, char* ss_ip, int ss_port);
+st_cache* search_in_cache(int req_type, char* req_data);
+void insert_in_cache(int req_type, char* req_data, int ss_id, char* ss_ip, int ss_port);

@@ -145,3 +145,48 @@ void add_paths(linked_list_head ll, struct trie_node *root)
         }
     }
 }
+
+// Linked list functions
+linked_list_head create_linked_list_head() {
+    linked_list_head linked_list = (linked_list_head) malloc(sizeof(linked_list_head_struct));
+    linked_list->number_of_nodes = 0;
+    linked_list->first = NULL;
+    linked_list->last = NULL;
+    return linked_list;
+}
+
+linked_list_node create_linked_list_node(char* path) {
+    linked_list_node N = (linked_list_node) malloc(sizeof(linked_list_node_struct));
+    N->next = NULL;
+    N->path = (char*) calloc(MAX_PATH_LEN, sizeof(char));
+    strcpy(N->path, path);
+    return N;
+}
+
+void insert_in_linked_list(linked_list_head linked_list, char* path) {
+    linked_list_node N = create_linked_list_node(path);
+    if (linked_list->number_of_nodes == 0) {
+        linked_list->first = N;
+        linked_list->last = N;
+        linked_list->number_of_nodes++;
+    } else if (linked_list->number_of_nodes == 1) {
+        linked_list->last = N;
+        linked_list->first->next = N;
+        linked_list->number_of_nodes++;
+    } else {
+        linked_list->last->next = N;
+        linked_list->last = N;
+        linked_list->number_of_nodes++;
+    }
+}
+
+void free_linked_list(linked_list_head linked_list) {
+    linked_list_node trav = linked_list->first;
+    while (trav != NULL) {
+        free(trav->path);
+        linked_list_node temp = trav->next;
+        free(trav);
+        trav = temp;
+    }
+    free(linked_list);
+}
