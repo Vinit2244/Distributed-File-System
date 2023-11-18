@@ -1,8 +1,35 @@
-#include "headers.h"
+// Don't add this file in the final code
+
+#include <stdio.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <signal.h>
+#include <unistd.h>
+#include <string.h>
+
+#define RED_COLOR    "\033[0;31m"
+#define GREEN_COLOR  "\033[0;32m"
+#define BLUE_COLOR   "\033[0;34m"
+#define YELLOW_COLOR "\033[0;33m"
+#define CYAN_COLOR   "\033[0;36m"
+#define ORANGE_COLOR "\e[38;2;255;85;0m"
+#define RESET_COLOR  "\033[0m"
+
+#define RED(str)    RED_COLOR    str RESET_COLOR
+#define GREEN(str)  GREEN_COLOR  str RESET_COLOR
+#define BLUE(str)   BLUE_COLOR   str RESET_COLOR
+#define YELLOW(str) YELLOW_COLOR str RESET_COLOR
+#define CYAN(str)   CYAN_COLOR   str RESET_COLOR
+#define ORANGE(str) ORANGE_COLOR str RESET_COLOR
+
+#define SS     -1
+#define CLIENT -2
+#define NS_PORT 2000
+#define BUFFER_SIZE 1024
 
 // Signal handler function
-void handleCtrlZ(int signum)
-{
+void handleCtrlZ(int signum) {
     printf("Ctrl+Z signal received (SIGTSTP)\n");
     // Print all the logs
 
@@ -26,6 +53,16 @@ void handleCtrlZ(int signum)
 
     fclose(fptr);
 }
+
+// Copy the code of this function in main
+// void initiate()
+// {
+//     struct sigaction sa;
+//     sa.sa_handler = &handleCtrlP; // Ctrl + Z (Windows/Linux/Mac)
+//     sa.sa_flags = SA_RESTART;        // Automatically restart the system call
+//     sigaction(SIGUSR1, &sa, NULL);   // Ctrl + Z sends SIGTSTP signal (Signal Stop) - sends foreground process to background
+//     sigfillset(&sa.sa_mask);
+// }
 
 // First argument should be whether the communication was with storage server or client (SS or CLIENT)
 // Second argument is storage server id with which the communication is happening, if communication is with a client and not a storage server then by default pass value 0 there
@@ -69,3 +106,25 @@ int insert_log(const int type, const int ss_id, const int ss_or_client_port, con
     return 1;
 }
 
+int main()
+{
+    // Handling Ctrl + z (SIGTSTP) signal
+    struct sigaction sa;
+    sa.sa_handler = &handleCtrlZ; // Ctrl + Z (Windows/Linux/Mac)
+    sa.sa_flags = SA_RESTART;        // Automatically restart the system call
+    sigaction(SIGTSTP, &sa, NULL);   // Ctrl + Z sends SIGTSTP signal (Signal Stop) - sends foreground process to background
+
+    while (1)
+    {
+        int type;
+        int ss_id;
+        int ss_or_client_port;
+        int request_type;
+        char request_data[1024] = {0};
+        int status_code;
+        scanf("%d|%d|%d|%d|%d|%s", &type, &ss_id, &ss_or_client_port, &request_type, &status_code, request_data);
+        insert_log(type, ss_id, ss_or_client_port, request_type, request_data, status_code);
+    }
+    
+    return 0;
+}

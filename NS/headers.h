@@ -11,11 +11,15 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <time.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <errno.h>
+
 //Relevant Macros
-#define NS_PORT 2000
-#define NS_IP "0.0.0.0"
-#define MAX_DATA_LENGTH 100000
-#define MAX_CONNECTIONS 100
+#define NS_PORT             2000
+#define NS_IP               "0.0.0.0"
+#define MAX_DATA_LENGTH     100000
+#define MAX_CONNECTIONS     100
 #define MAX_PATH_LEN        1024  
 
 //Request types
@@ -53,6 +57,14 @@
 #define BACKUP_CREATE_FILE   33
 #define BACKUP_CREATE_FOLDER 34
 
+// Macros for book keeping
+#define SS          -1
+#define CLIENT      -2
+#define BUFFER_SIZE 1024
+
+// Macros for caching 
+#define CACHE_SIZE 20
+
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
 #define GREEN_COLOR  "\033[0;32m"
@@ -77,7 +89,6 @@ extern pthread_cond_t send_signal;
 extern int server_socket_tcp, client_socket_tcp;
 extern struct sockaddr_in server_addr_tcp, client_addr_tcp;
 extern socklen_t client_addr_len_tcp;
-
 
 //Request packet structure
 typedef struct st_request
@@ -114,19 +125,15 @@ typedef struct ss_info
     int total_backups;
     int added;
     int synced;
-    
-
 } ss_info;
 
 //Send packet used for convenience of sending request packets to client/SS
 typedef struct send_packet{
-
     request r;      //main request packet
     int send_to;    //Whether a client or server
     char ip[20];    //IP address where to send the request body
     int status;     
-    char port[10]; 
-
+    char port[10];
 } send_packet;
 
 struct trie_node
@@ -159,10 +166,19 @@ typedef struct linked_list_node_struct {
     struct linked_list_node_struct* next;
 } linked_list_node_struct;
 
+typedef struct st_cache {
+    int req_type;
+    char req_data[MAX_DATA_LENGTH];
+    int ss_id;
+    char ss_ip[20];
+    int ss_port;
+} st_cache;
 
-
+typedef st_cache* cache_array;
 
 //Global variables
+extern cache_array cache;
+extern int curr_cache_write_index;
 extern ss ss_list[100];
 extern int server_count;
 extern packet send_buffer[100];
@@ -175,7 +191,6 @@ extern server_status connections[100];
 extern int connection_count;
 extern pthread_mutex_t status_lock;
 
-
 //Defined functions
 char** processstring(char data[],int n);
 void init_nfs();
@@ -185,15 +200,31 @@ void process(request req);
 void* send_handler();
 void* receive_handler();
 void* server_handler(void* p);
-void *backup_thread();
+void* backup_thread();
 void* sync_backup(void* p);
+
+// Linked list functions
+linked_list_head create_linked_list_head();
+void free_linked_list(linked_list_head linked_list);
+linked_list_node create_linked_list_node(char* path);
+void insert_in_linked_list(linked_list_head linked_list, char* path);
+
+// Tries functions
 struct trie_node *create_trie_node();
+void print_paths(struct trie_node *root);
 int insert_path(struct trie_node *root, char *key);
 int search_path(struct trie_node *root, char *key);
 int delete_path(struct trie_node *root, char *key);
-void print_paths(struct trie_node *root);
-linked_list_head create_linked_list_head();
-linked_list_node create_linked_list_node(char* path);
-void insert_in_linked_list(linked_list_head linked_list, char* path);
-void free_linked_list(linked_list_head linked_list);
 linked_list_head return_paths(struct trie_node *root);
+void add_paths(linked_list_head ll, struct trie_node *root);
+
+// Book Keeping functions
+void handleCtrlZ(int signum);
+int insert_log(const int type, const int ss_id, const int ss_or_client_port, const int request_type, const char* request_data, const int status_code);
+
+// Caching functions
+void init_cache();
+void print_cache();
+void delete_cache_index(const int idx);
+st_cache* search_in_cache(int req_type, int req_data);
+void insert_in_cache(int req_type, int req_data, int ss_id, char* ss_ip, int ss_port);
