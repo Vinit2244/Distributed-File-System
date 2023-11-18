@@ -45,9 +45,9 @@ def compile_make(i: int) -> None:
     subprocess.run(['make'],  check = True)
     os.chdir("..")
 
-# Copy the "SS_to_copy" folder n times (n specified through command line argument)
+# Copy the "SS" folder n times (n specified through command line argument)
 def copy_folder_n_times(num_of_ss: int, cwd: str) -> None:
-    source_dir = cwd + "/SS_to_copy"
+    source_dir = cwd + "/SS"
 
     for i in range(num_of_ss):
         dest_dir = cwd + f"/SS{i + 1}"

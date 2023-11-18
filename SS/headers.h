@@ -11,6 +11,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 // ==================== User defined header files  ====================
 #include "utils.h"
@@ -19,7 +22,7 @@
 // ========================== Useful Macros ==========================
 #define MAX_DATA_LENGTH     10000       // Maximum number of characters data being sent can have (query/file data)
 #define MAX_NO_OF_REQ       10          // At max it can handle 10 pending requests, if the request buffer is full then all the other incoming requests will be rejected
-#define MAX_FILES           10          // Maximum number of files that can be stored in the storage server
+#define MAX_FILES           30          // Maximum number of files that can be stored in the storage server
 #define MAX_PATH_LEN        1024        // Maximum length the relative path of a file can have
 #define NFS_SERVER_PORT_NO  2000        // Port on which NFS server listens
 #define MY_NFS_PORT_NO      3000        // Port number used to communicate with NFS server
@@ -28,6 +31,7 @@
 #define NFS_IP              "127.0.0.1" // IP address of the naming server
 #define MAX_PENDING         10          // Maximum number of connections the TCP socket can have in queue waiting
 #define MY_SS_ID            1           // Each storage server is assigned a unique SS_ID (used to distinguish between different servers)
+#define PWD                 "/home/divyansh/final-project-43/SS_to_copy"
 
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
@@ -53,12 +57,39 @@
 #define READ_REQ             5
 #define DELETE_REQ           6
 #define CREATE_REQ           7
-#define REGISTRATION_REQUEST 8
-#define REGISTRATION_ACK     9
+#define APPEND_REQ           8
+#define REGISTRATION_REQUEST 9
+#define REGISTRATION_ACK     10
+#define STOP_REQ             11
+#define READ_REQ_DATA        12
+#define ADD_PATHS            13
+#define DELETE_PATHS         14
+#define PASTE                15
+#define COPY                 16
+#define COPY_REQUEST         17
+#define RETRIEVE_INFO        19
+#define INFO                 20
+#define DATA_TO_BE_COPIED    21
+#define PING                 22
+#define CREATE_FILE          23
+#define CREATE_FOLDER        24
+#define DELETE_FILE          25
+#define DELETE_FOLDER        26
+#define BACKUP_PASTE         27
+#define BACKUP_READ_REQ      28
+#define BACKUP_WRITE_REQ     29
+#define BACKUP_APPEND_REQ    30
+#define BACKUP_DELETE_FILE   31
+#define BACKUP_DELETE_FOLDER 32
+#define BACKUP_CREATE_FILE   33
+#define BACKUP_CREATE_FOLDER 34
 
 // ============================= Statuses =============================
-#define NOT_REGISTERED 0
-#define REGISTERED     1
+#define NOT_REGISTERED    0
+#define REGISTERED        1
+#define WRITE_SUCCESSFUL  2
+#define APPEND_SUCCESSFUL 2
+#define SUCCESSFUL        2    // Keep all three successes to have the same value
 
 // ============================ Structures ============================
 // All the network communication happens in this structure form
@@ -81,15 +112,15 @@ typedef struct st_thread_data* thread_data;
 
 // ========================= Global variables =========================
 extern char**  accessible_paths;                // Stores all the RELATIVE PATHS (relative to the directory in which the storage server c file resides) of all the files that are accessible by clients on this storage server
+extern char**  backup_paths;                    // Stores the relative path of backup files
 extern int     num_of_paths_stored;             // Stores the number of paths which are currently stored in the accessible_paths array
+extern int     num_of_backup_paths_stored;      // Stores the number of all the backup paths
 extern int     nfs_registrations_status;        // Stores the status whether our server has been registered with NFS or not
 extern int     client_server_socket_fd;         // Socket file descriptor to receive client requests
 extern int     nfs_server_socket_fd;            // Socket file descriptot to receive NFS requests
-extern int     socket_fd;                       // UDP Socket used for communication with NFS to register my SS
 extern struct  sockaddr_in ss_address_nfs;      // IPv4 address struct for TCP communication between ss and nfs (requests)
 extern struct  sockaddr_in ss_address_client;   // IPv4 address struct for TCP communication between ss and client (requests)
-extern struct  sockaddr_in address;     
-extern socklen_t addr_size;       // IPv4 address struct for UDP communication between ss and nfs (register)
+extern socklen_t addr_size;                     // IPv4 address struct for TCP communication between ss and nfs (register)
 extern int*    thread_slot_empty_arr;           // 1 = thread is running, 0 = thread slot is free and can be used to create a new thread
 extern pthread_t* requests_serving_threads_arr; // Holds the threads when a request is being served in some thread
 
