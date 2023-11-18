@@ -87,9 +87,6 @@
 // ============================= Statuses =============================
 #define NOT_REGISTERED    0
 #define REGISTERED        1
-#define WRITE_SUCCESSFUL  2
-#define APPEND_SUCCESSFUL 2
-#define SUCCESSFUL        2    // Keep all three successes to have the same value
 
 // ============================ Structures ============================
 // All the network communication happens in this structure form

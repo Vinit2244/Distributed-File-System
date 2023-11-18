@@ -227,6 +227,7 @@ void *serve_request(void *args)
     */
 
     // Selecting the type of request sent
+    // Except for reads and backup alter requests I am sending ack for each request
     if (recvd_request.request_type == READ_REQ || recvd_request.request_type == BACKUP_READ_REQ)
     {
         char* path_to_read;
@@ -286,11 +287,14 @@ void *serve_request(void *args)
         fprintf(fptr, "%s", data_to_write);
         fclose(fptr);
 
-        send_ack(WRITE_SUCCESSFUL, sock_fd);
-
         if (recvd_request.request_type == BACKUP_WRITE_REQ)
         {
             free(path_to_write);
+            // No need to send ack as backup is done asynchronously
+        }
+        else
+        {
+            send_ack(ACK, sock_fd);
         }
     }
     else if (recvd_request.request_type == APPEND_REQ || recvd_request.request_type == BACKUP_APPEND_REQ)
@@ -314,11 +318,14 @@ void *serve_request(void *args)
         fprintf(fptr, "%s", data_to_write);
         fclose(fptr);
 
-        send_ack(APPEND_SUCCESSFUL, sock_fd);
-
         if (recvd_request.request_type == BACKUP_APPEND_REQ)
         {
             free(path_to_write);
+            // No need to send ack as backup is done asynchronously
+        }
+        else
+        {
+            send_ack(ACK, sock_fd);
         }
     }
     else if (recvd_request.request_type == RETRIEVE_INFO)
@@ -441,6 +448,7 @@ void *serve_request(void *args)
             fprintf(stderr, RED("send : %s\n"), strerror(errno));
             exit(EXIT_FAILURE);
         }
+
         send_ack(ACK, sock_fd);
     }
     else if (recvd_request.request_type == PASTE || recvd_request.request_type == BACKUP_PASTE)
@@ -517,6 +525,11 @@ void *serve_request(void *args)
         if (recvd_request.request_type == BACKUP_PASTE)
         {
             free(file_path);
+            // No need to send ack as backup is done asynchronously
+        }
+        else
+        {
+            send_ack(ACK, sock_fd);
         }
     }
     else if (recvd_request.request_type == PING)
@@ -573,7 +586,7 @@ void *serve_request(void *args)
             // Do nothing and continue;
         }
 
-        send_ack(ACK, sock_fd);
+        // No need to send ack as backup is done asynchronously
 
         free(file_path);
     }
@@ -593,24 +606,17 @@ void *serve_request(void *args)
         if (pid == 0) {
             char* command = "rm";
             char* args[] = {"rm", "-r", absolute_path, NULL};
-
+            // Start running the recursive remove command on terminal
             execvp(command, args);
             // execvp failed
             fprintf(stderr, RED("rmdir : failed\n"));
         } else if (pid > 0) {
+            // Waiting for the child process to finish
             wait(NULL);
         } else {
             fprintf(stderr, "\033[1;31mfork: could not fork\033[1;0m\n");
             return 0;
         }
-        
-        // Hacked rmdir so won't delete the base storage folder
-        // if (rmdir(dir_path) != 0)
-        // {
-        //     // If there was some error in deleting the directory
-        //     fprintf(stderr, RED("rmdir : %s\n"), strerror(errno));
-        //     exit(EXIT_FAILURE);
-        // }
 
         send_ack(ACK, sock_fd);
     }
@@ -640,16 +646,8 @@ void *serve_request(void *args)
             fprintf(stderr, "\033[1;31mfork: could not fork\033[1;0m\n");
             return 0;
         }
-        
-        // // Hacked rmdir so won't delete the base storage folder
-        // if (rmdir(dir_path) != 0)
-        // {
-        //     // If there was some error in deleting the directory
-        //     fprintf(stderr, RED("rmdir : %s\n"), strerror(errno));
-        //     exit(EXIT_FAILURE);
-        // }
 
-        send_ack(ACK, sock_fd);
+        // No need to send ack as backup is done asynchronously
 
         free(dir_path);
     }
@@ -718,7 +716,7 @@ void *serve_request(void *args)
 
         create_folder(file_path);
 
-        send_ack(ACK, sock_fd);
+        // No need to send ack as backup is done asynchronously
 
         free(file_path);
     }
