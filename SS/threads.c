@@ -241,7 +241,7 @@ void *serve_request(void *args)
         {
             printf(YELLOW("Backup Read request received.\n"));
             // Read the data in the file specified (Assuming that all the data can be read within the size of the request data buffer)
-            path_to_read = request_tkns[0];
+            path_to_read = replace_storage_by_backup(request_tkns[0]);
         }
 
         FILE *fptr = fopen(path_to_read, "r");
@@ -260,7 +260,7 @@ void *serve_request(void *args)
             exit(EXIT_FAILURE);
         }
 
-        if (recvd_request.request_type == READ_REQ)
+        if (recvd_request.request_type == BACKUP_READ_REQ)
         {
             free(path_to_read);
         }
