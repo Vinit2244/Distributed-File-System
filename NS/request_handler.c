@@ -1,7 +1,7 @@
 #include "headers.h"
 
 // Code to process the request according to request type
-void process(request req)
+void process(request req, int client_id)
 {
 
     if (req->request_type == REGISTRATION_REQUEST)
@@ -18,8 +18,45 @@ void process(request req)
     else if (req->request_type == WRITE_REQ || req->request_type == READ_REQ || req->request_type == RETRIEVE_INFO || req->request_type == APPEND_REQ)
     {
 
-        // printf("%d\n",server_count);
-        // printf("%s\n",req->data);
+        //Search in cache first
+        // if(search_in_cache(req->request_type,req->data) != NULL){
+        //     st_cache* c=search_in_cache(req->request_type,req->data);
+        //     printf(GREEN("Client request found in cache with!\n"));
+        //     pthread_mutex_lock(&server_lock);
+        //     int id = c->ss_id;
+        //     printf(GREEN("Found at port number : %s \n\n\n"),ss_list[id]->port);
+
+        //     if(ss_list[id]->status == 1){
+
+        //         request r = (request)malloc(sizeof(st_request));
+        //         r->request_type = RES;
+        //         // strcpy(r->data,search_in_cache(req->request_type,req->data));
+        //         char* data = (char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+        //         snprintf(data,MAX_DATA_LENGTH,"%s|%s",ss_list[id]->ip,ss_list[id]->client_port);
+        //         strcpy(r->data,data);
+        //         send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+        //     }
+        //     else if(ss_list[id]->is_backedup == 1 && req->request_type == READ_REQ){
+
+        //         request r = (request)malloc(sizeof(st_request));
+        //         r->request_type = BACKUP_READ_REQ;
+        //         char* data = (char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+        //         snprintf(data,MAX_DATA_LENGTH,"%s|%s",ss_list[id]->ip,ss_list[id]->backup_port[0]);
+        //         send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+        //     }
+        //     else{
+
+        //             request r = (request)malloc(sizeof(st_request));
+        //             r->request_type = FILE_NOT_FOUND;
+        //             strcpy(r->data, "File not found");
+        //             send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+        //     }
+
+        //     pthread_mutex_unlock(&server_lock);
+        //     return;
+
+        // }
+
         pthread_mutex_lock(&server_lock);
         int flag = 0;
         int id = 0;
@@ -46,17 +83,51 @@ void process(request req)
             r->request_type = FILE_NOT_FOUND;
             strcpy(r->data, "File not found");
             printf(RED("No files found , informing client\n\n\n"));
-            send(client_socket_tcp, r, sizeof(st_request), 0);
+            send(client_socket_arr[client_id], r, sizeof(st_request), 0);
         }
         else
         {
-
+            // insert_in_cache(req->request_type,req->data,id,ss_list[id]->ip,atoi(ss_list[id]->client_port));
+            // print_cache();
             // send to server
+
+            time_t before_processing = time(NULL);
+            if (req->request_type == READ_REQ || req->request_type == RETRIEVE_INFO) // Reading a file that is being written not possible
+            {
+                if(path_locked_or_not(req->data) != 1)
+                {
+                    // time_t proc = time(NULL);
+                    
+                    r->request_type = TIMEOUT;
+                    strcpy(r->data, "Timeout was done");
+                    send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+                    return;
+                    
+                    
+                }
+            }
+            else if (req->request_type == WRITE_REQ || req->request_type == APPEND_REQ) // Writing a file that is being written not possible
+            {
+                if(path_locked_or_not(req->data) != 1)
+                {
+                    
+                    
+                        r->request_type = TIMEOUT;
+                        strcpy(r->data, "Timeout was done");
+                        send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+                        return;
+                    
+                    
+                }
+                insert_path_lock(req->data); // Adding path to write list
+                printf(GREEN("Given path is added into locked paths : %s\n"),req->data);
+            }
+
             if (ss_list[id]->status == 1)
             {
                 r->request_type = RES;
                 strcpy(r->data, reference);
-                send(client_socket_tcp, r, sizeof(st_request), 0);
+                send(client_socket_arr[client_id], r, sizeof(st_request), 0);
             }
 
             else
@@ -68,7 +139,7 @@ void process(request req)
                     // allow
                     r->request_type = BACKUP_READ_REQ;
                     snprintf(r->data, MAX_DATA_LENGTH, "%s|%s", ss_list[id]->ip, ss_list[id]->backup_port[0]);
-                    send(client_socket_tcp,r,sizeof(st_request),0);
+                    send(client_socket_arr[client_id], r, sizeof(st_request), 0);
                 }
                 else
                 {
@@ -76,7 +147,7 @@ void process(request req)
                     r->request_type = FILE_NOT_FOUND;
                     strcpy(r->data, "File not found");
                     printf(RED("No files found , informing client\n\n\n"));
-                    send(client_socket_tcp, r, sizeof(st_request), 0);
+                    send(client_socket_arr[client_id], r, sizeof(st_request), 0);
                 }
             }
         }
@@ -112,7 +183,7 @@ void process(request req)
         {
             r->request_type = FILE_NOT_FOUND;
             strcpy(r->data, "File/Directory not found");
-            send(client_socket_tcp, r, sizeof(st_request), 0);
+            send(client_socket_arr[client_id], r, sizeof(st_request), 0);
         }
         else
         {
@@ -132,8 +203,8 @@ void process(request req)
                 send(s_fd, r, sizeof(st_request), 0);
                 recv(s_fd, r, sizeof(st_request), 0);
 
-
-                if(found_server->is_backedup==1){
+                if (found_server->is_backedup == 1)
+                {
 
                     if (req->request_type == DELETE_FOLDER)
                     {
@@ -152,7 +223,7 @@ void process(request req)
                     inet_pton(AF_INET, found_server->ip, &address.sin_addr.s_addr);
                     connect(s_fd, (struct sockaddr *)&address, sizeof(address));
                     send(s_fd, r, sizeof(st_request), 0);
-                    recv(s_fd, r, sizeof(st_request), 0);
+                    // recv(s_fd, r, sizeof(st_request), 0);
 
                     close(s_fd);
                     if (req->request_type == DELETE_FOLDER)
@@ -170,37 +241,22 @@ void process(request req)
                     inet_pton(AF_INET, found_server->ip, &address.sin_addr.s_addr);
                     connect(s_fd, (struct sockaddr *)&address, sizeof(address));
                     send(s_fd, r, sizeof(st_request), 0);
-                    recv(s_fd, r, sizeof(st_request), 0);
+                    // recv(s_fd, r, sizeof(st_request), 0);
 
                     close(s_fd);
-                    
-
                 }
 
+                r->request_type = ACK;
+                strcpy(r->data, "Operation succesful!\n");
+                send(client_socket_arr[client_id], r, sizeof(st_request), 0);
 
-
-
-
-
-                if (r->request_type == ACK)
-                {
-                    r->request_type = ACK;
-                    strcpy(r->data, "Operation succesful!\n");
-                    send(client_socket_tcp, r, sizeof(st_request), 0);
-                }
-                else
-                {
-                    r->request_type = FILE_NOT_FOUND;
-                    strcpy(r->data, "File not found");
-                    send(client_socket_tcp, r, sizeof(st_request), 0);
-                }
                 close(s_fd);
             }
             else
             {
                 r->request_type = FILE_NOT_FOUND;
                 strcpy(r->data, "File not found");
-                send(client_socket_tcp, r, sizeof(st_request), 0);
+                send(client_socket_arr[client_id], r, sizeof(st_request), 0);
             }
         }
     }
@@ -232,13 +288,12 @@ void process(request req)
             pthread_mutex_unlock(&ss_list[i]->lock);
         }
         pthread_mutex_unlock(&server_lock);
-        
 
         if (flag == 0 || found_server->status == 0)
         {
             r->request_type = FILE_NOT_FOUND;
             strcpy(r->data, "File/Directory not found");
-            send(client_socket_tcp, r, sizeof(st_request), 0);
+            send(client_socket_arr[client_id], r, sizeof(st_request), 0);
         }
         else
         {
@@ -275,7 +330,7 @@ void process(request req)
                 inet_pton(AF_INET, found_server->ip, &address.sin_addr.s_addr);
                 connect(s_fd, (struct sockaddr *)&address, sizeof(address));
                 send(s_fd, r, sizeof(st_request), 0);
-                recv(s_fd, r, sizeof(st_request), 0);
+                // recv(s_fd, r, sizeof(st_request), 0);
 
                 close(s_fd);
                 if (req->request_type == CREATE_FOLDER)
@@ -293,23 +348,15 @@ void process(request req)
                 inet_pton(AF_INET, found_server->ip, &address.sin_addr.s_addr);
                 connect(s_fd, (struct sockaddr *)&address, sizeof(address));
                 send(s_fd, r, sizeof(st_request), 0);
-                recv(s_fd, r, sizeof(st_request), 0);
+                // recv(s_fd, r, sizeof(st_request), 0);
 
                 close(s_fd);
             }
 
-            if (r->request_type == ACK)
-            {
-                r->request_type = ACK;
-                strcpy(r->data, "Operation succesful!\n");
-                send(client_socket_tcp, r, sizeof(st_request), 0);
-            }
-            else
-            {
-                r->request_type = FILE_NOT_FOUND;
-                strcpy(r->data, "File not found");
-                send(client_socket_tcp, r, sizeof(st_request), 0);
-            }
+            r->request_type = ACK;
+            strcpy(r->data, "Operation succesful!\n");
+            send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+
             close(s_fd);
         }
     }
@@ -318,7 +365,7 @@ void process(request req)
         request r = (request)malloc(sizeof(st_request));
         r->request_type = ACK;
         strcpy(r->data, "Operation succesful!\n");
-        send(client_socket_tcp, r, sizeof(st_request), 0);
+        send(client_socket_arr[client_id], r, sizeof(st_request), 0);
     }
     else if (req->request_type == COPY_REQUEST)
     {
@@ -341,8 +388,6 @@ void process(request req)
         {
 
             pthread_mutex_lock(&ss_list[i]->lock);
-
-            
 
             if (search_path(ss_list[i]->root, source) == 1)
             {
@@ -369,7 +414,7 @@ void process(request req)
             request r = (request)malloc(sizeof(st_request));
             r->request_type = FILE_NOT_FOUND;
             strcpy(r->data, "File not found");
-            send(client_socket_tcp, r, sizeof(st_request), 0);
+            send(client_socket_arr[client_id], r, sizeof(st_request), 0);
         }
         else
         {
@@ -392,24 +437,26 @@ void process(request req)
             char *token = strtok(get_r->data, "|");
             char *token1 = strtok(NULL, "|");
 
-            char** paths=(char**)malloc(sizeof(char*)*MAX_CONNECTIONS);
-            for(int i=0;i<MAX_CONNECTIONS;i++){
-                paths[i]=(char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+            char **paths = (char **)malloc(sizeof(char *) * MAX_CONNECTIONS);
+            for (int i = 0; i < MAX_CONNECTIONS; i++)
+            {
+                paths[i] = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
             }
-            char* token_path=strtok(token,"/");
-            int ind=0;
-            while(token_path!=NULL){
-                strcpy(paths[ind],token_path);
+            char *token_path = strtok(token, "/");
+            int ind = 0;
+            while (token_path != NULL)
+            {
+                strcpy(paths[ind], token_path);
                 ind++;
-                token_path=strtok(NULL,"/");
+                token_path = strtok(NULL, "/");
             }
-            char* new_dest=(char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
-            snprintf(new_dest, MAX_DATA_LENGTH, "%s/%s", desti, paths[ind-1]);
-            printf("%s\n",desti);
+            char *new_dest = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
+            snprintf(new_dest, MAX_DATA_LENGTH, "%s/%s", desti, paths[ind - 1]);
+            printf("%s\n", desti);
 
             get_r->request_type = PASTE;
             snprintf(get_r->data, MAX_DATA_LENGTH, "%s|%s", new_dest, token);
-            printf("%s\n",get_r->data);
+            printf("%s\n", get_r->data);
             struct sockaddr_in address1;
             memset(&address1, 0, sizeof(address1));
             int s_fd1 = socket(PF_INET, SOCK_STREAM, 0);
@@ -420,7 +467,8 @@ void process(request req)
             send(s_fd1, get_r, sizeof(st_request), 0);
             close(s_fd1);
 
-            if(dest_no->is_backedup==1){
+            if (dest_no->is_backedup == 1)
+            {
 
                 get_r->request_type = BACKUP_PASTE;
                 struct sockaddr_in address1;
@@ -445,15 +493,11 @@ void process(request req)
                 close(s_fd2);
             }
 
-        
-
-           
-
             request r = (request)malloc(sizeof(st_request));
             r->request_type = ACK;
             strcpy(r->data, "Copying succesful!\n");
             printf(BLUE("Copying succesful!\n\n\n"));
-            send(client_socket_tcp, r, sizeof(st_request), 0);
+            send(client_socket_arr[client_id], r, sizeof(st_request), 0);
         }
     }
 
@@ -481,27 +525,27 @@ void process(request req)
             ind++;
             token = strtok(NULL, "|");
         }
-        int count=0;
+        int count = 0;
         ss found_server = ss_list[atoi(ss_id) - 1];
         pthread_mutex_lock(&found_server->lock);
         for (int i = 0; i < ind - 1; i++)
         {
             strcpy(found_server->paths[found_server->path_count + i], path[i]);
-            if(search_path(found_server->root,path[i])==0){
-            
-            if(insert_path(found_server->root, path[i])==1){
-                count++;
-                
-            }
-            
+            if (search_path(found_server->root, path[i]) == 0)
+            {
+
+                if (insert_path(found_server->root, path[i]) == 1)
+                {
+                    count++;
+                }
             }
         }
 
         found_server->added = 1;
         found_server->path_count = found_server->path_count + ind - 1;
-        found_server->synced=0;
+        found_server->synced = 0;
         pthread_mutex_unlock(&found_server->lock);
-        printf(BLUE("Added %d new files/directories from server  %s\n\n\n"), count,found_server->port);
+        printf(BLUE("Added %d new files/directories from server  %s\n\n\n"), count, found_server->port);
         // print_paths(found_server->root);
     }
 
@@ -533,19 +577,7 @@ void process(request req)
         pthread_mutex_lock(&found_server->lock);
         for (int i = 0; i < tkn_cnt - 1; i++)
         {
-            // for (int j = 0; j < found_server->path_count; j++)
-            // {
-            //     if (strcmp(found_server->paths[j], path[i]) == 0)
-            //     {
-            //         for (int k = j; k < found_server->path_count - 1; k++)
-            //         {
-            //             strcpy(found_server->paths[k], found_server->paths[k + 1]);
-            //         }
-            //         found_server->path_count--;
-            //         break;
-            //     }
-            // }
-
+            
             if (search_path(found_server->root, path[i]) == 1)
             {
                 delete_path(found_server->root, path[i]);
@@ -557,6 +589,7 @@ void process(request req)
     }
     // Yet to work on depending on type of requests
     else if (req->request_type == LIST)
+
     {
 
         char *list = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
@@ -574,6 +607,62 @@ void process(request req)
         request r = (request)malloc(sizeof(st_request));
         r->request_type = RES;
         strcpy(r->data, list);
-        send(client_socket_tcp, r, sizeof(st_request), 0);
+        send(client_socket_arr[client_id], r, sizeof(st_request), 0);
     }
+
+    else if (req->request_type == WRITE_APPEND_COMP)
+    {
+
+        delete_path_lock(req->data);
+        printf(GREEN("Given path is deleted from locked paths : %s\n"),req->data);
+    }
+
+    else if (req->request_type == CONSISTENT_WRITE){
+
+        pthread_mutex_lock(&server_lock);
+
+        char* token = strtok(req->data,"|");
+        char* token1 = strtok(NULL,"|");
+        ss found_server;
+        for(int i = 0;i < server_count ; i++){
+
+            if(search_path(ss_list[i]->root,token)==1){
+                found_server = ss_list[i];
+                break;
+            }
+
+        }
+        pthread_mutex_unlock(&server_lock);
+
+        if(found_server->is_backedup==1){
+        request r = (request)malloc(sizeof(st_request));
+        r->request_type = BACKUP_WRITE_REQ;
+
+        snprintf(r->data,sizeof(r->data),"%s|%s",token,token1);
+
+        int sock_one = socket(PF_INET, SOCK_STREAM, 0);
+        struct sockaddr_in address;
+        memset(&address, 0, sizeof(address));
+        address.sin_port = htons(atoi(found_server->backup_port[0]));
+        address.sin_family = AF_INET;
+        inet_pton(AF_INET, found_server->ip, &address.sin_addr.s_addr);
+        connect(sock_one, (struct sockaddr *)&address, sizeof(address));
+        send(sock_one, r, sizeof(st_request), 0);
+        close(sock_one);
+
+        int sock_two = socket(PF_INET, SOCK_STREAM, 0);
+        struct sockaddr_in address1;
+        memset(&address1, 0, sizeof(address1));
+        address1.sin_port = htons(atoi(found_server->backup_port[1]));
+        address1.sin_family = AF_INET;
+        inet_pton(AF_INET, found_server->ip, &address1.sin_addr.s_addr);
+        connect(sock_two, (struct sockaddr *)&address1, sizeof(address1));
+        send(sock_two, r, sizeof(st_request), 0);
+
+        close(sock_two);
+
+        }
+    }
+
+
 }

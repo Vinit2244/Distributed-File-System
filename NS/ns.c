@@ -5,7 +5,7 @@ int curr_cache_write_index;
 ss ss_list[100];         // List of all storage servers
 int server_count = 0;    // Number of storage servers
 packet send_buffer[100]; // Buffer to store packets to be sent
-int send_count = 0;      // Number of packets in buffer                           // Size of UDP address
+int send_count = 0;      // Number of packets in buffer                           
 
 // Helper function to split string into tokens (n tokens)
 char **processstring(char data[], int n)
@@ -35,6 +35,13 @@ char **processstring(char data[], int n)
 void init_nfs()
 {
     // nothing as of now but any global pointers declared will be malloced here
+    init_cache();
+    sem_init(&lock, 0, 1);
+    for(int i=0;i<100;i++)
+    {
+        client_socket_arr[i]=-1;
+    }
+    initializer_header_node();
     return;
 }
 
@@ -92,16 +99,17 @@ void init_storage(char data[])
         new_ss->backup_root = create_trie_node();
         new_ss->is_backedup = 0;
         new_ss->has_backup = 0;
-        ss_list[server_count] = new_ss;
+        ss_list[atoi(tokens[0])-1] = new_ss;
         server_count++;
-        id = server_count - 1;
+        id = atoi(tokens[0]) - 1;
     }
     pthread_mutex_unlock(&server_lock);
 
+    // insert_log(1,id,atoi(new_ss->port),REGISTRATION_REQUEST,data,ACK);
+
     pthread_t server_thread;
     pthread_create(&server_thread, NULL, &server_handler, (void *)ss_list[id]);
-    // pthread_t sync_backup_thread;
-    // pthread_create(&sync_backup_thread,NULL,&sync_backup,(void*)ss_list[id]);
+    
 
     return;
 }
@@ -115,6 +123,8 @@ int main()
     sigaction(SIGTSTP, &sa, NULL);   // Ctrl + Z sends SIGTSTP signal (Signal Stop) - Prints the log onto the screen
 
     init_nfs(); // initialises ns server
+
+    
 
     // declaring thread variables
 

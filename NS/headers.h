@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <errno.h>
+#include <semaphore.h>
 
 //Relevant Macros
 #define NS_PORT             2000
@@ -21,7 +22,7 @@
 #define MAX_DATA_LENGTH     100000
 #define MAX_CONNECTIONS     100
 #define MAX_PATH_LEN        1024  
-
+#define MAX_PATHS_LOCKED    1000
 //Request types
 #define ACK                  1
 #define REQ                  2
@@ -56,6 +57,9 @@
 #define BACKUP_DELETE_FOLDER 32
 #define BACKUP_CREATE_FILE   33
 #define BACKUP_CREATE_FOLDER 34
+#define WRITE_APPEND_COMP    36
+#define TIMEOUT              37
+#define CONSISTENT_WRITE     35
 
 // Macros for book keeping
 #define SS          -1
@@ -152,6 +156,12 @@ typedef struct server_status{
 
 } server_status;
 
+struct path_locked {
+    char path[1000];
+    struct path_locked *next;
+};
+typedef struct path_locked paths_lock;
+
 typedef struct linked_list_head_struct* linked_list_head;
 typedef struct linked_list_node_struct* linked_list_node;
 
@@ -190,13 +200,16 @@ extern pthread_cond_t send_signal;
 extern server_status connections[100];
 extern int connection_count;
 extern pthread_mutex_t status_lock;
-
+extern pthread_mutex_t path_locked;
+extern paths_lock *global_paths_locked;      //Header Node
+extern int client_socket_arr[100];
+extern sem_t lock;
 //Defined functions
 char** processstring(char data[],int n);
 void init_nfs();
 void client_handler(char data[]);
 void init_storage(char data[]);
-void process(request req);
+void process(request req,int client_id);
 void* send_handler();
 void* receive_handler();
 void* server_handler(void* p);
@@ -228,3 +241,9 @@ void print_cache();
 void delete_cache_index(const int idx);
 st_cache* search_in_cache(int req_type, char* req_data);
 void insert_in_cache(int req_type, char* req_data, int ss_id, char* ss_ip, int ss_port);
+
+// Path locking functions
+void initializer_header_node();
+int path_locked_or_not(char *path);
+void insert_path_lock(const char *new_path);
+void delete_path_lock(const char *path_to_delete);

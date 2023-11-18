@@ -4,6 +4,9 @@ pthread_mutex_t server_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t send_buffer_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t send_signal = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t status_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t path_locked=PTHREAD_MUTEX_INITIALIZER;
+
+sem_t lock;
 
 int server_socket_tcp, client_socket_tcp;
 struct sockaddr_in server_addr_tcp, client_addr_tcp;
@@ -12,6 +15,9 @@ socklen_t client_addr_len_tcp = sizeof(client_addr_tcp);
 server_status connections[100];
 int connection_count = 0;
 int ack = 0;
+
+int client_socket_arr[100];
+
 
 void *receive_handler()
 {
@@ -39,20 +45,29 @@ void *receive_handler()
 
     while (1)
     {
-        client_socket_tcp = accept(server_socket_tcp, (struct sockaddr *)&client_addr_len_tcp, &client_addr_len_tcp);
-        if (client_socket_tcp == -1)
+        int id=-1;
+        for(int i=0;i<MAX_CONNECTIONS;i++)
+        {
+            if(client_socket_arr[i]==-1)
+            {
+                id=i;
+                break;
+            }
+        }
+        client_socket_arr[id] = accept(server_socket_tcp, (struct sockaddr *)&client_addr_len_tcp, &client_addr_len_tcp);
+        if (client_socket_arr[id] == -1)
         {
             perror("Accepting connection failed");
         }
         request req = (request)malloc(sizeof(st_request));
-        int x = recv(client_socket_tcp, req, sizeof(st_request), 0);
+        int x = recv(client_socket_arr[id], req, sizeof(st_request), 0);
 
         // if(x>0)printf("%s\n",req->data);
-        process(req); // thread
+        process(req,id); // thread
 
         free(req);
-
-        close(client_socket_tcp);
+        client_socket_arr[id]=-1;
+        close(client_socket_arr[id]);
     }
 
     close(server_socket_tcp);

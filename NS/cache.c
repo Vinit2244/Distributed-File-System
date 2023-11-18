@@ -51,7 +51,7 @@ st_cache* search_in_cache(int req_type, char* req_data)
 {
     for (int i = 0; i < curr_cache_write_index; i++)
     {
-        if (cache[i].req_type == req_type && cache[i].req_data == req_data)
+        if (cache[i].req_type == req_type && strcmp(cache[i].req_data,req_data)==0)
         {
             st_cache* to_return = (st_cache*) malloc(sizeof(st_cache));
 

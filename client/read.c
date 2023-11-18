@@ -95,6 +95,10 @@ void reading_operation(char *path)
             printf(RED("File Not Found \n")); // Error Not Found File
             return;
         }
+        else if(response->request_type == TIMEOUT){
+            printf(RED("File currently unavailable please try again\n"));
+            return;
+        }
         else{
         ipaddress = strtok(response->data, "|");
         port = strtok(NULL, "|");
@@ -112,4 +116,6 @@ void reading_operation(char *path)
 
 
     }
+
+    
 }
