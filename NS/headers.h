@@ -16,6 +16,8 @@
 #include <errno.h>
 #include <semaphore.h>
 
+#define LINUX
+
 //Relevant Macros
 #define NS_PORT             2000
 #define NS_IP               "0.0.0.0"
@@ -58,9 +60,9 @@
 #define BACKUP_DELETE_FOLDER 32
 #define BACKUP_CREATE_FILE   33
 #define BACKUP_CREATE_FOLDER 34
+#define CONSISTENT_WRITE     35
 #define WRITE_APPEND_COMP    36
 #define TIMEOUT              37
-#define CONSISTENT_WRITE     35
 
 // Macros for book keeping
 #define SS          -1
@@ -240,8 +242,8 @@ int insert_log(const int type, const int ss_id, const int ss_or_client_port, con
 void init_cache();
 void print_cache();
 void delete_cache_index(const int idx);
-st_cache* search_in_cache(int req_type, char* req_data);
 void insert_in_cache(int req_type, char* req_data, int ss_id, char* ss_ip, int ss_port);
+st_cache* search_in_cache(int req_type, char* req_data);
 
 // Path locking functions
 void initializer_header_node();

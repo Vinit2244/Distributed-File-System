@@ -1,6 +1,8 @@
 #ifndef __HEADERS_H__
 #define __HEADERS_H__
 
+#define LINUX
+
 // =========================== Header files ===========================
 #include <errno.h>
 #include <stdio.h>
@@ -14,13 +16,14 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/wait.h>
 
 // ==================== User defined header files  ====================
 #include "utils.h"
 #include "threads.h"
 
 // ========================== Useful Macros ==========================
-#define PWD                 "/home/divyansh/final-project-43/SS_to_copy"
+#define PWD                 "/home/ayush/Desktop/final-project-43/SS"
 #define MY_IP               "127.0.0.1" // Ip address of this storage server
 #define NFS_IP              "127.0.0.1" // IP address of the naming server
 #define MY_SS_ID            1           // Each storage server is assigned a unique SS_ID (used to distinguish between different servers)

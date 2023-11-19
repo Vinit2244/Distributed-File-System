@@ -216,10 +216,10 @@ void send_ack(const int status_code, const int sock_fd, const char* msg)
     int sent_msg_size;
     if ((sent_msg_size = send(sock_fd, (request) &ack_st, sizeof(st_request), 0)) <= 0)
     {
-        return 1;
+        fprintf(stderr, RED("send : could not sent acknowledgement : %s\n"), strerror(errno));
     }
 
-    return 0;
+    return;
 }
 
 // Searches for all files recursively

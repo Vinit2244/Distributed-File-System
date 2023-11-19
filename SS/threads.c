@@ -127,6 +127,7 @@ void *check_and_store_filepaths(void *args)
             memset(accessible_paths[i], 0, MAX_PATH_LEN);
             strcpy(accessible_paths[i], found_paths_copy[i]);
             free(found_paths_copy[i]);
+            found_paths_copy[i] = NULL;
         }
         num_of_paths_stored = num_paths_found;
 
@@ -154,7 +155,11 @@ void *check_and_store_filepaths(void *args)
 
         for (int i = 0; i < num_paths_found; i++)
         {
-            free(found_paths_copy[i]);
+            if (found_paths_copy != NULL)
+            {
+                free(found_paths_copy[i]);
+                found_paths_copy[i] = NULL;
+            }
         }
         free(found_paths_copy);
 
@@ -322,7 +327,7 @@ void *serve_request(void *args)
         fptr = fopen(path_to_write, "w");
         if (fptr == NULL)
         {
-            fprintf(stderr, RED("fopen : could not open file to write : %s\n"));
+            fprintf(stderr, RED("fopen : could not open file to write : %s\n"), strerror(errno));
             if (recvd_request.request_type == WRITE_REQ)
             {
                 send_ack(WRITE_FAILED, sock_fd, strerror(errno));
@@ -456,7 +461,11 @@ void *serve_request(void *args)
 
         // Storing file size with a space
         strcat(send_info.data, " Size : ");
-        sprintf(size_str, "%lld", file_stat.st_blocks);
+        #if defined(LINUX)
+            sprintf(size_str, "%ld", file_stat.st_blocks);
+        #else
+            sprintf(size_str, "%lld", file_stat.st_blocks);
+        #endif
         strcat(send_info.data, size_str);
         strcat(send_info.data, " ");
 
@@ -776,7 +785,7 @@ void *serve_request(void *args)
         else
         {
             // Fork failed so display error and send failed ack
-            fprintf(stderr, RED("fork: could not fork for folder deletion\n"), strerror(errno));
+            fprintf(stderr, RED("fork: could not fork for folder deletion : %s\n"), strerror(errno));
             free(dir_path);
             goto End;
         }

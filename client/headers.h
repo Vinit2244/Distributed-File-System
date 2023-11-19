@@ -1,6 +1,8 @@
 #ifndef __HEADERS_H__
 #define __HEADERS_H__
 
+#define LINUX
+
 // =========================== Header files ===========================
 #include <stdio.h>
 #include <stdlib.h>
