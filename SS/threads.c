@@ -230,7 +230,8 @@ void *serve_request(void *args)
     if ((recvd_msg_size = recv(sock_fd, &recvd_request, sizeof(st_request), 0)) <= 0)
     {
         fprintf(stderr, RED("recv  : %s\n"), strerror(errno));
-        return NULL;
+        send_ack(REQ_UNSERVICED, sock_fd, strerror(errno));
+        goto End2;
     }
 
     char **request_tkns = tokenize(recvd_request.data, '|');
@@ -259,6 +260,16 @@ void *serve_request(void *args)
         }
 
         FILE *fptr = fopen(path_to_read, "r");
+        if (fptr == NULL)
+        {
+            fprintf(stderr, RED("fopen : could not open file to read : %s\n"), strerror(errno));
+            send_ack(READ_FAILED, sock_fd, strerror(errno));
+            if (recvd_request.request_type == BACKUP_READ_REQ)
+            {
+                free(path_to_read);
+            }
+            goto End;
+        }
 
         st_request send_read_data;
         send_read_data.request_type = READ_REQ_DATA;
@@ -270,8 +281,8 @@ void *serve_request(void *args)
         int sent_msg_size;
         if ((sent_msg_size = send(sock_fd, (request)&send_read_data, sizeof(st_request), 0)) <= 0)
         {
-            fprintf(stderr, RED("send : %s\n"), strerror(errno));
-            exit(EXIT_FAILURE);
+            fprintf(stderr, RED("send : could not send the read data : %s\n"), strerror(errno));
+            send_ack(READ_FAILED, sock_fd, strerror(errno));
         }
 
         if (recvd_request.request_type == BACKUP_READ_REQ)
@@ -298,6 +309,19 @@ void *serve_request(void *args)
         // Opening file in write mode and writing onto the file (Assuming that the path is always correct and the file already exits)
         FILE *fptr;
         fptr = fopen(path_to_write, "w");
+        if (fptr == NULL)
+        {
+            fprintf(stderr, RED("fopen : could not open file to write : %s\n"));
+            if (recvd_request.request_type == WRITE_REQ)
+            {
+                send_ack(WRITE_FAILED, sock_fd, strerror(errno));
+            }
+            else
+            {
+                free(path_to_write);
+            }
+            goto End;
+        }
         fprintf(fptr, "%s", data_to_write);
         fclose(fptr);
 
@@ -321,11 +345,7 @@ void *serve_request(void *args)
 
             send_msg_to_nfs(final_str, CONSISTENT_WRITE);
 
-            // Keep sending acknowledgement till not sent successfully
-            while (send_ack(ACK, sock_fd) != 0)
-            {
-                fprintf(stderr, RED("send : could not send write acknowledgement : %s\n"), strerror(errno));
-            }
+            send_ack(ACK, sock_fd, NULL);
         }
     }
     else if (recvd_request.request_type == APPEND_REQ || recvd_request.request_type == BACKUP_APPEND_REQ)
@@ -348,6 +368,16 @@ void *serve_request(void *args)
         if (fptr == NULL)
         {
             fprintf(stderr, RED("fopen : could not open file to append : %s\n"), strerror(errno));
+            // Keep sending acknowledgement till not sent successfully only if it is not the backup request (since backup is asynchronous)
+            if (recvd_request.request_type == APPEND_REQ)
+            {
+                send_ack(APPEND_FAILED, sock_fd, strerror(errno));
+            }
+            else
+            {
+                free(path_to_write);
+            }
+            goto End;
         }
         fprintf(fptr, "%s", data_to_write);
         fclose(fptr);
@@ -372,11 +402,7 @@ void *serve_request(void *args)
 
             send_msg_to_nfs(final_str, CONSISTENT_WRITE);
 
-            // Keep sending acknowledgement till not sent successfully
-            while (send_ack(ACK, sock_fd) != 0)
-            {
-                fprintf(stderr, RED("send : could not send append acknowledgement : %s\n"), strerror(errno));
-            }
+            send_ack(ACK, sock_fd, NULL);
         }
     }
     else if (recvd_request.request_type == RETRIEVE_INFO)
@@ -410,8 +436,9 @@ void *serve_request(void *args)
         }
         else
         {
-            fprintf(stderr, RED("peek : %s\n"), strerror(errno));
-            exit(EXIT_FAILURE);
+            fprintf(stderr, RED("peek : could not get the stats for info of the file : %s\n"), strerror(errno));
+            send_ack(INFO_RETRIEVAL_FAILED, sock_fd, strerror(errno));
+            goto End;
         }
         strcat(send_info.data, " ");
         char size_str[10] = {0};
@@ -474,6 +501,7 @@ void *serve_request(void *args)
         if ((sent_msg_size = send(sock_fd, (request)&send_info, sizeof(st_request), 0)) <= 0)
         {
             fprintf(stderr, RED("send : could not send meta info : %s\n"), strerror(errno));
+            send_ack(INFO_RETRIEVAL_FAILED, sock_fd, strerror(errno));
         }
     }
     else if (recvd_request.request_type == COPY)
@@ -489,12 +517,8 @@ void *serve_request(void *args)
         if (fptr == NULL)
         {
             fprintf(stderr, RED("fopen : could not open file to read data to be copied : %s\n"), strerror(errno));
-            // Keep sending acknowledgement till not sent successfully
-            while (send_ack(FILE_NOT_FOUND, sock_fd) != 0)
-            {
-                fprintf(stderr, RED("send : could not send file not found acknowledgement : %s (trying again)\n"), strerror(errno));
-            }
-            goto End_copy;
+            send_ack(FILE_NOT_FOUND, sock_fd, NULL);
+            goto End;
         }
         char buffer[MAX_DATA_LENGTH - 1026] = {0};
         int bytes_read = fread(buffer, sizeof(char), MAX_DATA_LENGTH - 1027, fptr);
@@ -508,20 +532,11 @@ void *serve_request(void *args)
         if ((sent_msg_size = send(sock_fd, (request)&copy_data_request, sizeof(st_request), 0)) <= 0)
         {
             fprintf(stderr, RED("send : could not send the data to be copied : %s\n"), strerror(errno));
-            // Keep sending acknowledgement till not sent successfully
-            while (send_ack(COPY_FAILED, sock_fd) != 0)
-            {
-                fprintf(stderr, RED("send : could not send copy failed acknowledgement : %s (trying again)\n"), strerror(errno));
-            }
-            goto End_copy;
+            send_ack(COPY_FAILED, sock_fd, NULL);
+            goto End;
         }
 
-        // Keep sending acknowledgement till not sent successfully
-        while (send_ack(ACK, sock_fd) != 0)
-        {
-            fprintf(stderr, RED("send : could not send append acknowledgement : %s\n"), strerror(errno));
-        }
-    End_copy:
+        send_ack(ACK, sock_fd, NULL);
     }
     else if (recvd_request.request_type == PASTE || recvd_request.request_type == BACKUP_PASTE)
     {
@@ -578,12 +593,11 @@ void *serve_request(void *args)
                 {
                     free(file_path);
                 }
-                // Keep sending acknowledgement till not sent successfully
-                while (send_ack(PASTE_FAILED, sock_fd) != 0)
+                else
                 {
-                    fprintf(stderr, RED("send : could not send paste failed acknowledgement : %s (trying again)\n"), strerror(errno));
+                    send_ack(PASTE_FAILED, sock_fd, strerror(errno));
                 }
-                goto End_paste;
+                goto End;
             }
             // Moving into that directory to create the next directory in hierarchy
             chdir(dirs[i]);
@@ -596,8 +610,9 @@ void *serve_request(void *args)
         FILE *fptr = fopen(file_path, "w");
         if (fptr == NULL)
         {
-            fprintf(stderr, RED("fopen : %s\n"), strerror(errno));
-            exit(EXIT_FAILURE);
+            fprintf(stderr, RED("fopen : could not open file for pasting : %s\n"), strerror(errno));
+            send_ack(PASTE_FAILED, sock_fd, strerror(errno));
+            goto End;
         }
 
         fprintf(fptr, "%s", file_content);
@@ -611,24 +626,15 @@ void *serve_request(void *args)
         }
         else
         {
-            // Keep sending acknowledgement till not sent successfully
-            while (send_ack(ACK, sock_fd) != 0)
-            {
-                fprintf(stderr, RED("send : could not send append acknowledgement : %s\n"), strerror(errno));
-            }
+            send_ack(ACK, sock_fd, NULL);
         }
-    End_paste:
     }
     else if (recvd_request.request_type == PING)
     {
         printf(YELLOW("Ping request received.\n"));
         // Received a ping request from NFS to check if my SS is still responding or not so sending back the PING to say that I am active and listening
         st_request ping_request;
-        // Keep sending acknowledgement till not sent successfully
-        while (send_ack(ACK, sock_fd) != 0)
-        {
-            fprintf(stderr, RED("send : could not send append acknowledgement : %s\n"), strerror(errno));
-        }
+        send_ack(ACK, sock_fd, NULL);
     }
     else if (recvd_request.request_type == DELETE_FILE)
     {
@@ -643,34 +649,20 @@ void *serve_request(void *args)
             {
                 // If there was some error in deleting the file
                 fprintf(stderr, RED("remove : could not delete file : %s\n"), strerror(errno));
-
-                // Keep sending acknowledgement till not sent successfully
-                while (send_ack(DELETION_FAILED, sock_fd) != 0)
-                {
-                    fprintf(stderr, RED("send : could not send deletion failed acknowledgement : %s (sending again)\n"), strerror(errno));
-                }
-                goto End_delete_file;
+                send_ack(DELETE_FAILED, sock_fd, strerror(errno));
+                goto End;
             }
         }
         else
         {
             // File path does not exist
             fprintf(stderr, RED("remove : file does not exist\n"));
-
-            // Keep sending acknowledgement till not sent successfully
-            while (send_ack(FILE_NOT_FOUND, sock_fd) != 0)
-            {
-                fprintf(stderr, RED("send : could not send file not found acknowledgement : %s (sending again)\n"), strerror(errno));
-            }
-            goto End_delete_file;
+            send_ack(DELETE_FAILED, sock_fd, strerror(errno));
+            goto End;
         }
 
         // Keep sending acknowledgement till not sent successfully
-        while (send_ack(ACK, sock_fd) != 0)
-        {
-            fprintf(stderr, RED("send : could not send append acknowledgement : %s\n"), strerror(errno));
-        }
-    End_delete_file:
+        send_ack(ACK, sock_fd, NULL);
     }
     else if (recvd_request.request_type == BACKUP_DELETE_FILE)
     {
@@ -685,6 +677,8 @@ void *serve_request(void *args)
             {
                 // If there was some error in deleting the file
                 fprintf(stderr, RED("remove : could not delete backup file : %s\n"), strerror(errno));
+                free(file_path);
+                goto End;
             }
         }
         else
@@ -704,65 +698,8 @@ void *serve_request(void *args)
         char* absolute_path = create_abs_path(dir_path);
         if (absolute_path == NULL)
         {
-            fprintf(stderr, RED("rmdir : Can't remove the specified folder\n"));
-            // Keep sending acknowledgement till not sent successfully
-            while (send_ack(INVALID_DELETION, sock_fd) != 0)
-            {
-                fprintf(stderr, RED("send : could not send invalid deletion acknowledgement : %s (sending again)\n"), strerror(errno));
-            }
-            goto End_delete_folder;
-        }
-
-        int pid = fork();
-        if (pid == 0)
-        {
-            // Child process
-            char* command = "rm";
-            char* args[] = {"rm", "-r", absolute_path, NULL};
-
-            execvp(command, args);
-            // execvp failed
-            fprintf(stderr, RED("execvp : failed to remove directories\n"));
-
-            // Keep sending acknowledgement till not sent successfully
-            while (send_ack(DELETION_FAILED, sock_fd) != 0)
-            {
-                fprintf(stderr, RED("send : could not send deletion failed acknowledgement : %s (sending again)\n"), strerror(errno));
-            }
-        }
-        else if (pid > 0)
-        {
-            // Parent process (waiting for child to finish)
-            wait(NULL);
-        }
-        else
-        {
-            // Fork failed so display error and send failed ack
-            fprintf(stderr, RED("fork: could not fork for folder deletion\n"));
-
-            // Keep sending acknowledgement till not sent successfully
-            while (send_ack(DELETION_FAILED, sock_fd) != 0)
-            {
-                fprintf(stderr, RED("send : could not send deletion failed acknowledgement : %s (sending again)\n"), strerror(errno));
-            }
-        }
-
-        // Keep sending acknowledgement till not sent successfully
-        while (send_ack(ACK, sock_fd) != 0)
-        {
-            fprintf(stderr, RED("send : could not send delete folder acknowledgement : %s (sending again)\n"), strerror(errno));
-        }
-    End_delete_folder:
-    }
-    else if (recvd_request.request_type == BACKUP_DELETE_FOLDER)
-    {
-        printf(YELLOW("Backup Delete folder request received.\n"));
-        char* dir_path = replace_storage_by_backup(recvd_request.data);
-
-        char* absolute_path = create_abs_path(dir_path);
-        if (absolute_path == NULL)
-        {
-            fprintf(stderr, RED("rmdir : Can't remove the specified folder\n"));
+            fprintf(stderr, RED("rmdir : Can't remove the specified folder : %s\n"), strerror(errno));
+            send_ack(INVALID_DELETION, sock_fd, strerror(errno));
             goto End;
         }
 
@@ -776,6 +713,49 @@ void *serve_request(void *args)
             execvp(command, args);
             // execvp failed
             fprintf(stderr, RED("execvp : failed to remove directories\n"));
+            send_ack(DELETE_FAILED, sock_fd, strerror(errno));
+            goto End;
+        }
+        else if (pid > 0)
+        {
+            // Parent process (waiting for child to finish)
+            wait(NULL);
+        }
+        else
+        {
+            // Fork failed so display error and send failed ack
+            fprintf(stderr, RED("fork: could not fork for folder deletion\n"));
+            send_ack(DELETE_FAILED, sock_fd, strerror(errno));
+            goto End;
+        }
+
+        send_ack(ACK, sock_fd, NULL);
+    }
+    else if (recvd_request.request_type == BACKUP_DELETE_FOLDER)
+    {
+        printf(YELLOW("Backup Delete folder request received.\n"));
+        char* dir_path = replace_storage_by_backup(recvd_request.data);
+
+        char* absolute_path = create_abs_path(dir_path);
+        if (absolute_path == NULL)
+        {
+            fprintf(stderr, RED("rmdir : Can't remove the specified folder : %s\n"), strerror(errno));
+            free(dir_path);
+            goto End;
+        }
+
+        int pid = fork();
+        if (pid == 0)
+        {
+            // Child process
+            char* command = "rm";
+            char* args[] = {"rm", "-r", absolute_path, NULL};
+
+            execvp(command, args);
+            // execvp failed
+            fprintf(stderr, RED("execvp : failed to remove directories : %s\n"), strerror(errno));
+            free(dir_path);
+            goto End;
         }
         else if (pid > 0)
         {
@@ -785,11 +765,12 @@ void *serve_request(void *args)
         else
         {
             // Fork failed so display error and send failed ack
-            fprintf(stderr, RED("fork: could not fork for folder deletion\n"));
+            fprintf(stderr, RED("fork: could not fork for folder deletion\n"), strerror(errno));
+            free(dir_path);
+            goto End;
         }
 
         // No need to send ack as backup is done asynchronously
-    End:
         free(dir_path);
     }
     else if (recvd_request.request_type == CREATE_FILE)
@@ -801,15 +782,12 @@ void *serve_request(void *args)
         if (fptr == NULL)
         {
             fprintf(stderr, RED("fopen : path DNE : %s\n"), strerror(errno));
-            exit(EXIT_FAILURE);
+            send_ack(CREATE_FAILED, sock_fd, strerror(errno));
+            goto End;
         }
         fclose(fptr);
 
-        // Keep sending acknowledgement till not sent successfully
-        while (send_ack(ACK, sock_fd) != 0)
-        {
-            fprintf(stderr, RED("send : could not send create file acknowledgement : %s (sending again)\n"), strerror(errno));
-        }
+        send_ack(ACK, sock_fd, NULL);
     }
     else if (recvd_request.request_type == BACKUP_CREATE_FILE)
     {
@@ -841,6 +819,12 @@ void *serve_request(void *args)
         create_folder(folder_path);
 
         FILE *fptr = fopen(file_path, "w");
+        if (fptr == NULL)
+        {
+            fprintf(stderr, RED("fopen : could not open file to create backup file : %s\n"), strerror(errno));
+            free(file_path);
+            goto End;
+        }
         fclose(fptr);
 
         free(file_path);
@@ -852,11 +836,7 @@ void *serve_request(void *args)
 
         create_folder(file_path);
 
-        // Keep sending acknowledgement till not sent successfully
-        while (send_ack(ACK, sock_fd) != 0)
-        {
-            fprintf(stderr, RED("send : could not send create folder acknowledgement : %s (trying again)\n"), strerror(errno));
-        }
+        send_ack(ACK, sock_fd, NULL);
     }
     else if (recvd_request.request_type == BACKUP_CREATE_FOLDER)
     {
@@ -870,9 +850,11 @@ void *serve_request(void *args)
         free(file_path);
     }
 
+End:
     // Freeing tokens created at the start from request data
     free_tokens(request_tkns);
 
+End2:
     // Closing client socket as all the communication is done
     if (close(sock_fd) < 0)
     {
@@ -898,7 +880,7 @@ void *start_nfs_port(void *args)
     if (nfs_server_socket_fd < 0)
     {
         // Some error occured while creating socket
-        fprintf(stderr, RED("socket : %s\n"), strerror(errno));
+        fprintf(stderr, RED("socket : could not start nfs socket : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -909,7 +891,7 @@ void *start_nfs_port(void *args)
     // Binding to the port
     if (bind(nfs_server_socket_fd, (struct sockaddr *)&ss_address_nfs, sizeof(ss_address_nfs)) == -1)
     {
-        fprintf(stderr, RED("bind : %s\n"), strerror(errno));
+        fprintf(stderr, RED("bind : could not bind nfs socket : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -918,7 +900,7 @@ void *start_nfs_port(void *args)
     // Listening for incoming requests for communication
     if (listen(nfs_server_socket_fd, MAX_PENDING) == -1)
     {
-        fprintf(stderr, RED("listen : %s\n"), strerror(errno));
+        fprintf(stderr, RED("listen : could not listen on nfs socket : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -931,7 +913,7 @@ void *start_nfs_port(void *args)
         int nfs_sock_fd = accept(nfs_server_socket_fd, (struct sockaddr *)&nfs_addr, (socklen_t *)&addr_size);
         if (nfs_sock_fd == -1)
         {
-            fprintf(stderr, RED("accept : %s\n"), strerror(errno));
+            fprintf(stderr, RED("accept : could not accept connection on nfs socket : %s\n"), strerror(errno));
             exit(EXIT_FAILURE);
         }
 
@@ -958,7 +940,7 @@ void *start_nfs_port(void *args)
 
     if (close(nfs_server_socket_fd) < 0)
     {
-        fprintf(stderr, RED("close : failed to close the server socket!\n"));
+        fprintf(stderr, RED("close : failed to close the nfs socket!\n"));
         exit(EXIT_FAILURE);
     }
 
@@ -975,7 +957,7 @@ void *start_client_port(void *args)
     if (client_server_socket_fd < 0)
     {
         // Some error occured while creating socket
-        fprintf(stderr, RED("socket : %s\n"), strerror(errno));
+        fprintf(stderr, RED("socket : could not create client socket : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -987,7 +969,7 @@ void *start_client_port(void *args)
     if (bind(client_server_socket_fd, (struct sockaddr *)&ss_address_client, sizeof(ss_address_client)) == -1)
     {
         // Error while binding to the port
-        fprintf(stderr, RED("bind : %s\n"), strerror(errno));
+        fprintf(stderr, RED("bind : could not bind to client socket : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -996,7 +978,7 @@ void *start_client_port(void *args)
     // Listening for incoming requests for communication
     if (listen(client_server_socket_fd, MAX_PENDING) == -1)
     {
-        fprintf(stderr, RED("listen : %s\n"), strerror(errno));
+        fprintf(stderr, RED("listen : could not listen on client socket : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -1011,7 +993,7 @@ void *start_client_port(void *args)
         int client_socket_fd = accept(client_server_socket_fd, (struct sockaddr *)&client_addr, (socklen_t *)&addr_size);
         if (client_socket_fd == -1)
         {
-            fprintf(stderr, RED("accept : %s\n"), strerror(errno));
+            fprintf(stderr, RED("accept : could not accept requests on client socket : %s\n"), strerror(errno));
             exit(EXIT_FAILURE);
         }
 
@@ -1043,7 +1025,7 @@ void *start_client_port(void *args)
     if (close(client_server_socket_fd) < 0)
     {
         // Error while closing the socket
-        fprintf(stderr, RED("close : failed to close the server socket!\n"));
+        fprintf(stderr, RED("close : failed to close the client socket!\n"));
         exit(EXIT_FAILURE);
     }
 

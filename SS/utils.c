@@ -8,7 +8,9 @@ char **tokenize(const char *str, const char ch)
     for (int i = 0; i < strlen(str); i++)
     {
         if (str[i] == ch)
+        {
             num_of_ch++;
+        }
     }
 
     // Number of tokens would be 1 more than the number of delimiters present in the string
@@ -158,7 +160,7 @@ int register_ss(void)
 
     if (inet_pton(AF_INET, NFS_IP, &address.sin_addr.s_addr) <= 0) 
     {   
-        fprintf(stderr, RED("inet_pton : could not conver ip string to short int : %s\n"), strerror(errno));
+        fprintf(stderr, RED("inet_pton : could not conver ip string to short int for registering ss : %s\n"), strerror(errno));
         return 1;
     }
 
@@ -178,7 +180,7 @@ int register_ss(void)
     int sent_msg_size;
     if ((sent_msg_size = send(socket_fd, (request) &registration_request_st, sizeof(st_request), 0)) < 0)
     {
-        fprintf(stderr, RED("send : could not send registration request : %s\n"), strerror(errno));
+        fprintf(stderr, RED("send : could not send ss registration request : %s\n"), strerror(errno));
         return 1;
     }
 
@@ -197,12 +199,17 @@ int register_ss(void)
     return 0;
 }
 
-// Sends the mentioned acknowledgement to the given socket file descriptor, returns 0 if successful else 1
-int send_ack(const int status_code, const int sock_fd)
+// Sends the mentioned acknowledgement to the given socket file descriptor
+void send_ack(const int status_code, const int sock_fd, const char* msg)
 {
     // Send acknowledgement
     st_request ack_st;
     ack_st.request_type = status_code;
+    if (msg != NULL)
+    {
+        memset(ack_st.data, 0, MAX_DATA_LENGTH);
+        strcpy(ack_st.data, msg);
+    }
 
     // Nothing to be written onto the data as only ack is being sent
     

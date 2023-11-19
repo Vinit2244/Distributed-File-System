@@ -89,9 +89,15 @@
 
 // ============================= ERROR Codes =============================
 // All operation failed error codes start from 600
-#define DELETION_FAILED      601
+#define REQ_UNSERVICED       600
+#define DELETE_FAILED        601
 #define PASTE_FAILED         602
 #define COPY_FAILED          603
+#define APPEND_FAILED        604
+#define CREATE_FAILED        605
+#define INFO_RETRIEVAL_FAILED 606
+#define READ_FAILED          607
+#define WRITE_FAILED         608
 // All not allowed error codes will start from 500
 #define INVALID_DELETION     501
 // All not found error codes will start from 400
