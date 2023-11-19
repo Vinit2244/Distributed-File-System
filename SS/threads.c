@@ -263,13 +263,13 @@ void *serve_request(void *args)
         if (fptr == NULL)
         {
             fprintf(stderr, RED("fopen : could not open file to read : %s\n"), strerror(errno));
-            if (recvd_request.request_type == BACKUP_READ_REQ)
+            if (recvd_request.request_type == READ_REQ)
             {
-                free(path_to_read);
+                send_ack(READ_FAILED, sock_fd, strerror(errno));
             }
             else
             {
-                send_ack(READ_FAILED, sock_fd, strerror(errno));
+                free(path_to_read);
             }
             goto End;
         }
@@ -285,14 +285,15 @@ void *serve_request(void *args)
         if ((sent_msg_size = send(sock_fd, (request)&send_read_data, sizeof(st_request), 0)) <= 0)
         {
             fprintf(stderr, RED("send : could not send the read data : %s\n"), strerror(errno));
-            if (recvd_request.request_type == BACKUP_READ_REQ)
-            {
-                free(path_to_read);
-            }
-            else
+            if (recvd_request.request_type == READ_REQ)
             {
                 send_ack(READ_FAILED, sock_fd, strerror(errno));
             }
+            else
+            {
+                free(path_to_read);
+            }
+            goto End;
         }
 
         if (recvd_request.request_type == BACKUP_READ_REQ)
