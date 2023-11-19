@@ -12,7 +12,6 @@ struct trie_node *create_trie_node()
     }
     node->key = NULL;   // Initially there is no string stored in the node (strings are stored only in end nodes)
     node->end = 0;      // Initially the node is not an end node
-    node->ss_id = 0;    // Initially SS id is not assigned yet
     // 256 childrens 1 for each of the ASCII characters
     for (int i = 0; i < 256; i++)
     {
@@ -22,7 +21,7 @@ struct trie_node *create_trie_node()
 }
 
 // A function to insert a string into the trie, Returns 1 if successfull else 0
-int insert_path(struct trie_node *root, char *key, const int ss_id)
+int insert_path(struct trie_node *root, char *key)
 {
     // Starting from the root node
     struct trie_node *current = root;
@@ -47,7 +46,6 @@ int insert_path(struct trie_node *root, char *key, const int ss_id)
     // We have reached the end of the string that is to be stored so we are at the final node so just store the string as the key and mark this node as one of the end nodes
     current->key = key;
     current->end = 1;
-    current->ss_id = ss_id;
     return 1;
 }
 
@@ -106,7 +104,7 @@ void print_paths(struct trie_node *root)
 
     if (root->end == 1)
     {
-        printf("%s %d\n", root->key, root->ss_id);
+        printf("%s\n", root->key);
     }
 
     for (int i = 0; i < 256; i++)
