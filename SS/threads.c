@@ -52,6 +52,7 @@ void *check_and_store_filepaths(void *args)
             strcat(found_paths[idx++], &n->path[strlen(PWD)]);
             n = n->next;
         }
+
         // Have copied all the found paths in the array so now we can free the linked list
         free_linked_list(paths);
 
@@ -92,7 +93,11 @@ void *check_and_store_filepaths(void *args)
         if (strlen(new_paths) > 0)
         {
             new_paths[strlen(new_paths) - 1] = '\0';
-            send_update_paths_request(ADD_PATHS, new_paths);
+            if (send_update_paths_request(ADD_PATHS, new_paths) != 0)
+            {
+                fprintf(stderr, RED("Could not send add paths request.\n"));
+                goto Free;
+            }
         }
 
         // Checking for deleted paths
@@ -109,10 +114,24 @@ void *check_and_store_filepaths(void *args)
         if (strlen(deleted_paths) > 0)
         {
             deleted_paths[strlen(deleted_paths) - 1] = '\0';
-            send_update_paths_request(DELETE_PATHS, deleted_paths);
+            if (send_update_paths_request(DELETE_PATHS, deleted_paths) != 0)
+            {
+                fprintf(stderr, RED("Could not send add paths request.\n"));
+                goto Free;
+            }
         }
 
-        // Freeing all the memory allocated except the found paths copy array
+        // Copying all the found paths into the accessible paths array
+        for (int i = 0; i < num_paths_found; i++)
+        {
+            memset(accessible_paths[i], 0, MAX_PATH_LEN);
+            strcpy(accessible_paths[i], found_paths_copy[i]);
+            free(found_paths_copy[i]);
+        }
+        num_of_paths_stored = num_paths_found;
+
+        // Freeing all the memory allocated
+    Free:
         for (int i = 0; i < num_paths_found; i++)
         {
             if (found_paths[i] != NULL)
@@ -133,15 +152,10 @@ void *check_and_store_filepaths(void *args)
         }
         free(accessible_paths_copy);
 
-        // Copying all the found paths into the accessible paths array
         for (int i = 0; i < num_paths_found; i++)
         {
-            memset(accessible_paths[i], 0, MAX_PATH_LEN);
-            strcpy(accessible_paths[i], found_paths_copy[i]);
             free(found_paths_copy[i]);
         }
-
-        num_of_paths_stored = num_paths_found;
         free(found_paths_copy);
 
         pthread_mutex_unlock(&accessible_paths_mutex);
@@ -307,7 +321,11 @@ void *serve_request(void *args)
 
             send_msg_to_nfs(final_str, CONSISTENT_WRITE);
 
-            send_ack(ACK, sock_fd);
+            // Keep sending acknowledgement till not sent successfully
+            while (send_ack(ACK, sock_fd) != 0)
+            {
+                fprintf(stderr, RED("send : could not send write acknowledgement : %s\n"), strerror(errno));
+            }
         }
     }
     else if (recvd_request.request_type == APPEND_REQ || recvd_request.request_type == BACKUP_APPEND_REQ)
@@ -326,8 +344,11 @@ void *serve_request(void *args)
         
         char *data_to_write = request_tkns[1];
 
-        FILE *fptr;
-        fptr = fopen(path_to_write, "a");
+        FILE *fptr = fopen(path_to_write, "a");
+        if (fptr == NULL)
+        {
+            fprintf(stderr, RED("fopen : could not open file to append : %s\n"), strerror(errno));
+        }
         fprintf(fptr, "%s", data_to_write);
         fclose(fptr);
 
@@ -350,8 +371,12 @@ void *serve_request(void *args)
             strcat(final_str, buffer);
 
             send_msg_to_nfs(final_str, CONSISTENT_WRITE);
-            
-            send_ack(ACK, sock_fd);
+
+            // Keep sending acknowledgement till not sent successfully
+            while (send_ack(ACK, sock_fd) != 0)
+            {
+                fprintf(stderr, RED("send : could not send append acknowledgement : %s\n"), strerror(errno));
+            }
         }
     }
     else if (recvd_request.request_type == RETRIEVE_INFO)
@@ -366,7 +391,8 @@ void *serve_request(void *args)
         send_info.request_type = INFO;
         memset(send_info.data, 0, MAX_DATA_LENGTH);
 
-        strcpy(send_info.data, "Permission : ");
+        strcpy(send_info.data, PINK_COLOR);
+        strcat(send_info.data, "Permission : ");
 
         // Retrieving file permissions
         if (!stat(path, &file_stat))
@@ -442,12 +468,12 @@ void *serve_request(void *args)
         char timestamp[100] = {0};
         sprintf(timestamp, "Date : %s %s  Time : %s:%s ", month, date, hour, mins);
         strcat(send_info.data, timestamp);
+        strcat(send_info.data, RESET_COLOR);
 
         int sent_msg_size;
         if ((sent_msg_size = send(sock_fd, (request)&send_info, sizeof(st_request), 0)) <= 0)
         {
-            fprintf(stderr, RED("send : %s\n"), strerror(errno));
-            exit(EXIT_FAILURE);
+            fprintf(stderr, RED("send : could not send meta info : %s\n"), strerror(errno));
         }
     }
     else if (recvd_request.request_type == COPY)
@@ -460,6 +486,16 @@ void *serve_request(void *args)
         memset(copy_data_request.data, 0, MAX_DATA_LENGTH);
 
         FILE *fptr = fopen(path, "r");
+        if (fptr == NULL)
+        {
+            fprintf(stderr, RED("fopen : could not open file to read data to be copied : %s\n"), strerror(errno));
+            // Keep sending acknowledgement till not sent successfully
+            while (send_ack(FILE_NOT_FOUND, sock_fd) != 0)
+            {
+                fprintf(stderr, RED("send : could not send file not found acknowledgement : %s (trying again)\n"), strerror(errno));
+            }
+            goto End_copy;
+        }
         char buffer[MAX_DATA_LENGTH - 1026] = {0};
         int bytes_read = fread(buffer, sizeof(char), MAX_DATA_LENGTH - 1027, fptr);
 
@@ -471,11 +507,21 @@ void *serve_request(void *args)
         int sent_msg_size;
         if ((sent_msg_size = send(sock_fd, (request)&copy_data_request, sizeof(st_request), 0)) <= 0)
         {
-            fprintf(stderr, RED("send : %s\n"), strerror(errno));
-            exit(EXIT_FAILURE);
+            fprintf(stderr, RED("send : could not send the data to be copied : %s\n"), strerror(errno));
+            // Keep sending acknowledgement till not sent successfully
+            while (send_ack(COPY_FAILED, sock_fd) != 0)
+            {
+                fprintf(stderr, RED("send : could not send copy failed acknowledgement : %s (trying again)\n"), strerror(errno));
+            }
+            goto End_copy;
         }
 
-        send_ack(ACK, sock_fd);
+        // Keep sending acknowledgement till not sent successfully
+        while (send_ack(ACK, sock_fd) != 0)
+        {
+            fprintf(stderr, RED("send : could not send append acknowledgement : %s\n"), strerror(errno));
+        }
+    End_copy:
     }
     else if (recvd_request.request_type == PASTE || recvd_request.request_type == BACKUP_PASTE)
     {
@@ -526,8 +572,18 @@ void *serve_request(void *args)
             else
             {
                 // Error creating the directory
-                fprintf(stderr, RED("mkdir : %s\n"), strerror(errno));
-                exit(EXIT_FAILURE);
+                fprintf(stderr, RED("mkdir : could not create directory : %s\n"), strerror(errno));
+                chdir(PWD);
+                if (recvd_request.request_type == BACKUP_PASTE)
+                {
+                    free(file_path);
+                }
+                // Keep sending acknowledgement till not sent successfully
+                while (send_ack(PASTE_FAILED, sock_fd) != 0)
+                {
+                    fprintf(stderr, RED("send : could not send paste failed acknowledgement : %s (trying again)\n"), strerror(errno));
+                }
+                goto End_paste;
             }
             // Moving into that directory to create the next directory in hierarchy
             chdir(dirs[i]);
@@ -555,15 +611,24 @@ void *serve_request(void *args)
         }
         else
         {
-            send_ack(ACK, sock_fd);
+            // Keep sending acknowledgement till not sent successfully
+            while (send_ack(ACK, sock_fd) != 0)
+            {
+                fprintf(stderr, RED("send : could not send append acknowledgement : %s\n"), strerror(errno));
+            }
         }
+    End_paste:
     }
     else if (recvd_request.request_type == PING)
     {
         printf(YELLOW("Ping request received.\n"));
         // Received a ping request from NFS to check if my SS is still responding or not so sending back the PING to say that I am active and listening
         st_request ping_request;
-        send_ack(ACK, sock_fd);
+        // Keep sending acknowledgement till not sent successfully
+        while (send_ack(ACK, sock_fd) != 0)
+        {
+            fprintf(stderr, RED("send : could not send append acknowledgement : %s\n"), strerror(errno));
+        }
     }
     else if (recvd_request.request_type == DELETE_FILE)
     {
@@ -577,18 +642,35 @@ void *serve_request(void *args)
             if (remove(file_path) != 0)
             {
                 // If there was some error in deleting the file
-                fprintf(stderr, RED("remove : %s\n"), strerror(errno));
-                exit(EXIT_FAILURE);
+                fprintf(stderr, RED("remove : could not delete file : %s\n"), strerror(errno));
+
+                // Keep sending acknowledgement till not sent successfully
+                while (send_ack(DELETION_FAILED, sock_fd) != 0)
+                {
+                    fprintf(stderr, RED("send : could not send deletion failed acknowledgement : %s (sending again)\n"), strerror(errno));
+                }
+                goto End_delete_file;
             }
         }
         else
         {
             // File path does not exist
-            fprintf(stderr, RED("remove : File does not exist\n"));
-            exit(EXIT_FAILURE);
+            fprintf(stderr, RED("remove : file does not exist\n"));
+
+            // Keep sending acknowledgement till not sent successfully
+            while (send_ack(FILE_NOT_FOUND, sock_fd) != 0)
+            {
+                fprintf(stderr, RED("send : could not send file not found acknowledgement : %s (sending again)\n"), strerror(errno));
+            }
+            goto End_delete_file;
         }
 
-        send_ack(ACK, sock_fd);
+        // Keep sending acknowledgement till not sent successfully
+        while (send_ack(ACK, sock_fd) != 0)
+        {
+            fprintf(stderr, RED("send : could not send append acknowledgement : %s\n"), strerror(errno));
+        }
+    End_delete_file:
     }
     else if (recvd_request.request_type == BACKUP_DELETE_FILE)
     {
@@ -602,8 +684,7 @@ void *serve_request(void *args)
             if (remove(file_path) != 0)
             {
                 // If there was some error in deleting the file
-                fprintf(stderr, RED("remove : %s\n"), strerror(errno));
-                exit(EXIT_FAILURE);
+                fprintf(stderr, RED("remove : could not delete backup file : %s\n"), strerror(errno));
             }
         }
         else
@@ -613,7 +694,6 @@ void *serve_request(void *args)
         }
 
         // No need to send ack as backup is done asynchronously
-
         free(file_path);
     }
     else if (recvd_request.request_type == DELETE_FOLDER)
@@ -625,26 +705,54 @@ void *serve_request(void *args)
         if (absolute_path == NULL)
         {
             fprintf(stderr, RED("rmdir : Can't remove the specified folder\n"));
-            exit(EXIT_FAILURE);
+            // Keep sending acknowledgement till not sent successfully
+            while (send_ack(INVALID_DELETION, sock_fd) != 0)
+            {
+                fprintf(stderr, RED("send : could not send invalid deletion acknowledgement : %s (sending again)\n"), strerror(errno));
+            }
+            goto End_delete_folder;
         }
 
         int pid = fork();
-        if (pid == 0) {
+        if (pid == 0)
+        {
+            // Child process
             char* command = "rm";
             char* args[] = {"rm", "-r", absolute_path, NULL};
-            // Start running the recursive remove command on terminal
+
             execvp(command, args);
             // execvp failed
-            fprintf(stderr, RED("rmdir : failed\n"));
-        } else if (pid > 0) {
-            // Waiting for the child process to finish
+            fprintf(stderr, RED("execvp : failed to remove directories\n"));
+
+            // Keep sending acknowledgement till not sent successfully
+            while (send_ack(DELETION_FAILED, sock_fd) != 0)
+            {
+                fprintf(stderr, RED("send : could not send deletion failed acknowledgement : %s (sending again)\n"), strerror(errno));
+            }
+        }
+        else if (pid > 0)
+        {
+            // Parent process (waiting for child to finish)
             wait(NULL);
-        } else {
-            fprintf(stderr, "\033[1;31mfork: could not fork\033[1;0m\n");
-            return 0;
+        }
+        else
+        {
+            // Fork failed so display error and send failed ack
+            fprintf(stderr, RED("fork: could not fork for folder deletion\n"));
+
+            // Keep sending acknowledgement till not sent successfully
+            while (send_ack(DELETION_FAILED, sock_fd) != 0)
+            {
+                fprintf(stderr, RED("send : could not send deletion failed acknowledgement : %s (sending again)\n"), strerror(errno));
+            }
         }
 
-        send_ack(ACK, sock_fd);
+        // Keep sending acknowledgement till not sent successfully
+        while (send_ack(ACK, sock_fd) != 0)
+        {
+            fprintf(stderr, RED("send : could not send delete folder acknowledgement : %s (sending again)\n"), strerror(errno));
+        }
+    End_delete_folder:
     }
     else if (recvd_request.request_type == BACKUP_DELETE_FOLDER)
     {
@@ -655,26 +763,33 @@ void *serve_request(void *args)
         if (absolute_path == NULL)
         {
             fprintf(stderr, RED("rmdir : Can't remove the specified folder\n"));
-            exit(EXIT_FAILURE);
+            goto End;
         }
 
         int pid = fork();
-        if (pid == 0) {
+        if (pid == 0)
+        {
+            // Child process
             char* command = "rm";
             char* args[] = {"rm", "-r", absolute_path, NULL};
 
             execvp(command, args);
             // execvp failed
-            fprintf(stderr, RED("rmdir : failed\n"));
-        } else if (pid > 0) {
+            fprintf(stderr, RED("execvp : failed to remove directories\n"));
+        }
+        else if (pid > 0)
+        {
+            // Parent process
             wait(NULL);
-        } else {
-            fprintf(stderr, "\033[1;31mfork: could not fork\033[1;0m\n");
-            return 0;
+        }
+        else
+        {
+            // Fork failed so display error and send failed ack
+            fprintf(stderr, RED("fork: could not fork for folder deletion\n"));
         }
 
         // No need to send ack as backup is done asynchronously
-
+    End:
         free(dir_path);
     }
     else if (recvd_request.request_type == CREATE_FILE)
@@ -685,12 +800,16 @@ void *serve_request(void *args)
         FILE *fptr = fopen(file_path, "w");
         if (fptr == NULL)
         {
-            fprintf(stderr, RED("fopen : path DNE\n"));
+            fprintf(stderr, RED("fopen : path DNE : %s\n"), strerror(errno));
             exit(EXIT_FAILURE);
         }
         fclose(fptr);
 
-        send_ack(ACK, sock_fd);
+        // Keep sending acknowledgement till not sent successfully
+        while (send_ack(ACK, sock_fd) != 0)
+        {
+            fprintf(stderr, RED("send : could not send create file acknowledgement : %s (sending again)\n"), strerror(errno));
+        }
     }
     else if (recvd_request.request_type == BACKUP_CREATE_FILE)
     {
@@ -733,7 +852,11 @@ void *serve_request(void *args)
 
         create_folder(file_path);
 
-        send_ack(ACK, sock_fd);
+        // Keep sending acknowledgement till not sent successfully
+        while (send_ack(ACK, sock_fd) != 0)
+        {
+            fprintf(stderr, RED("send : could not send create folder acknowledgement : %s (trying again)\n"), strerror(errno));
+        }
     }
     else if (recvd_request.request_type == BACKUP_CREATE_FOLDER)
     {

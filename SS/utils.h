@@ -22,11 +22,11 @@ void free_linked_list(linked_list_head linked_list);
 
 // General utility functions
 // void accessible_paths_init(void);
-void send_update_paths_request(int request_type, char* paths_string);
-void register_ss(void);
+int send_update_paths_request(const int request_type, const char* paths_string);
+int register_ss(void);
 void free_tokens(char** tokens);
 char** tokenize(const char* str, const char ch);
-void send_ack(const int status_code, const int sock_fd);
+int send_ack(const int status_code, const int sock_fd);
 void seek(char* path_to_base_dir, linked_list_head paths);
 char* remove_extension(char* file_name);
 void update_path(char* path, char* next_dir);

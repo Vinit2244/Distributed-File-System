@@ -15,10 +15,10 @@ char **tokenize(const char *str, const char ch)
     int num_of_tokens = num_of_ch + 1;
 
     // Allocating num_of_tokens + 1 memory because we need to store last token as NULL token to mark the end of tokens
-    char **tokens = (char **)malloc((num_of_tokens + 1) * sizeof(char *));
+    char **tokens = (char **) malloc((num_of_tokens + 1) * sizeof(char*));
     for (int i = 0; i < num_of_tokens; i++)
     {
-        tokens[i] = (char *)calloc(MAX_DATA_LENGTH, sizeof(char));
+        tokens[i] = (char *) calloc(MAX_DATA_LENGTH, sizeof(char));
     }
     // The last token will be kept null so that when traversing we would know when the tokens end by checking for NULL token
     tokens[num_of_tokens] = NULL;
@@ -57,8 +57,8 @@ void free_tokens(char **tokens)
     return;
 }
 
-// Sends request to NFS to add or delete some paths
-void send_update_paths_request(int request_type, char* paths_string)
+// Sends request to NFS to add or delete some paths, returns 0 if successful else returns 1
+int send_update_paths_request(const int request_type, const char* paths_string)
 {
     // Preparing the request to be sent
     st_request update_request;
@@ -68,7 +68,16 @@ void send_update_paths_request(int request_type, char* paths_string)
     // Storing all the file paths to be updated
     sprintf(update_request.data, "%d|%s", MY_SS_ID, paths_string); // <My ss_id>|[<paths>]
 
-    printf(ORANGE("%s\n"), update_request.data);
+    if (request_type == ADD_PATHS)
+    {
+        printf(CYAN("Add paths request data : "));
+        printf(ORANGE("%s\n"), update_request.data);
+    }
+    else if (request_type == DELETE_PATHS)
+    {
+        printf(CYAN("Delete paths request data : "));
+        printf(ORANGE("%s\n"), update_request.data);
+    }
     
     // Connecting to the NFS through TCP
     struct sockaddr_in address;
@@ -78,8 +87,8 @@ void send_update_paths_request(int request_type, char* paths_string)
     if (socket_fd < 0) 
     { 
         // Some error occured while creating socket
-        fprintf(stderr, RED("socket : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
+        fprintf(stderr, RED("socket : unable to create socket for sending update paths request : %s\n"), strerror(errno));
+        return 1;
     }
 
     address.sin_port    = htons(NFS_SERVER_PORT_NO);        // port on which server side process is listening
@@ -87,8 +96,8 @@ void send_update_paths_request(int request_type, char* paths_string)
 
     if (inet_pton(AF_INET, NFS_IP, &address.sin_addr.s_addr) <= 0) 
     {   
-        fprintf(stderr, RED("inet_pton : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
+        fprintf(stderr, RED("inet_pton : unable to convert ip to short int in send update paths request : %s\n"), strerror(errno));
+        return 1;
     }
 
     // Waiting for us to connect to the NFS, it may happen that the NFS port might be busy and could not accept the connection request so sending it again and again until once it connects
@@ -107,22 +116,22 @@ void send_update_paths_request(int request_type, char* paths_string)
     int sent_msg_size;
     if ((sent_msg_size = send(socket_fd, (request) &update_request, sizeof(st_request), 0)) < 0)
     {
-        fprintf(stderr, RED("send : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
+        fprintf(stderr, RED("send : could not send update paths request : %s\n"), strerror(errno));
+        return 1;
     }
 
     // Closing the socket as the communication is done
     if (close(socket_fd) < 0) 
     {
-        fprintf(stderr, RED("close : failed to close the socket!\n"));
-        exit(EXIT_FAILURE);
+        fprintf(stderr, RED("close : failed to close the socket of update paths request!\n"));
+        return 1;
     }
 
-    return;
+    return 0;
 }
 
-// Send registration request to the NFS using TCP socket and waits for registration ack
-void register_ss(void)
+// Send registration request to the NFS using TCP socket and waits for registration ack, returns 0 if successful else 1
+int register_ss(void)
 {
     // Preparing the request to be sent
     st_request registration_request_st;
@@ -140,8 +149,8 @@ void register_ss(void)
     if (socket_fd < 0) 
     { 
         // Some error occured while creating socket
-        fprintf(stderr, RED("socket : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
+        fprintf(stderr, RED("socket : could not create socket for registering SS : %s\n"), strerror(errno));
+        return 1;
     }
 
     address.sin_port    = htons(NFS_SERVER_PORT_NO);        // port on which server side process is listening
@@ -149,12 +158,12 @@ void register_ss(void)
 
     if (inet_pton(AF_INET, NFS_IP, &address.sin_addr.s_addr) <= 0) 
     {   
-        fprintf(stderr, RED("inet_pton : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
+        fprintf(stderr, RED("inet_pton : could not conver ip string to short int : %s\n"), strerror(errno));
+        return 1;
     }
 
     // Waiting for us to connect to the NFS, it may happen that the NFS port might be busy and could not accept the connection request so sending it again and again until once it connects
-    while(1)
+    while (1)
     {
         if (connect(socket_fd, (struct sockaddr *) &address, sizeof(address)) == -1) 
         {
@@ -169,8 +178,8 @@ void register_ss(void)
     int sent_msg_size;
     if ((sent_msg_size = send(socket_fd, (request) &registration_request_st, sizeof(st_request), 0)) < 0)
     {
-        fprintf(stderr, RED("send : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
+        fprintf(stderr, RED("send : could not send registration request : %s\n"), strerror(errno));
+        return 1;
     }
 
     // Send the registration request (since we are using TCP we are sure that it would have reaced the NFS so now we can change the registration status to register assuming that the NFS also registers our ss successfully)
@@ -181,15 +190,15 @@ void register_ss(void)
     // Closing the socket as the communication is done
     if (close(socket_fd) < 0) 
     {
-        fprintf(stderr, RED("close : failed to close the socket!\n"));
-        exit(EXIT_FAILURE);
+        fprintf(stderr, RED("close : failed to close the socket created to register ss!\n"));
+        return 1;
     }
 
-    return;
+    return 0;
 }
 
-// Sends the mentioned acknowledgement to the given socket file descriptor
-void send_ack(const int status_code, const int sock_fd)
+// Sends the mentioned acknowledgement to the given socket file descriptor, returns 0 if successful else 1
+int send_ack(const int status_code, const int sock_fd)
 {
     // Send acknowledgement
     st_request ack_st;
@@ -200,11 +209,10 @@ void send_ack(const int status_code, const int sock_fd)
     int sent_msg_size;
     if ((sent_msg_size = send(sock_fd, (request) &ack_st, sizeof(st_request), 0)) <= 0)
     {
-        fprintf(stderr, RED("send : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
+        return 1;
     }
 
-    return;
+    return 0;
 }
 
 // Searches for all files recursively

@@ -23,6 +23,7 @@
 #define MAX_CONNECTIONS     100
 #define MAX_PATH_LEN        1024  
 #define MAX_PATHS_LOCKED    1000
+
 //Request types
 #define ACK                  1
 #define REQ                  2
@@ -144,6 +145,7 @@ struct trie_node
 {
     char *key;
     int end;
+    int ss_id;
     struct trie_node *children[256];    // Total 256 characters possible that can come in any path name
 };
 
@@ -225,7 +227,7 @@ void insert_in_linked_list(linked_list_head linked_list, char* path);
 // Tries functions
 struct trie_node *create_trie_node();
 void print_paths(struct trie_node *root);
-int insert_path(struct trie_node *root, char *key);
+int insert_path(struct trie_node *root, char *key, const int ss_id);
 int search_path(struct trie_node *root, char *key);
 int delete_path(struct trie_node *root, char *key);
 linked_list_head return_paths(struct trie_node *root);
