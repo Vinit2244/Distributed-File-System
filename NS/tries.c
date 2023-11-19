@@ -51,7 +51,7 @@ int insert_path(struct trie_node *root, char *key, const int ss_id)
     return 1;
 }
 
-// A function to search for a string in the trie, Returns 1 if path is found else 0
+// A function to search for a string in the trie, Returns the ss_id if path is found else 0
 int search_path(struct trie_node *root, char *key)
 {
     // Starting from the root node
@@ -70,7 +70,7 @@ int search_path(struct trie_node *root, char *key)
 
     if (current->end == 1)
     {
-        return 1;
+        return current->ss_id;
     }
     return 0;
 }
