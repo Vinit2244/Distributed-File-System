@@ -39,7 +39,7 @@
 #define READ_REQ_DATA        12
 #define ADD_PATHS            13
 #define DELETE_PATHS         14
-#define COPY                 16
+#define COPY_FILE            16
 #define PASTE                15
 #define COPY_REQUEST         17
 #define FILE_NOT_FOUND       18
@@ -58,9 +58,12 @@
 #define BACKUP_DELETE_FOLDER 32
 #define BACKUP_CREATE_FILE   33
 #define BACKUP_CREATE_FOLDER 34
-#define WRITE_APPEND_COMP    36
-#define TIMEOUT              37
+#define WRITE_APPEND_COMP    40
+#define TIMEOUT              39
 #define CONSISTENT_WRITE     35
+#define COPY_FOLDER 36
+#define N_FILE_REQ 37
+
 
 // Macros for book keeping
 #define SS          -1

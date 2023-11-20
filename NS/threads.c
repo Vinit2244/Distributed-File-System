@@ -372,7 +372,7 @@ void *backup_thread()
                                 y = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
                             }
 
-                            r->request_type = COPY;
+                            r->request_type = COPY_FILE;
                             strcpy(r->data, paths[j]);
 
                             int x = send(sock, r, sizeof(st_request), 0);

@@ -1,0 +1,11 @@
+./storage ./storage/temp5.txt ./storage/SS1_dir3 ./storage/SS1_dir3/SS1_file5.txt./SS1_dir1
+./SS1_dir1/SS1_file1.txt
+./SS1_dir1/SS1_file2.txt
+./SS1_dir2
+./SS1_dir2/SS1_file3.txt
+./SS1_dir2/SS1_file4.txt
+./SS1_dir3
+./SS1_dir3/SS1_file5.txt
+./SS1_dir3/SS1_file6.txt
+./SS1_file7.txt
+./SS1_file8.txt
