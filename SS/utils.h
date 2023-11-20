@@ -23,6 +23,7 @@ void insert_in_linked_list(linked_list_head linked_list, char* path);
 
 // General utility functions
 int register_ss(void);
+int is_file(char *string);
 int send_update_paths_request(const int request_type, const char* paths_string);
 void create_folder(char* path);
 void free_tokens(char** tokens);
@@ -35,5 +36,6 @@ char* remove_extension(char* file_name);
 char* create_abs_path(char* relative_path);
 char* replace_storage_by_backup(char* path);
 char** tokenize(const char* str, const char ch);
+char** get_all_files_folders(const char* abs_path);
 
 #endif

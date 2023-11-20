@@ -89,6 +89,11 @@
 #define BACKUP_CREATE_FOLDER 34
 #define CONSISTENT_WRITE     35
 #define COPY_FOLDER          36
+#define N_FILES_REQ          37
+
+// ============================= FILE TYPES =============================
+#define FILE_T               100
+#define FOLDER_T             101
 
 // ============================= ERROR Codes =============================
 // All operation failed error codes start from 600

@@ -304,7 +304,7 @@ void *serve_request(void *args)
             path_to_read = replace_storage_by_backup(request_tkns[0]);
         }
 
-        FILE *fptr = fopen(path_to_read, "r");
+        FILE* fptr = fopen(path_to_read, "r");
         if (fptr == NULL)
         {
             fprintf(stderr, RED("fopen : could not open file to read : %s\n"), strerror(errno));
@@ -363,8 +363,7 @@ void *serve_request(void *args)
         char *data_to_write = request_tkns[1];
 
         // Opening file in write mode and writing onto the file (Assuming that the path is always correct and the file already exits)
-        FILE *fptr;
-        fptr = fopen(path_to_write, "w");
+        FILE *fptr = fopen(path_to_write, "w");
         if (fptr == NULL)
         {
             fprintf(stderr, RED("fopen : could not open file to write : %s\n"), strerror(errno));
@@ -388,8 +387,7 @@ void *serve_request(void *args)
         }
         else
         {
-            FILE* fptr2;
-            fptr2 = fopen(path_to_write, "r");
+            FILE* fptr2 = fopen(path_to_write, "r");
             char buffer[MAX_DATA_LENGTH - MAX_PATH_LEN - 1] = {0};
             fread(buffer, sizeof(char), MAX_DATA_LENGTH - MAX_PATH_LEN - 2, fptr2);
             fclose(fptr2);
@@ -445,8 +443,7 @@ void *serve_request(void *args)
         }
         else
         {
-            FILE* fptr2;
-            fptr2 = fopen(path_to_write, "r");
+            FILE* fptr2 = fopen(path_to_write, "r");
             char buffer[MAX_DATA_LENGTH - MAX_PATH_LEN - 1] = {0};
             fread(buffer, sizeof(char), MAX_DATA_LENGTH - MAX_PATH_LEN - 2, fptr2);
             fclose(fptr2);
@@ -608,7 +605,7 @@ void *serve_request(void *args)
         strcpy(abs_path, PWD);
         strcat(abs_path, path + 2);
 
-        
+        char** files_folders = get_all_files_folders(abs_path);
     }
     else if (recvd_request.request_type == PASTE || recvd_request.request_type == BACKUP_PASTE)
     {
@@ -642,8 +639,23 @@ void *serve_request(void *args)
             n_tkns++;
         }
 
-        // Final number of dirs is 1 less than the number of tokens as the last one is the file
-        int n_dirs = n_tkns - 1;
+        int n_dirs;
+        int file_type;
+
+        int result = is_file(dirs[n_tkns - 1]);
+        if (result == 1)
+        {
+            // This is a paste file request
+            // Final number of dirs is 1 less than the number of tokens as the last one is the file
+            n_dirs = n_tkns - 1;
+            file_type = FILE_T;
+        }
+        else
+        {
+            // This is a paste folder request
+            n_dirs = n_tkns;
+            file_type = FOLDER_T;
+        }
 
         // Now creating all the intermediate dirs one by one
         for (int i = 0; i < n_dirs; i++)
@@ -678,18 +690,21 @@ void *serve_request(void *args)
         // Moving out back to the pwd
         chdir(PWD);
 
-        // Now opening the file in write mode, if it does not exist it would be created otherwise the old data would be overwritten
-        FILE *fptr = fopen(file_path, "w");
-        if (fptr == NULL)
+        if (file_type == FILE_T)
         {
-            fprintf(stderr, RED("fopen : could not open file for pasting : %s\n"), strerror(errno));
-            send_ack(PASTE_FAILED, sock_fd, strerror(errno));
-            goto End;
+            // Now opening the file in write mode, if it does not exist it would be created otherwise the old data would be overwritten
+            FILE *fptr = fopen(file_path, "w");
+            if (fptr == NULL)
+            {
+                fprintf(stderr, RED("fopen : could not open file for pasting : %s\n"), strerror(errno));
+                send_ack(PASTE_FAILED, sock_fd, strerror(errno));
+                goto End;
+            }
+
+            fprintf(fptr, "%s", file_content);
+
+            fclose(fptr);
         }
-
-        fprintf(fptr, "%s", file_content);
-
-        fclose(fptr);
 
         if (recvd_request.request_type == BACKUP_PASTE)
         {

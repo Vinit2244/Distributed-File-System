@@ -528,6 +528,42 @@ void send_msg_to_nfs(char* msg, int req_type)
     return;
 }
 
+// Gets the list of all the files and folders given inside the folder path
+char** get_all_files_folders(const char* abs_path)
+{
+    char base_dir_path[MAX_PATH_LEN] = {0};
+    sprintf(base_dir_path, "%s", abs_path);
+
+    // Linked list to store the paths found as we don't know in advance how many paths will be found
+    linked_list_head paths = create_linked_list_head();
+
+    // Searching the SS_test_dir recursively to obtain the absolute paths of all the files
+    seek(base_dir_path, paths);
+
+    // Number of paths found
+    int num_paths_found = paths->number_of_nodes;
+    // I have to remove the not accessible paths from here first and then pass only the path staring from the source folder of files and folders inside it along with the content if it's a file
+
+    char** files_folders = (char**) malloc((num_paths_found + 1) * sizeof(char*));
+
+    free_linked_list(paths);
+
+    return files_folders;
+}
+
+// Checks if the provided file name is a file or not
+int is_file(char *string)
+{
+    char** temp_tkns = tokenize(string, '.');
+    if (temp_tkns[1] != NULL)
+    {
+        free_tokens(temp_tkns);
+        return 1;
+    }
+    free_tokens(temp_tkns);
+    return 0;
+}
+
 // ===================================== LINKED LIST FUNC ===========================================
 linked_list_head create_linked_list_head() {
     linked_list_head linked_list = (linked_list_head) malloc(sizeof(linked_list_head_struct));
