@@ -61,13 +61,23 @@ void *receive_handler()
         }
         request req = (request)malloc(sizeof(st_request));
         int x = recv(client_socket_arr[id], req, sizeof(st_request), 0);
-
-        // if(x>0)printf("%s\n",req->data);
-        process(req,id); // thread
+        // printf("%d\n",req->request_type);
+        if(req->request_type<36 && req->request_type>3){
+        // if(x>0)printf("%d\n",id);
+        pthread_t new_proc;
+        proc n = (proc)malloc(sizeof(struct proc));
+        n->request_type = req->request_type;
+        // n->r = req;
+        strcpy(n->data, req->data);
+        n->client_id = id;
+        
+        pthread_create(&new_proc, NULL, &process, (void*)n);
+        
+        }
+        // process(req,id); // thread
 
         free(req);
-        client_socket_arr[id]=-1;
-        close(client_socket_arr[id]);
+        
     }
 
     close(server_socket_tcp);
@@ -120,6 +130,15 @@ void *server_handler(void *p)
             pack->status = 0;
             pack->synced = 0;
             printf(RED("Server %s disconnected with send error!\n\n\n"), pack->port);
+            pthread_mutex_lock(&server_lock);
+            for (int i = 0; i < server_count; i++)
+            {
+                if (strcmp(ss_list[i]->port, pack->port) == 0)
+                {
+                    ss_list[i]->status = 0;
+                }
+            }
+            pthread_mutex_unlock(&server_lock);
             return NULL;
         }
         recv(sock, r, sizeof(st_request), 0);

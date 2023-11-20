@@ -16,8 +16,6 @@
 #include <errno.h>
 #include <semaphore.h>
 
-#define LINUX
-
 //Relevant Macros
 #define NS_PORT             2000
 #define NS_IP               "0.0.0.0"
@@ -60,9 +58,9 @@
 #define BACKUP_DELETE_FOLDER 32
 #define BACKUP_CREATE_FILE   33
 #define BACKUP_CREATE_FOLDER 34
-#define CONSISTENT_WRITE     35
 #define WRITE_APPEND_COMP    36
 #define TIMEOUT              37
+#define CONSISTENT_WRITE     35
 
 // Macros for book keeping
 #define SS          -1
@@ -132,6 +130,7 @@ typedef struct ss_info
     int total_backups;
     int added;
     int synced;
+    int ssid;
 } ss_info;
 
 //Send packet used for convenience of sending request packets to client/SS
@@ -142,6 +141,14 @@ typedef struct send_packet{
     int status;     
     char port[10];
 } send_packet;
+
+ struct proc{
+    char data[MAX_DATA_LENGTH];
+    int request_type;
+    int client_id;
+};
+
+typedef struct proc* proc;
 
 struct trie_node
 {
@@ -212,7 +219,7 @@ char** processstring(char data[],int n);
 void init_nfs();
 void client_handler(char data[]);
 void init_storage(char data[]);
-void process(request req,int client_id);
+void* process(void* arg);
 void* send_handler();
 void* receive_handler();
 void* server_handler(void* p);
@@ -242,11 +249,19 @@ int insert_log(const int type, const int ss_id, const int ss_or_client_port, con
 void init_cache();
 void print_cache();
 void delete_cache_index(const int idx);
-void insert_in_cache(int req_type, char* req_data, int ss_id, char* ss_ip, int ss_port);
 st_cache* search_in_cache(int req_type, char* req_data);
+void insert_in_cache(int req_type, char* req_data, int ss_id, char* ss_ip, int ss_port);
 
 // Path locking functions
 void initializer_header_node();
 int path_locked_or_not(char *path);
 void insert_path_lock(const char *new_path);
 void delete_path_lock(const char *path_to_delete);
+
+
+// Processing functions
+void* basic_ops(request req,int client_id);
+void* handle_create(request req,int client_id);
+void* handle_delete(request req,int client_id);
+void* copy_handler(request req,int client_id);
+int connect_to_port(char* port);

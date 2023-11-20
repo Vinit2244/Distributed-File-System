@@ -31,6 +31,29 @@ char **processstring(char data[], int n)
     return tokens;
 }
 
+int connect_to_port(char* port){
+
+    int client_socket;
+    client_socket = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in server_address;
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(atoi(port));
+    server_address.sin_addr.s_addr = INADDR_ANY;
+
+    while(1){
+    int x=connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address));
+    if(x == -1)
+    {
+        perror("Connection failed");
+        return 0;
+    }
+    else if(x==0) break;
+    
+    }
+    return client_socket;
+
+}
+
 // Code to initialise nfs
 void init_nfs()
 {
@@ -99,9 +122,10 @@ void init_storage(char data[])
         new_ss->backup_root = create_trie_node();
         new_ss->is_backedup = 0;
         new_ss->has_backup = 0;
-        ss_list[atoi(tokens[0])-1] = new_ss;
+        new_ss->ssid=atoi(tokens[0]);
+        ss_list[server_count] = new_ss;
+        id = server_count;
         server_count++;
-        id = atoi(tokens[0]) - 1;
     }
     pthread_mutex_unlock(&server_lock);
 
@@ -110,7 +134,7 @@ void init_storage(char data[])
     pthread_t server_thread;
     pthread_create(&server_thread, NULL, &server_handler, (void *)ss_list[id]);
     
-
+    
     return;
 }
 
