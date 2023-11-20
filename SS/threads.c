@@ -55,6 +55,12 @@ void *check_and_store_filepaths(void *args)
 
         // Have copied all the found paths in the array so now we can free the linked list
         free_linked_list(paths);
+        printf("All found paths : \n");
+        for (int k = 0; k < num_paths_found; k++)
+        {
+            printf("%s\n", found_paths[k]);
+        }
+        printf("\n");
 
         // Now go and match each paths in not_accessible_paths and found_paths
         for (int k = 0; k < num_of_not_accessible_paths_stored; k++)
@@ -75,6 +81,16 @@ void *check_and_store_filepaths(void *args)
                 }
             }
         }
+        printf("Found paths after removing accessible paths : \n");
+        for (int k = 0; k < num_paths_found; k++)
+        {
+            if (found_paths[k] != NULL)
+            {
+                printf("%s\n", found_paths[k]);
+            }
+        }
+        printf("\n");
+        
 
         // Now go and match each paths in found_paths and accessible_paths
         for (int k = 0; k < num_paths_found; k++)
@@ -109,9 +125,10 @@ void *check_and_store_filepaths(void *args)
                 strcat(new_paths, "|");
             }
         }
-        // Removing the last | from the concatenation of paths
+        
         if (strlen(new_paths) > 0)
         {
+            // Removing the last | from the concatenation of paths
             new_paths[strlen(new_paths) - 1] = '\0';
             if (send_update_paths_request(ADD_PATHS, new_paths) != 0)
             {
@@ -547,7 +564,7 @@ void *serve_request(void *args)
             send_ack(INFO_RETRIEVAL_FAILED, sock_fd, strerror(errno));
         }
     }
-    else if (recvd_request.request_type == COPY)
+    else if (recvd_request.request_type == COPY_FILE)
     {
         printf(YELLOW("Copy request received.\n"));
         char* path = recvd_request.data;
@@ -580,6 +597,18 @@ void *serve_request(void *args)
         }
 
         send_ack(ACK, sock_fd, NULL);
+    }
+    else if (recvd_request.request_type == COPY_FOLDER)
+    {
+        // Relative path to the folder to be copied
+        char *path = recvd_request.data;
+        char abs_path[MAX_PATH_LEN] = {0};
+
+        // Creating the absolute path to the folder
+        strcpy(abs_path, PWD);
+        strcat(abs_path, path + 2);
+
+        
     }
     else if (recvd_request.request_type == PASTE || recvd_request.request_type == BACKUP_PASTE)
     {

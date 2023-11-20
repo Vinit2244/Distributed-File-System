@@ -17,16 +17,30 @@ cwd = os.getcwd()
 
 if operating_system == "macos":
     for i in range(num_of_ss):
-        os.chdir(f"SS{i + 1}")                  # Changing cwd to the SS folder 
-        command = f'open -a Terminal.app ss.o'  # Running the command to open new terminal window and run the .o file
+        os.chdir(f"SS{i + 1}")                  # Changing cwd to the SS folder
+        paths = list()
+        with open("accessible_paths.txt", "r") as file:
+            paths = file.readlines()
+        path_string = ""
+        for path in paths:
+            path_string += path.strip()
+            path_string += " "
+        command = f'open -a Terminal.app ss.o {path_string}'  # Running the command to open new terminal window and run the .o file
         subprocess.Popen(command, shell=True)
         os.chdir("..")                          # Going back to parent directory
 
 elif operating_system == "linux":
     for i in range(num_of_ss):
         os.chdir(f"SS{i + 1}")                  # Changing cwd to the SS folder 
+        paths = list()
+        with open("accessible_paths.txt", "r") as file:
+            paths = file.readlines()
+        path_string = ""
+        for path in paths:
+            path_string += path.strip()
+            path_string += " "
         # Running the command to open new terminal window and run the .o file
-        command = f'gnome-terminal -x bash -c "./ss.o"'
+        command = f'gnome-terminal -x bash -c "./ss.o {path_string}"'
         subprocess.Popen(command, shell=True)
         os.chdir("..")                          # Going back to parent directory
 

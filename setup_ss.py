@@ -12,7 +12,6 @@ def update_header_and_config_files(i: int, base_dir: str, cwd: str) -> None:
     pattern1 = r'^\s*#define\s*MY_NFS_PORT_NO.*$'   
     pattern2 = r'^\s*#define\s*MY_CLIENT_PORT_NO.*$'
     pattern3 = r'^\s*#define\s*MY_SS_ID.*$'
-    pattern4 = r'^\s*#define\s*PWD.*$'
 
     # Read the content of the input file
     with open(input_file, 'r') as file:
@@ -22,7 +21,6 @@ def update_header_and_config_files(i: int, base_dir: str, cwd: str) -> None:
     modified_lines = [re.sub(pattern1, f'#define MY_NFS_PORT_NO {1000 * (i + 1) + 500}', line) for line in lines]
     modified_lines = [re.sub(pattern2, f'#define MY_CLIENT_PORT_NO {1000 * (i + 1) + 501}', line) for line in modified_lines]
     modified_lines = [re.sub(pattern3, f'#define MY_SS_ID {i + 1}', line) for line in modified_lines]
-    modified_lines = [re.sub(pattern4, f'#define PWD "{cwd + f"/SS{i + 1}"}"', line) for line in modified_lines]
     
     # Write the modified content back to the same file
     with open(input_file, 'w') as file:
@@ -125,22 +123,32 @@ for i in range(num_of_ss):
         
         update_header_and_config_files(i, base_dir, cwd)
         
-        test_dir_path = os.path.join(base_dir, "storage")
-        create_dir(test_dir_path)
-        
         # Creating multiples directories in the test directory
         for j in range(num_of_dir):
-            dir_path = os.path.join(test_dir_path, f"SS{i + 1}_dir{j + 1}")
+            dir_path = os.path.join(base_dir, f"SS{i + 1}_dir{j + 1}")
             create_dir(dir_path)
+            with open(f"{cwd}/SS{i + 1}/accessible_paths.txt", "a") as file:
+                file.write(f"./SS{i + 1}_dir{j + 1}")
+                file.write("\n")
             
             # Creating sample files with sample text in each dir
             for k in range(max_num_of_files_in_dir):
                 file_path = os.path.join(dir_path, f"SS{i + 1}_file{curr_file_index}.txt")
+                with open(f"{cwd}/SS{i + 1}/accessible_paths.txt", "a") as file:
+                    file.write(f"./SS{i + 1}_dir{j + 1}/SS{i + 1}_file{curr_file_index}.txt")
+                    file.write("\n")
                 if curr_file_index <= total_num_of_files:
-                    
                     create_file(file_path, curr_file_index)
                     curr_file_index += 1
                 
+        create_file(base_dir + f"/SS{i + 1}_file{curr_file_index + 1}.txt", curr_file_index + 1)
+        create_file(base_dir + f"/SS{i + 1}_file{curr_file_index + 2}.txt", curr_file_index + 2)
+        with open(f"{cwd}/SS{i + 1}/accessible_paths.txt", "a") as file:
+                file.write(f"./SS{i + 1}_file{curr_file_index + 1}.txt")
+                file.write("\n")
+                file.write(f"./SS{i + 1}_file{curr_file_index + 2}.txt")
+                file.write("\n")
+        
         # Compiling all the makefiles
         compile_make(i)
         

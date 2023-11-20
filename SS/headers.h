@@ -23,7 +23,6 @@
 #include "threads.h"
 
 // ========================== Useful Macros ==========================
-#define PWD                 "/Users/vinitmehta/Desktop/IIITH_Main/Sem3/OSN/mini_projects/final-project-43/SS"
 #define MY_IP               "127.0.0.1" // Ip address of this storage server
 #define NFS_IP              "127.0.0.1" // IP address of the naming server
 #define MY_SS_ID            1           // Each storage server is assigned a unique SS_ID (used to distinguish between different servers)
@@ -70,7 +69,7 @@
 #define ADD_PATHS            13
 #define DELETE_PATHS         14
 #define PASTE                15
-#define COPY                 16
+#define COPY_FILE            16
 #define COPY_REQUEST         17
 #define RETRIEVE_INFO        19
 #define INFO                 20
@@ -89,6 +88,7 @@
 #define BACKUP_CREATE_FILE   33
 #define BACKUP_CREATE_FOLDER 34
 #define CONSISTENT_WRITE     35
+#define COPY_FOLDER          36
 
 // ============================= ERROR Codes =============================
 // All operation failed error codes start from 600
@@ -137,6 +137,7 @@ extern int        nfs_registrations_status;        // Stores the status whether 
 extern int        client_server_socket_fd;         // Socket file descriptor to receive client requests
 extern int        nfs_server_socket_fd;            // Socket file descriptot to receive NFS requests
 extern int*       thread_slot_empty_arr;           // 1 = thread is running, 0 = thread slot is free and can be used to create a new thread
+extern char*      PWD;                             // Stores the path to PWD
 extern char**     not_accessible_paths;            // Stores the RELATIVE PATH of all the files that are not accessible when the ss is initialized
 extern char**     accessible_paths;                // Stores all the RELATIVE PATHS (relative to the directory in which the storage server c file resides) of all the files that are accessible by clients on this storage server
 extern char**     backup_paths;                    // Stores the relative path of backup files

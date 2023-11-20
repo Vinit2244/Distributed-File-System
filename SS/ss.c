@@ -12,7 +12,7 @@ int        nfs_registrations_status     = NOT_REGISTERED; // Stores the status w
 int        client_server_socket_fd;                       // TCP Socket file descriptor to receive client requests
 int        nfs_server_socket_fd;                          // TCP Socket file descriptor to receive NFS requests
 int*       thread_slot_empty_arr;                         // 1 = thread is running, 0 = thread slot is free and can be used to create a new thread
-char*      pwd                          = NULL;
+char*      PWD                          = NULL;           // Stores the path to PWD
 char**     not_accessible_paths         = NULL;           // Stores the RELATIVE PATH of all the files that are not accessible when the ss is initialized
 char**     accessible_paths             = NULL;           // Stores the RELATIVE PATH (relative to the directory in which the storage server c file resides) of all the files that are accessible by clients on this storage server
 char**     backup_paths                 = NULL;           // Stores the relative path of backup files
@@ -23,6 +23,19 @@ pthread_t* requests_serving_threads_arr;                  // Holds the threads w
 
 int main(int argc, char *argv[])
 {
+    PWD = (char*) calloc(MAX_PATH_LEN, sizeof(char));
+    if (PWD == NULL)
+    {
+        fprintf(stderr, RED("calloc : cannot allocate memory to pwd char array : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    if (getcwd(PWD, MAX_PATH_LEN) == NULL)
+    {
+        fprintf(stderr, RED("pwd : error in getting pwd : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
     accessible_paths = (char**) malloc(MAX_FILES * sizeof(char*));
     if (accessible_paths == NULL)
     {
@@ -68,25 +81,15 @@ int main(int argc, char *argv[])
         }
     }
     
+    char new_paths[MAX_DATA_LENGTH - 1000] = {0};
     for (int i = 1; i < argc; i++)
     {
         strcpy(accessible_paths[num_of_paths_stored++], argv[i]);
+        strcat(new_paths, argv[i]);
+        strcat(new_paths, "|");
     }
 
     find_not_accessible_paths();
-
-    pwd = (char*) calloc(MAX_PATH_LEN, sizeof(char));
-    if (pwd == NULL)
-    {
-        fprintf(stderr, RED("calloc : cannot allocate memory to pwd char array : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-    if (getcwd(pwd, MAX_PATH_LEN) == NULL)
-    {
-        fprintf(stderr, RED("pwd : error in getting pwd : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
-    }
 
     // Allocating memory
     requests_serving_threads_arr = (pthread_t*) malloc(MAX_PENDING * sizeof(pthread_t));
@@ -141,6 +144,16 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    if (strlen(new_paths) > 0)
+    {
+        // Removing the last | from the concatenation of paths
+        new_paths[strlen(new_paths) - 1] = '\0';
+        if (send_update_paths_request(ADD_PATHS, new_paths) != 0)
+        {
+            fprintf(stderr, RED("Could not send add paths request.\n"));
+        }
+    }
+
     // Creating the thread that would keep updating the paths.txt file with the current state of the accessible paths array regularly after some time interval
     pthread_t check_and_store_filepaths_thread;
     pthread_t check_and_store_backup_paths_thread;
@@ -149,18 +162,18 @@ int main(int argc, char *argv[])
         fprintf(stderr, RED("pthread_create : Unable to create check_and_store_filepaths_thread : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
-    if (pthread_create(&check_and_store_backup_paths_thread, NULL, &check_and_store_backup_paths, NULL) != 0)
-    {
-        fprintf(stderr, RED("pthread_create : Unable to create check_and_store_backup_paths_thread : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    // if (pthread_create(&check_and_store_backup_paths_thread, NULL, &check_and_store_backup_paths, NULL) != 0)
+    // {
+    //     fprintf(stderr, RED("pthread_create : Unable to create check_and_store_backup_paths_thread : %s\n"), strerror(errno));
+    //     exit(EXIT_FAILURE);
+    // }
 
     // Waiting for threads to complete
-    if (pthread_join(check_and_store_backup_paths_thread, NULL) != 0)
-    {
-        fprintf(stderr, RED("pthread_join : Could not join thread check_and_store_backup_paths_thread : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    // if (pthread_join(check_and_store_backup_paths_thread, NULL) != 0)
+    // {
+    //     fprintf(stderr, RED("pthread_join : Could not join thread check_and_store_backup_paths_thread : %s\n"), strerror(errno));
+    //     exit(EXIT_FAILURE);
+    // }
     if (pthread_join(check_and_store_filepaths_thread, NULL) != 0)
     {
         fprintf(stderr, RED("pthread_join : Could not join thread check_and_store_filepaths_thread : %s\n"), strerror(errno));
