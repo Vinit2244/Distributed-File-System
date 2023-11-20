@@ -26,6 +26,7 @@ int register_ss(void);
 int send_update_paths_request(const int request_type, const char* paths_string);
 void create_folder(char* path);
 void free_tokens(char** tokens);
+void find_not_accessible_paths();
 void update_path(char* path, char* next_dir);
 void send_msg_to_nfs(char* msg, int req_type);
 void seek(char* path_to_base_dir, linked_list_head paths);

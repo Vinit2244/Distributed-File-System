@@ -8,7 +8,7 @@ void *check_and_store_filepaths(void *args)
         pthread_mutex_lock(&accessible_paths_mutex);
 
         char base_dir_path[MAX_PATH_LEN] = {0};
-        sprintf(base_dir_path, "%s/storage", PWD);
+        sprintf(base_dir_path, "%s", PWD);
 
         // Linked list to store the paths found as we don't know in advance how many paths will be found
         linked_list_head paths = create_linked_list_head();
@@ -72,6 +72,28 @@ void *check_and_store_filepaths(void *args)
                         found_paths[k] = NULL;
                         accessible_paths_copy[j] = NULL;
                         break;
+                    }
+                }
+            }
+        }
+
+        // Now go and match each paths in not_accessible_paths and found_paths
+        for (int k = 0; k < num_paths_found; k++)
+        {
+            char *curr_found_path = found_paths[k];
+            if (curr_found_path != NULL)
+            {
+                for (int j = 0; j < num_of_not_accessible_paths_stored; j++)
+                {
+                    char *curr_not_accessible_path = not_accessible_paths[j];
+                    if (curr_not_accessible_path != NULL)
+                    {
+                        if (strcmp(curr_found_path, curr_not_accessible_path) == 0)
+                        {
+                            free(found_paths[k]);
+                            found_paths[k] = NULL;
+                            break;
+                        }
                     }
                 }
             }

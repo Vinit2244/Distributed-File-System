@@ -5,6 +5,7 @@ pthread_mutex_t accessible_paths_mutex;
 pthread_mutex_t threads_arr_mutex;
 pthread_mutex_t backup_paths_mutex;
 
+int        num_of_not_accessible_paths_stored = 0;
 int        num_of_backup_paths_stored   = 0;              // Stores the number of all the backup paths
 int        num_of_paths_stored          = 0;              // Initially no paths are stored
 int        nfs_registrations_status     = NOT_REGISTERED; // Stores the status whether our server has been registered with NFS or not
@@ -12,6 +13,7 @@ int        client_server_socket_fd;                       // TCP Socket file des
 int        nfs_server_socket_fd;                          // TCP Socket file descriptor to receive NFS requests
 int*       thread_slot_empty_arr;                         // 1 = thread is running, 0 = thread slot is free and can be used to create a new thread
 char*      pwd                          = NULL;
+char**     not_accessible_paths         = NULL;           // Stores the RELATIVE PATH of all the files that are not accessible when the ss is initialized
 char**     accessible_paths             = NULL;           // Stores the RELATIVE PATH (relative to the directory in which the storage server c file resides) of all the files that are accessible by clients on this storage server
 char**     backup_paths                 = NULL;           // Stores the relative path of backup files
 struct     sockaddr_in ss_address_nfs;                    // IPv4 address struct for ss and nfs TCP communication (requests)
@@ -21,6 +23,58 @@ pthread_t* requests_serving_threads_arr;                  // Holds the threads w
 
 int main(int argc, char *argv[])
 {
+    accessible_paths = (char**) malloc(MAX_FILES * sizeof(char*));
+    if (accessible_paths == NULL)
+    {
+        fprintf(stderr, RED("malloc : cannot allocate memory to accessible paths : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    not_accessible_paths = (char**) malloc(MAX_FILES * sizeof(char*));
+    if (not_accessible_paths == NULL)
+    {
+        fprintf(stderr, RED("malloc : cannot allocate memory to not accessible paths : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    backup_paths = (char**) malloc(MAX_FILES * sizeof(char*));
+    if (backup_paths == NULL)
+    {
+        fprintf(stderr, RED("malloc : cannot allocate memory to backup paths : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < MAX_FILES; i++)
+    {
+        accessible_paths[i] = (char*) calloc(MAX_PATH_LEN, sizeof(char));
+        if (accessible_paths[i] == NULL)
+        {
+            fprintf(stderr, RED("calloc : cannot allocate memory to accessible_paths[i] : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+
+        backup_paths[i] = (char*) calloc(MAX_PATH_LEN, sizeof(char));
+        if (backup_paths[i] == NULL)
+        {
+            fprintf(stderr, RED("calloc : cannot allocate memory to backup_paths[i] : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+
+        not_accessible_paths[i] = (char*) calloc(MAX_PATH_LEN, sizeof(char));
+        if (not_accessible_paths[i] == NULL)
+        {
+            fprintf(stderr, RED("calloc : cannot allocate memory to not_accessible_paths[i] : %s\n"), strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    for (int i = 0; i < argc; i++)
+    {
+        strcpy(accessible_paths[num_of_paths_stored++], argv[i]);
+    }
+
+    find_not_accessible_paths();
+
     pwd = (char*) calloc(MAX_PATH_LEN, sizeof(char));
     if (pwd == NULL)
     {
@@ -47,37 +101,6 @@ int main(int argc, char *argv[])
     {
         fprintf(stderr, RED("malloc : cannot allocate memory to thread_slot_empty_arr : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
-    }
-
-    accessible_paths = (char**) malloc(MAX_FILES * sizeof(char*));
-    if (accessible_paths == NULL)
-    {
-        fprintf(stderr, RED("malloc : cannot allocate memory to accessible paths : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-    backup_paths = (char**) malloc(MAX_FILES * sizeof(char*));
-    if (backup_paths == NULL)
-    {
-        fprintf(stderr, RED("malloc : cannot allocate memory to backup paths : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-    for (int i = 0; i < MAX_FILES; i++)
-    {
-        accessible_paths[i] = (char*) calloc(MAX_PATH_LEN, sizeof(char));
-        if (accessible_paths[i] == NULL)
-        {
-            fprintf(stderr, RED("calloc : cannot allocate memory to accessible_paths[i] : %s\n"), strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-
-        backup_paths[i] = (char*) calloc(MAX_PATH_LEN, sizeof(char));
-        if (backup_paths[i] == NULL)
-        {
-            fprintf(stderr, RED("calloc : cannot allocate memory to backup_paths[i] : %s\n"), strerror(errno));
-            exit(EXIT_FAILURE);
-        }
     }
 
     // Initializing mutexes, condition variables and semaphores

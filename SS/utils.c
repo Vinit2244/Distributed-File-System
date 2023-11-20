@@ -1,5 +1,129 @@
 #include "headers.h"
 
+// Finds all the non accessible paths initially
+void find_not_accessible_paths()
+{
+    pthread_mutex_lock(&accessible_paths_mutex);
+
+    char base_dir_path[MAX_PATH_LEN] = {0};
+    sprintf(base_dir_path, "%s", PWD);
+
+    // Linked list to store the paths found as we don't know in advance how many paths will be found
+    linked_list_head paths = create_linked_list_head();
+
+    // Searching the SS_test_dir recursively to obtain the absolute paths of all the files
+    seek(base_dir_path, paths);
+
+    // Print the number of paths found for debugging
+    printf("\nChecked filepaths : %d\n", paths->number_of_nodes);
+
+    // Number of paths found
+    int num_paths_found = paths->number_of_nodes;
+
+    // Storing the copy of accessible paths array to match with the files found
+    char **accessible_paths_copy = (char **)malloc(MAX_FILES * sizeof(char *));
+
+    for (int i = 0; i < MAX_FILES; i++)
+    {
+        accessible_paths_copy[i] = NULL;
+    }
+    for (int k = 0; k < num_of_paths_stored; k++)
+    {
+        accessible_paths_copy[k] = calloc(MAX_PATH_LEN, sizeof(char));
+        strcpy(accessible_paths_copy[k], accessible_paths[k]);
+    }
+
+    // Storing relative paths of the files found in the found_paths array
+    char **found_paths = (char **)malloc(num_paths_found * sizeof(char *));
+    // Storing a copy of found_paths as well so after comparing if there are some new paths or some paths are deleted then we can create a new accessible paths array
+    char **found_paths_copy = (char **)malloc(paths->number_of_nodes * sizeof(char *));
+
+    linked_list_node n = paths->first;
+    int idx = 0;
+    while (n != NULL)
+    {
+        found_paths[idx] = (char *)calloc(MAX_PATH_LEN, sizeof(char));
+        found_paths_copy[idx] = (char *)calloc(MAX_PATH_LEN, sizeof(char));
+        strcpy(found_paths_copy[idx], ".");
+        strcat(found_paths_copy[idx], &n->path[strlen(PWD)]);
+        strcpy(found_paths[idx], ".");
+        strcat(found_paths[idx++], &n->path[strlen(PWD)]);
+        n = n->next;
+    }
+
+    // Have copied all the found paths in the array so now we can free the linked list
+    free_linked_list(paths);
+
+    // Now go and match each paths in found_paths and accessible_paths
+    for (int k = 0; k < num_paths_found; k++)
+    {
+        char *curr_found_path = found_paths[k];
+        for (int j = 0; j < num_of_paths_stored; j++)
+        {
+            char *curr_accessible_path = accessible_paths_copy[j];
+            if (curr_found_path != NULL && curr_accessible_path != NULL)
+            {
+                if (strcmp(curr_found_path, curr_accessible_path) == 0)
+                {
+                    free(found_paths[k]);
+                    free(accessible_paths_copy[j]);
+                    found_paths[k] = NULL;
+                    accessible_paths_copy[j] = NULL;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Now all the not null paths in found_paths are the paths that are newly added while all the not null paths in accessible paths copy are deleted paths
+    // Checking for new paths
+    int num_new_paths = 0;
+    char new_paths[MAX_DATA_LENGTH - 1000] = {0};
+
+    for (int i = 0; i < num_paths_found; i++)
+    {
+        if (found_paths[i] != NULL)
+        {
+            strcpy(not_accessible_paths[num_of_not_accessible_paths_stored++], found_paths[i]);
+        }
+    }
+
+    // Freeing all the memory allocated
+Free:
+    for (int i = 0; i < num_paths_found; i++)
+    {
+        if (found_paths[i] != NULL)
+        {
+            free(found_paths[i]);
+            found_paths[i] = NULL;
+        }
+    }
+    free(found_paths);
+
+    for (int i = 0; i < num_of_paths_stored; i++)
+    {
+        if (accessible_paths_copy[i] != NULL)
+        {
+            free(accessible_paths_copy[i]);
+            accessible_paths_copy[i] = NULL;
+        }
+    }
+    free(accessible_paths_copy);
+
+    for (int i = 0; i < num_paths_found; i++)
+    {
+        if (found_paths_copy != NULL)
+        {
+            free(found_paths_copy[i]);
+            found_paths_copy[i] = NULL;
+        }
+    }
+    free(found_paths_copy);
+
+    pthread_mutex_unlock(&accessible_paths_mutex);
+    return;
+}
+
 // This function tokenises the provided string on given character and returns a 2D character array broken at ch
 char **tokenize(const char *str, const char ch)
 {
