@@ -56,6 +56,26 @@ void *check_and_store_filepaths(void *args)
         // Have copied all the found paths in the array so now we can free the linked list
         free_linked_list(paths);
 
+        // Now go and match each paths in not_accessible_paths and found_paths
+        for (int k = 0; k < num_of_not_accessible_paths_stored; k++)
+        {
+            char *curr_not_accessible_path = not_accessible_paths[k];
+            for (int j = 0; j < num_paths_found; j++)
+            {
+                char *curr_found_path = found_paths[j];
+                if (curr_found_path != NULL)
+                {
+                    if (strcmp(curr_found_path, curr_not_accessible_path) == 0)
+                    {
+                        free(found_paths_copy[j]);
+                        free(found_paths[j]);
+                        found_paths[j] = NULL;
+                        found_paths_copy[j] = NULL;
+                    }
+                }
+            }
+        }
+
         // Now go and match each paths in found_paths and accessible_paths
         for (int k = 0; k < num_paths_found; k++)
         {
@@ -72,28 +92,6 @@ void *check_and_store_filepaths(void *args)
                         found_paths[k] = NULL;
                         accessible_paths_copy[j] = NULL;
                         break;
-                    }
-                }
-            }
-        }
-
-        // Now go and match each paths in not_accessible_paths and found_paths
-        for (int k = 0; k < num_paths_found; k++)
-        {
-            char *curr_found_path = found_paths[k];
-            if (curr_found_path != NULL)
-            {
-                for (int j = 0; j < num_of_not_accessible_paths_stored; j++)
-                {
-                    char *curr_not_accessible_path = not_accessible_paths[j];
-                    if (curr_not_accessible_path != NULL)
-                    {
-                        if (strcmp(curr_found_path, curr_not_accessible_path) == 0)
-                        {
-                            free(found_paths[k]);
-                            found_paths[k] = NULL;
-                            break;
-                        }
                     }
                 }
             }
@@ -146,12 +144,15 @@ void *check_and_store_filepaths(void *args)
         // Copying all the found paths into the accessible paths array
         for (int i = 0; i < num_paths_found; i++)
         {
-            memset(accessible_paths[i], 0, MAX_PATH_LEN);
-            strcpy(accessible_paths[i], found_paths_copy[i]);
-            free(found_paths_copy[i]);
-            found_paths_copy[i] = NULL;
+            if (found_paths_copy[i] != NULL)
+            {
+                memset(accessible_paths[i], 0, MAX_PATH_LEN);
+                strcpy(accessible_paths[i], found_paths_copy[i]);
+                free(found_paths_copy[i]);
+                found_paths_copy[i] = NULL;
+            }
         }
-        num_of_paths_stored = num_paths_found;
+        num_of_paths_stored = num_paths_found - num_of_not_accessible_paths_stored;
 
         // Freeing all the memory allocated
     Free:

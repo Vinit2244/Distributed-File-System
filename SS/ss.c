@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
         }
     }
     
-    for (int i = 0; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
         strcpy(accessible_paths[num_of_paths_stored++], argv[i]);
     }

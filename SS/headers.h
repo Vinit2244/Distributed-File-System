@@ -23,7 +23,7 @@
 #include "threads.h"
 
 // ========================== Useful Macros ==========================
-#define PWD                 "/home/ayush/Desktop/final-project-43/SS"
+#define PWD                 "/Users/vinitmehta/Desktop/IIITH_Main/Sem3/OSN/mini_projects/final-project-43/SS"
 #define MY_IP               "127.0.0.1" // Ip address of this storage server
 #define NFS_IP              "127.0.0.1" // IP address of the naming server
 #define MY_SS_ID            1           // Each storage server is assigned a unique SS_ID (used to distinguish between different servers)
