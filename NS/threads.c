@@ -108,7 +108,8 @@ void *server_handler(void *p)
             pack->status = 0;
             return NULL;
         }
-        // printf(GREEN("Connected to server %s succesfully!\n\n\n"),pack->port);
+
+        
 
         pack->status = 1;
         r->request_type = PING;
@@ -135,10 +136,10 @@ void *server_handler(void *p)
 
         if (r->request_type != ACK)
         {
-            // printf("x: %d\n",x);
+
+
             pack->synced=0;
             printf(RED("Server %s disconnected!\n\n\n"), pack->port);
-            // printf("%d\n",r->request_type);
             pthread_mutex_lock(&server_lock);
             for (int i = 0; i < server_count; i++)
             {

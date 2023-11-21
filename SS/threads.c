@@ -716,7 +716,7 @@ void *serve_request(void *args)
                 chdir(PWD);
                 if (recvd_request.request_type == BACKUP_PASTE)
                 {
-                    free(file_path);
+                    free(file_path);printf(YELLOW("Ping request received.\n"));
                 }
                 else
                 {
@@ -825,7 +825,7 @@ void *serve_request(void *args)
         char* absolute_path = create_abs_path(dir_path);
         if (absolute_path == NULL)
         {
-            fprintf(stderr, RED("rmdir : Can't remove the specified folder : %s\n"), strerror(errno));
+            fprintf(stderr, RED("rmdir : Can't remove the specified folder.\n"));
             send_ack(INVALID_DELETION, sock_fd, strerror(errno));
             goto End;
         }

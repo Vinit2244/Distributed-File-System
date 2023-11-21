@@ -46,7 +46,7 @@ int connect_to_port(char *port)
         int x = connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address));
         if (x == -1)
         {
-            perror("Connection failed");
+            printf(RED("Connection to %s failed\n"), port);
             return 0;
         }
         else if (x == 0)
@@ -114,11 +114,6 @@ void replicate_backups(ss server)
         }
     }
 
-    // for(int i=0;i<total_new_paths;i++){
-    //     printf(ORANGE("%s\n"),new_paths[i]);
-    // }
-
-    // add new files
     for (int i = 0; i < total_new_paths; i++)
     {
 
@@ -128,7 +123,6 @@ void replicate_backups(ss server)
             if (search_path(ss_list[j]->root, new_paths[i]) >= 0)
             {
                 found_server = ss_list[j];
-                // printf("%s found in %s\n",new_paths[i],found_server->port);
                 break;
             }
         }
@@ -143,15 +137,26 @@ void replicate_backups(ss server)
             strcpy(r->data, new_paths[i]);
             printf("Connecting to %s\n", found_server->port);
             int sock = connect_to_port(found_server->port);
-            send(sock, r, sizeof(st_request), 0);
-            recv(sock, r, sizeof(st_request), 0);
+
+            if(send(sock, r, sizeof(st_request), 0)<0){
+                printf(RED("Error in sending\n"));
+            }
+            
+            if(recv(sock, r, sizeof(st_request), 0)<0){
+                printf(RED("Error in receiving\n"));
+            }
+            
             close(sock);
-            // sleep(1);
             r->request_type = BACKUP_PASTE;
 
             sock = connect_to_port(server->port);
+            if(sock<=0){
+                printf(RED("Error in connecting to %s\n"),server->port);
+            }
 
-            send(sock, r, sizeof(st_request), 0);
+            if(send(sock, r, sizeof(st_request), 0)<0){
+                printf(RED("Error in sending\n"));
+            }
             close(sock);
         }
         else
@@ -159,8 +164,15 @@ void replicate_backups(ss server)
             printf("Copying folder %s\n\n", new_paths[i]);
             r->request_type = BACKUP_CREATE_FOLDER;
             strcpy(r->data, new_paths[i]);
+
             int sock = connect_to_port(server->port);
-            send(sock, r, sizeof(st_request), 0);
+            if(sock<=0){
+                printf(RED("Error in connecting to %s\n"),server->port);
+            }
+
+            if(send(sock, r, sizeof(st_request), 0)<0){
+                printf(RED("Error in sending\n"));
+            }
             close(sock);
         }
     }
@@ -214,7 +226,14 @@ void replicate_backups(ss server)
             strcpy(r->data,to_rem[i]);
 
             int sock = connect_to_port(server->port);
-            send(sock,r,sizeof(st_request),0);
+
+            if(sock<0){
+                printf(RED("Error in connecting to %s\n"),server->port);
+            }
+
+            if(send(sock,r,sizeof(st_request),0)<0){
+                printf(RED("Error in sending\n"));
+            }
             close(sock);
 
         }
@@ -225,7 +244,15 @@ void replicate_backups(ss server)
             strcpy(r->data,to_rem[i]);
 
             int sock = connect_to_port(server->port);
-            send(sock,r,sizeof(st_request),0);
+
+            if(sock<0){
+                printf(RED("Error in connecting to %s\n"),server->port);
+            }
+
+            if(send(sock,r,sizeof(st_request),0)<0){
+                printf(RED("Error in sending\n"));
+            }
+            
             close(sock);
 
 
@@ -238,7 +265,6 @@ void replicate_backups(ss server)
     return;
 }
 
-// Code to add a new storage server in naming server list
 void init_storage(char data[])
 {
     // tokenise the string and create a new server object with extracted attributes

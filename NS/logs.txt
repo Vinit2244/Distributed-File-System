@@ -893,3 +893,297 @@ Request type                      : 31
 Request data                      : ./SS1_dir2/SS1_file4.txt
 Status                            : 200
 
+Communicating with Client
+NFS Port number                   : 2000
+Client Port number                : 2000
+Request type                      : 14
+Request data                      : 3|./SS3_dir2|./SS3_dir2/SS3_file3.txt|./SS3_dir2/SS3_file4.txt|./SS3_file7.txt|./SS3_dir3|./SS3_dir3/SS3_file5.txt|./SS3_dir1|./SS3_dir1/SS3_file1.txt|./SS3_dir1/SS3_file2.txt|./SS3_file8.txt
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 32
+Request data                      : ./SS3_dir2
+Status                            : 200
+
+Communicating with Storage Server : 2
+NFS Port number                   : 2000
+Storage Server Port number        : 2500
+Request type                      : 32
+Request data                      : ./SS3_dir2
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 31
+Request data                      : ./SS3_dir2/SS3_file3.txt
+Status                            : 200
+
+Communicating with Storage Server : 2
+NFS Port number                   : 2000
+Storage Server Port number        : 2500
+Request type                      : 31
+Request data                      : ./SS3_dir2/SS3_file3.txt
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 31
+Request data                      : ./SS3_dir2/SS3_file4.txt
+Status                            : 200
+
+Communicating with Storage Server : 2
+NFS Port number                   : 2000
+Storage Server Port number        : 2500
+Request type                      : 31
+Request data                      : ./SS3_dir2/SS3_file4.txt
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 31
+Request data                      : ./SS3_file7.txt
+Status                            : 200
+
+Communicating with Storage Server : 2
+NFS Port number                   : 2000
+Storage Server Port number        : 2500
+Request type                      : 31
+Request data                      : ./SS3_file7.txt
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 32
+Request data                      : ./SS3_dir3
+Status                            : 200
+
+Communicating with Storage Server : 2
+NFS Port number                   : 2000
+Storage Server Port number        : 2500
+Request type                      : 32
+Request data                      : ./SS3_dir3
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 31
+Request data                      : ./SS3_dir3/SS3_file5.txt
+Status                            : 200
+
+Communicating with Storage Server : 2
+NFS Port number                   : 2000
+Storage Server Port number        : 2500
+Request type                      : 31
+Request data                      : ./SS3_dir3/SS3_file5.txt
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 32
+Request data                      : ./SS3_dir1
+Status                            : 200
+
+Communicating with Storage Server : 2
+NFS Port number                   : 2000
+Storage Server Port number        : 2500
+Request type                      : 32
+Request data                      : ./SS3_dir1
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 31
+Request data                      : ./SS3_dir1/SS3_file1.txt
+Status                            : 200
+
+Communicating with Storage Server : 2
+NFS Port number                   : 2000
+Storage Server Port number        : 2500
+Request type                      : 31
+Request data                      : ./SS3_dir1/SS3_file1.txt
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 31
+Request data                      : ./SS3_dir1/SS3_file2.txt
+Status                            : 200
+
+Communicating with Storage Server : 2
+NFS Port number                   : 2000
+Storage Server Port number        : 2500
+Request type                      : 31
+Request data                      : ./SS3_dir1/SS3_file2.txt
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 31
+Request data                      : ./SS3_file8.txt
+Status                            : 200
+
+Communicating with Storage Server : 2
+NFS Port number                   : 2000
+Storage Server Port number        : 2500
+Request type                      : 31
+Request data                      : ./SS3_file8.txt
+Status                            : 200
+
+Communicating with Client
+NFS Port number                   : 2000
+Client Port number                : 2000
+Request type                      : 14
+Request data                      : 2|./SS2_dir3|./SS2_dir3/SS2_file5.txt|./SS2_file8.txt|./SS2_file7.txt|./SS2_dir2|./SS2_dir2/SS2_file3.txt|./SS2_dir2/SS2_file4.txt|./SS2_dir1|./SS2_dir1/SS2_file1.txt|./SS2_dir1/SS2_file2.txt
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 32
+Request data                      : ./SS2_dir3
+Status                            : 200
+
+Communicating with Storage Server : 3
+NFS Port number                   : 2000
+Storage Server Port number        : 3500
+Request type                      : 32
+Request data                      : ./SS2_dir3
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 31
+Request data                      : ./SS2_dir3/SS2_file5.txt
+Status                            : 200
+
+Communicating with Storage Server : 3
+NFS Port number                   : 2000
+Storage Server Port number        : 3500
+Request type                      : 31
+Request data                      : ./SS2_dir3/SS2_file5.txt
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 31
+Request data                      : ./SS2_file8.txt
+Status                            : 200
+
+Communicating with Storage Server : 3
+NFS Port number                   : 2000
+Storage Server Port number        : 3500
+Request type                      : 31
+Request data                      : ./SS2_file8.txt
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 31
+Request data                      : ./SS2_file7.txt
+Status                            : 200
+
+Communicating with Storage Server : 3
+NFS Port number                   : 2000
+Storage Server Port number        : 3500
+Request type                      : 31
+Request data                      : ./SS2_file7.txt
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 32
+Request data                      : ./SS2_dir2
+Status                            : 200
+
+Communicating with Storage Server : 3
+NFS Port number                   : 2000
+Storage Server Port number        : 3500
+Request type                      : 32
+Request data                      : ./SS2_dir2
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 31
+Request data                      : ./SS2_dir2/SS2_file3.txt
+Status                            : 200
+
+Communicating with Storage Server : 3
+NFS Port number                   : 2000
+Storage Server Port number        : 3500
+Request type                      : 31
+Request data                      : ./SS2_dir2/SS2_file3.txt
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 31
+Request data                      : ./SS2_dir2/SS2_file4.txt
+Status                            : 200
+
+Communicating with Storage Server : 3
+NFS Port number                   : 2000
+Storage Server Port number        : 3500
+Request type                      : 31
+Request data                      : ./SS2_dir2/SS2_file4.txt
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 32
+Request data                      : ./SS2_dir1
+Status                            : 200
+
+Communicating with Storage Server : 3
+NFS Port number                   : 2000
+Storage Server Port number        : 3500
+Request type                      : 32
+Request data                      : ./SS2_dir1
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 31
+Request data                      : ./SS2_dir1/SS2_file1.txt
+Status                            : 200
+
+Communicating with Storage Server : 3
+NFS Port number                   : 2000
+Storage Server Port number        : 3500
+Request type                      : 31
+Request data                      : ./SS2_dir1/SS2_file1.txt
+Status                            : 200
+
+Communicating with Storage Server : 1
+NFS Port number                   : 2000
+Storage Server Port number        : 1500
+Request type                      : 31
+Request data                      : ./SS2_dir1/SS2_file2.txt
+Status                            : 200
+
+Communicating with Storage Server : 3
+NFS Port number                   : 2000
+Storage Server Port number        : 3500
+Request type                      : 31
+Request data                      : ./SS2_dir1/SS2_file2.txt
+Status                            : 200
+

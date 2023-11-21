@@ -13,14 +13,7 @@ void* copy_handler(request req,int client_id){
         strcpy(desti, token);
 
         if(req->request_type == COPY_FOLDER){
-            // printf("Invalid file to copy!\n");
-            // request r = (request)malloc(sizeof(st_request));
-            // r->request_type = FILE_NOT_FOUND;
-            // strcpy(r->data, "File not found");
-            // send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-            // client_socket_arr[client_id] = -1;  
-            // close(client_socket_arr[client_id]);
-            // return NULL;
+
 
             request r = (request)malloc(sizeof(st_request));
             r->request_type = COPY_FOLDER;

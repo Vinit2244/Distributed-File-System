@@ -441,7 +441,7 @@ char* create_abs_path(char* relative_path)
         n_tkns++;
     }
 
-    if (n_tkns == 2 || n_tkns == 1)
+    if (n_tkns == 1)
     {
         // Trying to find abs path for the base folder or storage or backup folder which we can't allow
         return NULL;
