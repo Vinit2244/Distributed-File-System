@@ -8,7 +8,7 @@ void* basic_ops(request req,int client_id){
             r->request_type = FILE_NOT_FOUND;
             strcpy(r->data, "File not found");
             send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-            int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,OK);
+            int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,OK);
             if(logging==0)
             {
                 printf(RED("Logging not added\n"));
@@ -37,7 +37,7 @@ void* basic_ops(request req,int client_id){
                         r->request_type = TIMEOUT;
                         strcpy(r->data, "Timeout was done");
                         send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-                        int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,TIMEOUT);
+                        int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,TIMEOUT);
                         if(logging==0)
                         {
                             printf(RED("Logging not added\n"));
@@ -53,7 +53,7 @@ void* basic_ops(request req,int client_id){
                         r->request_type = RES;
                         snprintf(r->data, MAX_DATA_LENGTH, "%s|%s", ss_list[id]->ip, ss_list[id]->client_port);
                         send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-                        int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,OK);
+                        int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,OK);
                         if(logging==0)
                         {
                             printf(RED("Logging not added\n"));
@@ -72,7 +72,7 @@ void* basic_ops(request req,int client_id){
                         r->request_type = TIMEOUT;
                         strcpy(r->data, "Timeout was done");
                         send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-                        int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,TIMEOUT);
+                        int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,TIMEOUT);
                         if(logging==0)
                         {
                             printf(RED("Logging not added\n"));
@@ -89,7 +89,7 @@ void* basic_ops(request req,int client_id){
                         r->request_type = RES;
                         snprintf(r->data, MAX_DATA_LENGTH, "%s|%s", ss_list[id]->ip, ss_list[id]->client_port);
                         send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-                        int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,OK);
+                        int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,OK);
                         if(logging==0)
                         {
                             printf(RED("Logging not added\n"));
@@ -109,7 +109,7 @@ void* basic_ops(request req,int client_id){
                 snprintf(data, MAX_DATA_LENGTH, "%s|%s", ss_list[id]->ip, ss_list[id]->client_port);
                 strcpy(r->data, data);
                 send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-                int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,OK);
+                int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,OK);
                 if(logging==0)
                 {
                     printf(RED("Logging not added\n"));
@@ -133,7 +133,7 @@ void* basic_ops(request req,int client_id){
                 r->request_type = FILE_NOT_FOUND;
                 strcpy(r->data, "File not found");
                 send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-                int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,FILE_NOT_FOUND);
+                int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,FILE_NOT_FOUND);
                 if(logging==0)
                 {
                     printf(RED("Logging not added\n"));
@@ -173,7 +173,7 @@ void* basic_ops(request req,int client_id){
             strcpy(r->data, "File not found");
             printf(RED("No files found , informing client\n\n\n"));
             send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-            int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,FILE_NOT_FOUND);
+            int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,FILE_NOT_FOUND);
             if(logging==0)
             {
                 printf(RED("Logging not added\n"));
@@ -191,7 +191,7 @@ void* basic_ops(request req,int client_id){
                     r->request_type = TIMEOUT;
                     strcpy(r->data, "Timeout was done");
                     send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-                    int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,TIMEOUT);
+                    int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,TIMEOUT);
                     if(logging==0)
                     {
                         printf(RED("Logging not added\n"));
@@ -209,7 +209,7 @@ void* basic_ops(request req,int client_id){
                     r->request_type = TIMEOUT;
                     strcpy(r->data, "Timeout was done");
                     send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-                    int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,TIMEOUT);
+                    int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,TIMEOUT);
                     if(logging==0)
                     {
                         printf(RED("Logging not added\n"));
@@ -227,7 +227,7 @@ void* basic_ops(request req,int client_id){
                 r->request_type = RES;
                 strcpy(r->data, reference);
                 send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-                int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,OK);
+                int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,OK);
                 if(logging==0)
                 {
                     printf(RED("Logging not added\n"));
@@ -244,7 +244,7 @@ void* basic_ops(request req,int client_id){
                     r->request_type = BACKUP_READ_REQ;
                     snprintf(r->data, MAX_DATA_LENGTH, "%s|%s", ss_list[id]->ip, ss_list[id]->backup_port[0]);
                     send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-                    int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,OK);
+                    int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,OK);
                     if(logging==0)
                     {
                         printf(RED("Logging not added\n"));
@@ -257,7 +257,7 @@ void* basic_ops(request req,int client_id){
                     strcpy(r->data, "File not found");
                     printf(RED("No files found , informing client\n\n\n"));
                     send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-                    int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,FILE_NOT_FOUND);
+                    int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,FILE_NOT_FOUND);
                     if(logging==0)
                     {
                         printf(RED("Logging not added\n"));
