@@ -122,13 +122,15 @@ Vinit Mehta (2022111001)</i> <br>
 
 <p id="#ss"></p>
 
+### <span style="color:pink"> Storage Server </span>
+
 <p id="#client"></p>
 
+### <span style="color:pink"> Client </span>
 
 <p id="#implementation"></p>
 
 ## <span style="color:skyblue">Implementation</span>
-
 
 ### <span style="color:pink"> Flow of Control</span>
 - The Naming server initialises all necessary parameters and starts by binding to port 2000.
@@ -193,6 +195,20 @@ till the socket is closed.
   * APPEND \<file path\>
 * DESCRIPTION :
   * Similar to write request just that the file would be opened in append mode at SS.
+
+### <span style="color:pink"> CREATE FILE Request </span>
+* FORMAT :
+  * CREATE FILE \<path\> \<file name\>
+* DESCRIPTION :
+  * It first sends the create file request to the NS (FORMAT : \<path\>|\<file name\>). NS first searches for the SS in which the given path resides. If the path is not found with any SS it returns appropriate error message to the client. On the other hand if the path is found NS sends a request to the respective SS to create the file.
+  * If the path to the file does not exist (intermediate files are not there) then the file won't be created and appropriate error message would be sent to NS by SS.
+  * NS would just forward the packet received from SS (either ACK or Error message) and client would just print the error message if the file creation is not successfull.
+
+### <span style="color:pink"> CREATE FOLDER Request </span>
+* FORMAT :
+  * CREATE FOLDER \<path\> \<folder name\>
+* DESCRIPTION :
+  * Similar to create file.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
