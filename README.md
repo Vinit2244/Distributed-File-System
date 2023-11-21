@@ -218,8 +218,58 @@ till the socket is closed.
 * FORMAT :
   * DELETE FILE \<path\>
 * DESCRIPTION :
-  * Client sends the request to the NS (FORMAT : \<path\>). Then NS checks if the path provided is accessible or not, if the path is accessible then it sends Delete request to the respective server.
-  * SS tries to delete the file, if there is some error while 
+  * The client sends the request to NS in the given format. The NS detects this data and checks whether the given path is an accessible path. If it is not it returns 404 error otherwise it sends a delete file request to the storage server having the file. 
+  * The storage server uses a system call to remove the file from the local storage and sends an acknowledgement to the NS. The NS also sends a request to delete the corresponding file from the servers which contain the backup of the desired server.
+  * The client receives acknowledgement from NS on completion of request or suitable error code that the NS forwards from the SS.
+
+### <span style="color:pink"> DELETE FOLDER Request </span>
+* FORMAT :
+  * DELETE FOLDER \<path\>
+* DESCRIPTION :
+  * Similar to delete file but if a folder has some contents , all the contents are recursively deleted from the folder.
+
+### <span style="color:pink"> COPY FILE Request </span>
+* FORMAT :
+  * COPY FILE \<path\> \<path\>
+* DESCRIPTION :
+  * The client sends the request to NS with the source and destination. The NS sends a COPY request to the storage server containing the source file and the server responds with the content of the data. 
+  * The NS sends a request to destination folder with the destination path modified as destination folder followed by file name.
+  * The SS creates the relevant file in the destination folder and writes the content into it.
+  * The SS sends an acknowledgement on receiving data.
+  * In case where the second argument is a file , the client program does not send a packet but informs the client about invalid input type
+  *Redundancy is maintained by sending a COPY to backup storage serves as well.
+
+### <span style="color:pink"> COPY FOLDER Request </span>
+* FORMAT :
+  * COPY FOLDER \<path\> \<path>
+* DESCRIPTION :
+  * Just like copy file , the client sends a request to NS with source and destination. The NS sends a COPY FOLDER request to source folder if it exits and it responds with a folder object containing all accessible paths in the folder. The NS copies files and creates directories into the destination folder from this object.
+  
+### <span style="color:pink"> INFO Request </span>
+* FORMAT :
+  * INFO \<path\>
+* DESCRIPTION :
+  * Provides file size , date modified , permissions of a file to    the user if it is a text file.
+
+### <span style="color:pink"> LIST Request </span>
+* FORMAT :
+  * LIST
+* DESCRIPTION :
+  * Lists all accessible paths which can be accessed at the moment (if a storage server is down as well , they are accessible just  under read operation only).
+
+### <span style="color:pink"> MAN Request </span>
+* FORMAT :
+  * MAN
+* DESCRIPTION :
+  * Dont't know how to tell the client what to do ? Check this out!
+    This tells you syntax of all available client commands!
+
+### <span style="color:pink"> EXIT Request </span>
+* FORMAT :
+  * EXIT
+* DESCRIPTION :
+  * Goodbye!
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
