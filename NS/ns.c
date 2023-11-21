@@ -125,7 +125,7 @@ void replicate_backups(ss server)
         ss found_server = NULL;
         for (int j = 0; j < server_count; j++)
         {
-            if (search_path(ss_list[j]->root, new_paths[i]) == 1)
+            if (search_path(ss_list[j]->root, new_paths[i]) >= 0)
             {
                 found_server = ss_list[j];
                 // printf("%s found in %s\n",new_paths[i],found_server->port);

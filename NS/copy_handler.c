@@ -30,14 +30,14 @@ void* copy_handler(request req,int client_id){
             pthread_mutex_lock(&server_lock);
             // printf("%d\n",server_count);
             for(int i=0;i<server_count;i++){
-                if(search_path(ss_list[i]->root,source)==1){
+                if(search_path(ss_list[i]->root,source)>=0){
                     
                     found_server=ss_list[i];
                     printf("found source at %d\n",i);
                     // printf("Found surce\n");
                     
                 }
-                if(search_path(ss_list[i]->root,desti)==1){
+                if(search_path(ss_list[i]->root,desti)>=0){
                     dest_server=ss_list[i];
                     // printf("Found dest\n");
                     printf("found dest at %d\n",i);
@@ -145,13 +145,13 @@ void* copy_handler(request req,int client_id){
 
             pthread_mutex_lock(&ss_list[i]->lock);
 
-            if (search_path(ss_list[i]->root, source) == 1)
+            if (search_path(ss_list[i]->root, source) >=0)
             {
                 
                 source_no = ss_list[i];
                 flag++;
             }
-            if (search_path(ss_list[i]->root, desti) == 1)
+            if (search_path(ss_list[i]->root, desti) >=0)
             {   
                 
                 dest_no = ss_list[i];

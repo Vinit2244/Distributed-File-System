@@ -301,7 +301,111 @@ void *sync_backup(void *arg)
 
 
             pack->synced=1;
-            return NULL;
+
+            char **paths1 = (char **)malloc(sizeof(char *) * 100);
+            for (int i = 0; i < 100; i++)
+            {
+                paths1[i] = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
+            }
+
+            linked_list_head ll1 = return_paths(id->backup_root);
+            int cnt1 = 0;
+            trav = ll1->first;
+            while (trav != NULL)
+            {
+                strcpy(paths1[cnt1], trav->path);
+                cnt1++;
+                trav = trav->next;
+            }
+
+            char** paths2 = (char**)malloc(sizeof(char*)*100);
+            for(int i=0;i<100;i++){
+                paths2[i]=(char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+            }
+            linked_list_head ll2 = return_paths(id2->backup_root);
+            int cnt2 = 0;
+            trav = ll2->first;
+            while (trav != NULL)
+            {
+                strcpy(paths2[cnt2], trav->path);
+                cnt2++;
+                trav = trav->next;
+            }
+
+            char ** to_rem = (char**)malloc(sizeof(char*)*100);
+            for(int i=0;i<100;i++){
+                to_rem[i]=(char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+            }
+            int ind1=0;
+            for(int i=0;i<cnt1;i++){
+                int flag=1;
+                for(int j=0;j<cnt;j++){
+                    
+                    if(strcmp(paths1[i],paths[j])==0){
+                        flag=0;
+                        break;
+                    }
+
+                }
+                if(flag==1 && search_path(id->backup_root,paths1[i])==pack->ssid){
+                    strcpy(to_rem[ind1++],paths1[i]);
+                }
+            }
+
+            for(int i=0;i<ind1;i++){
+                request r=(request)malloc(sizeof(st_request));
+
+                if(strstr(to_rem[i],".txt")!=NULL){
+                r->request_type=BACKUP_DELETE_FILE;}
+                else r->request_type=BACKUP_DELETE_FOLDER;
+                strcpy(r->data,to_rem[i]);
+
+                if(id->status==1){
+                int sock=connect_to_port(pack->backup_port[0]);
+                send(sock,r,sizeof(st_request),0);
+                close(sock);}
+
+            }
+
+
+            char ** to_rem1 = (char**)malloc(sizeof(char*)*100);
+            for(int i=0;i<100;i++){
+                to_rem1[i]=(char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+            }
+
+            int ind2=0;
+            for(int i=0;i<cnt2;i++){
+                int flag=1;
+                for(int j=0;j<cnt;j++){
+                    
+                    if(strcmp(paths2[i],paths[j])==0){
+                        flag=0;
+                        break;
+                    }
+
+                }
+                if(flag==1 && search_path(id2->backup_root,paths2[i])==pack->ssid){
+                    strcpy(to_rem1[ind2++],paths2[i]);
+                }
+            }
+
+            for(int i=0;i<ind2;i++){
+                request r=(request)malloc(sizeof(st_request));
+
+                if(strstr(to_rem1[i],".txt")!=NULL){
+                r->request_type=BACKUP_DELETE_FILE;}
+                else r->request_type=BACKUP_DELETE_FOLDER;
+                strcpy(r->data,to_rem1[i]);
+                if(id2->status==1){
+                int sock=connect_to_port(pack->backup_port[1]);
+                send(sock,r,sizeof(st_request),0);
+                close(sock);}
+            }
+
+
+
+
+            // return NULL;
 
         }
         else pthread_mutex_unlock(&pack->lock);
@@ -377,8 +481,8 @@ void *backup_thread()
                     for (int j = 0; j < cnt; j++)
                     {
 
-                        insert_path(ss_list[id1]->backup_root, paths[j]);
-                        insert_path(ss_list[id2]->backup_root, paths[j]);
+                        insert_path(ss_list[id1]->backup_root, paths[j],ss_list[i]->ssid);
+                        insert_path(ss_list[id2]->backup_root, paths[j],ss_list[i]->ssid);
 
                         if (strstr(paths[j], ".txt") != NULL)
                         {

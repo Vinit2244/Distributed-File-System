@@ -12,6 +12,7 @@ struct trie_node *create_trie_node()
     }
     node->key = NULL;   // Initially there is no string stored in the node (strings are stored only in end nodes)
     node->end = 0;      // Initially the node is not an end node
+    node->ssid = -1;
     // 256 childrens 1 for each of the ASCII characters
     for (int i = 0; i < 256; i++)
     {
@@ -21,7 +22,7 @@ struct trie_node *create_trie_node()
 }
 
 // A function to insert a string into the trie, Returns 1 if successfull else 0
-int insert_path(struct trie_node *root, char *key)
+int insert_path(struct trie_node *root, char *key,int ssid)
 {
     // Starting from the root node
     struct trie_node *current = root;
@@ -46,6 +47,7 @@ int insert_path(struct trie_node *root, char *key)
     // We have reached the end of the string that is to be stored so we are at the final node so just store the string as the key and mark this node as one of the end nodes
     current->key = key;
     current->end = 1;
+    current->ssid = ssid;
     return 1;
 }
 
@@ -61,16 +63,16 @@ int search_path(struct trie_node *root, char *key)
         if (current->children[index] == NULL)
         {
             // If the character we are looking for is not present as the child then the string is not present in the trie
-            return 0;
+            return -1;
         }
         current = current->children[index];
     }
 
     if (current->end == 1)
     {
-        return 1;
+        return current->ssid;
     }
-    return 0;
+    return -1;
 }
 
 // A function to delete a string from the trie, Returns 1 if successfull else 0
@@ -91,6 +93,7 @@ int delete_path(struct trie_node *root, char *key)
     
     current->key = NULL;
     current->end = 0;
+    current->ssid = -1;
     return 1;
 }
 
@@ -104,7 +107,7 @@ void print_paths(struct trie_node *root)
 
     if (root->end == 1)
     {
-        printf("%s\n", root->key);
+        printf("%s %d\n", root->key,root->ssid);
     }
 
     for (int i = 0; i < 256; i++)

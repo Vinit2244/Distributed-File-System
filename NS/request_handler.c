@@ -90,13 +90,14 @@ void *process(void *arg)
         // ss found_server = ss_list[atoi(ss_id) - 1];
         ss found_server;
 
-
+        int id=-1;
         for (int i = 0; i < server_count; i++)
         {
 
             if (ss_list[i]->ssid == atoi(ss_id))
             {
                 found_server = ss_list[i];
+                id=i;
                 // printf("Added in %s\n",found_server->port);
                 break;
             }
@@ -106,13 +107,63 @@ void *process(void *arg)
         for (int i = 0; i < ind - 1; i++)
         {
             strcpy(found_server->paths[found_server->path_count + i], path[i]);
-            if (search_path(found_server->root, path[i]) == 0)
+            if (search_path(found_server->root, path[i]) == -1)
             {
-
-                if (insert_path(found_server->root, path[i]) == 1)
+                
+                if (insert_path(found_server->root, path[i],atoi(ss_id)) == 1)
                 {
                     count++;
                 }
+
+                if(found_server->is_backedup == 1){
+
+                    if(strstr(path[i],".txt")!=NULL){
+
+                        request r = (request)malloc(sizeof(st_request));
+                        r->request_type = COPY_FILE;
+                        strcpy(r->data, path[i]);
+
+                        int sock_one = connect_to_port(found_server->port);
+
+                        send(sock_one, r, sizeof(st_request), 0);
+                        recv(sock_one, r, sizeof(st_request), 0);
+
+                        close(sock_one);
+
+                        r->request_type = BACKUP_PASTE;
+
+                        int sock_two = connect_to_port(found_server->backup_port[0]);
+                        send(sock_two, r, sizeof(st_request), 0);
+                        close(sock_two);
+
+                        int sock_three = connect_to_port(found_server->backup_port[1]);
+                        send(sock_three, r, sizeof(st_request), 0);
+                        close(sock_three);
+
+
+                    }
+
+                    else{
+
+
+                        request r = (request)malloc(sizeof(st_request));
+                        r->request_type = BACKUP_CREATE_FOLDER;
+                        strcpy(r->data, path[i]);
+
+                        int sock_one = connect_to_port(found_server->backup_port[0]);
+
+                        send(sock_one, r, sizeof(st_request), 0);
+                        close(sock_one);
+
+                        int sock_two = connect_to_port(found_server->backup_port[1]);
+                        send(sock_two, r, sizeof(st_request), 0);
+                        close(sock_two);
+
+                    }
+
+
+                }
+
             }
         }
 
@@ -159,12 +210,38 @@ void *process(void *arg)
         for (int i = 0; i < tkn_cnt - 1; i++)
         {
 
-            if (search_path(found_server->root, path[i]) == 1)
+            if (search_path(found_server->root, path[i]) >= 0)
             {
+
+                
+
                 if (delete_path(found_server->root, path[i]) == 1)
                 {
                     count++;
                 }
+
+                if(found_server->is_backedup==1){
+
+                    request r = (request)malloc(sizeof(st_request));
+
+                    if(strstr(path[i],".txt")!=NULL){
+                        r->request_type = BACKUP_DELETE_FILE;
+                    }
+                    else r->request_type = BACKUP_DELETE_FOLDER;
+
+                    strcpy(r->data, path[i]);
+
+                    int sock_one = connect_to_port(found_server->backup_port[0]);
+                    send(sock_one,r, sizeof(st_request), 0);
+                    close(sock_one);
+
+                    int sock_two = connect_to_port(found_server->backup_port[1]);
+                    send(sock_two,r, sizeof(st_request), 0);
+                    close(sock_two);
+                    
+
+                }
+
                 found_server->path_count--;
             }
         }
@@ -223,7 +300,7 @@ void *process(void *arg)
         for (int i = 0; i < server_count; i++)
         {
 
-            if (search_path(ss_list[i]->root, token) == 1)
+            if (search_path(ss_list[i]->root, token) >=0)
             {
                 found_server = ss_list[i];
                 break;

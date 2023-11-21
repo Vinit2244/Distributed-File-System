@@ -331,7 +331,7 @@ void send_ack(const int status_code, const int sock_fd, const char* msg)
     ack_st.request_type = status_code;
     if (msg != NULL)
     {
-        printf("\n\n\nMessage is %s\n\n\n",msg);
+        // printf("\n\n\nMessage is %s\n\n\n",msg);
         memset(ack_st.data, 0, MAX_DATA_LENGTH);
         strcpy(ack_st.data, msg);
     }
@@ -344,7 +344,7 @@ void send_ack(const int status_code, const int sock_fd, const char* msg)
     {
         fprintf(stderr, RED("send : could not sent acknowledgement for Request type %d : %s\n"), status_code, strerror(errno));
     }
-    printf("%d\n",sent_msg_size);
+
 
     return;
 }

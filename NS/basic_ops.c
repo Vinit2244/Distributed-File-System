@@ -154,7 +154,7 @@ void* basic_ops(request req,int client_id){
         for (int i = 0; i < server_count; i++)
         {
             pthread_mutex_lock(&ss_list[i]->lock);
-            if (search_path(ss_list[i]->root, req->data) == 1)
+            if (search_path(ss_list[i]->root, req->data) >=0)
             {
                 snprintf(reference, MAX_DATA_LENGTH, "%s|%s", ss_list[i]->ip, ss_list[i]->client_port);
                 flag = 1;
