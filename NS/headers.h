@@ -23,6 +23,7 @@
 #define MAX_CONNECTIONS     100
 #define MAX_PATH_LEN        1024  
 #define MAX_PATHS_LOCKED    1000
+#define MAX_FILES           50
 
 //Request types
 #define ACK                  1
@@ -58,12 +59,13 @@
 #define BACKUP_DELETE_FOLDER 32
 #define BACKUP_CREATE_FILE   33
 #define BACKUP_CREATE_FOLDER 34
-#define WRITE_APPEND_COMP    40
-#define TIMEOUT              39
+
 #define CONSISTENT_WRITE     35
 #define COPY_FOLDER 36
 #define N_FILE_REQ 37
-
+#define WRITE_APPEND_COMP 40
+#define TIMEOUT 39
+#define FOLDER_DATA_TO_BE_COPIED 38
 
 // Macros for book keeping
 #define SS          -1
@@ -196,6 +198,13 @@ typedef struct st_cache {
     char ss_ip[20];
     int ss_port;
 } st_cache;
+
+typedef struct st_copy_folder
+{
+    int request_type;
+    int num_paths;
+    char paths[MAX_FILES][MAX_PATH_LEN];
+} st_copy_folder;
 
 typedef st_cache* cache_array;
 

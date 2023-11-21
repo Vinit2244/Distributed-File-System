@@ -32,9 +32,11 @@ void update_path(char* path, char* next_dir);
 void send_msg_to_nfs(char* msg, int req_type);
 void seek(char* path_to_base_dir, linked_list_head paths);
 void send_ack(const int status_code, const int sock_fd, const char* msg);
+char* get_folder_name(char* path);
 char* remove_extension(char* file_name);
 char* create_abs_path(char* relative_path);
 char* replace_storage_by_backup(char* path);
+char* update_path_rel(char* abs_path, char* curr_path);
 char** tokenize(const char* str, const char ch);
 char** get_all_files_folders(const char* abs_path);
 

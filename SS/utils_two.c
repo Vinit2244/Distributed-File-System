@@ -331,11 +331,9 @@ void send_ack(const int status_code, const int sock_fd, const char* msg)
     ack_st.request_type = status_code;
     if (msg != NULL)
     {
-        printf("\n\n\nMessage is %s\n\n\n",msg);
         memset(ack_st.data, 0, MAX_DATA_LENGTH);
         strcpy(ack_st.data, msg);
     }
-
 
     // Nothing to be written onto the data as only ack is being sent
     
@@ -344,7 +342,6 @@ void send_ack(const int status_code, const int sock_fd, const char* msg)
     {
         fprintf(stderr, RED("send : could not sent acknowledgement for Request type %d : %s\n"), status_code, strerror(errno));
     }
-    printf("%d\n",sent_msg_size);
 
     return;
 }
@@ -545,85 +542,11 @@ char** get_all_files_folders(const char* abs_path)
 
     // Number of paths found
     int num_paths_found = paths->number_of_nodes;
+    // I have to remove the not accessible paths from here first and then pass only the path staring from the source folder of files and folders inside it along with the content if it's a file
 
-    // Storing relative paths of the files found in the found_paths array
-    char **found_paths = (char **)malloc(num_paths_found * sizeof(char *));
+    char** files_folders = (char**) malloc((num_paths_found + 1) * sizeof(char*));
 
-    linked_list_node n = paths->first;
-    int idx = 0;
-    while (n != NULL)
-    {
-        char temp_str[MAX_PATH_LEN] = {0};
-        strcpy(temp_str, ".");
-        strcat(temp_str, &n->path[strlen(PWD)]);
-
-        int flag = 1;
-        for (int k = 0; k < num_of_not_accessible_paths_stored; k++)
-        {
-            if (strcmp(temp_str, not_accessible_paths[k]) == 0)
-            {
-                flag = 0;
-                break;
-            }
-        }
-        if (flag == 1)
-        {
-            found_paths[idx] = (char *)calloc(MAX_PATH_LEN, sizeof(char));
-            strcpy(found_paths[idx], ".");
-            strcat(found_paths[idx++], &n->path[strlen(abs_path)]);
-        }
-        n = n->next;
-    }
-
-    // Have copied all the found paths in the array so now we can free the linked list
     free_linked_list(paths);
-
-    // Now go and match each paths in not_accessible_paths and found_paths
-    for (int k = 0; k < num_of_not_accessible_paths_stored; k++)
-    {
-        char *curr_not_accessible_path = not_accessible_paths[k];
-        for (int j = 0; j < num_paths_found; j++)
-        {
-            char *curr_found_path = found_paths[j];
-            if (curr_found_path != NULL)
-            {
-                if (strcmp(curr_found_path, curr_not_accessible_path) == 0)
-                {
-                    free(found_paths[j]);
-                    found_paths[j] = NULL;
-                    break;
-                }
-            }
-        }
-    }
-
-    int n_new_num_found_paths = 0;
-    for (int i = 0; i < num_paths_found; i++)
-    {
-        if (found_paths[i] != NULL)
-        {
-            n_new_num_found_paths++;
-        }
-    }
-
-    char** files_folders = (char**) malloc((n_new_num_found_paths + 1) * sizeof(char*));
-
-    int ff_idx = 0;
-    for (int i = 0; i < num_paths_found; i++)
-    {
-        if (found_paths[i] != NULL)
-        {
-            files_folders[ff_idx] = (char*) calloc(MAX_PATH_LEN, sizeof(char));
-            strcpy(files_folders[ff_idx], found_paths[i]);
-            ff_idx++;
-            free(found_paths[i]);
-        }
-    }
-
-    files_folders[n_new_num_found_paths] = NULL;
-
-    // free_linked_list(paths);
-    free(found_paths);
 
     return files_folders;
 }
@@ -724,8 +647,10 @@ void update_path(char* path, char* next_dir) {
 
 char* update_path_rel(char* abs_path, char* curr_path)
 {
+    printf("%s\n",curr_path);
     char* final_path = (char*) calloc(MAX_PATH_LEN, sizeof(char));
     strcat(final_path, abs_path);
-    strcat(final_path, curr_path + 1);
+    strcat(final_path, "/");
+    strcat(final_path, curr_path);
     return final_path;
 }

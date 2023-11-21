@@ -63,7 +63,7 @@
 #define DELETE_PATHS         14
 #define COPY_TO              15
 #define COPY_FROM            16
-#define COPY_REQ             17
+#define COPY_FILE            16
 #define FILE_NOT_FOUND       18
 #define RETRIEVE_INFO        19
 #define INFO                 20
@@ -83,6 +83,7 @@
 #define BACKUP_CREATE_FOLDER 34
 #define WRITE_APPEND_COMP    40
 #define TIMEOUT              39
+#define COPY_FOLDER 36
 // ============================= Statuses =============================
 #define NOT_REGISTERED 0
 #define REGISTERED     1
@@ -121,7 +122,7 @@ void writing_append_operation(char *path,int f);
 void communicate_with_ss_info(char *ipaddress, char *port, char *path);
 void info(char *path);
 void delete_operation(char *path,int macro);
-void copy_operation(char *path1, char *path2);
+void copy_operation(int req_type,char *path1, char *path2);
 void list();
 
 

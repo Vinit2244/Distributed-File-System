@@ -1,1 +1,0 @@
-./storage ./storage/temp5.txt ./storage/SS1_dir3 ./storage/SS1_dir3/SS1_file5.txt

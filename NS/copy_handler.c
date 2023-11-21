@@ -5,14 +5,14 @@ void* copy_handler(request req,int client_id){
         char *source = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
         char *desti = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
 
-
+        // printf("%s\n",req->data);
         char *token = strtok(req->data, "|");
 
         strcpy(source, token);
         token = strtok(NULL, "|");
         strcpy(desti, token);
 
-        if(strstr(source,".txt")==NULL){
+        if(req->request_type == COPY_FOLDER){
             // printf("Invalid file to copy!\n");
             // request r = (request)malloc(sizeof(st_request));
             // r->request_type = FILE_NOT_FOUND;
@@ -28,14 +28,19 @@ void* copy_handler(request req,int client_id){
             ss found_server = NULL;
             ss dest_server = NULL;
             pthread_mutex_lock(&server_lock);
+            // printf("%d\n",server_count);
             for(int i=0;i<server_count;i++){
                 if(search_path(ss_list[i]->root,source)==1){
                     
                     found_server=ss_list[i];
+                    printf("found source at %d\n",i);
+                    // printf("Found surce\n");
                     
                 }
-                else if(search_path(ss_list[i]->root,desti)==1){
+                if(search_path(ss_list[i]->root,desti)==1){
                     dest_server=ss_list[i];
+                    // printf("Found dest\n");
+                    printf("found dest at %d\n",i);
                 }
 
                 if(found_server!=NULL && dest_server!=NULL){
@@ -56,45 +61,70 @@ void* copy_handler(request req,int client_id){
 
             else{
 
+                printf(YELLOW("Copying folder %s to %s\n"),found_server->port,dest_server->port);
+                st_copy_folder* get_r=(st_copy_folder*)malloc(sizeof(st_copy_folder));
                 int sock_fd=connect_to_port(found_server->port);
                 send(sock_fd,r,sizeof(st_request),0);
-                recv(sock_fd,r,sizeof(st_request),0);
+                recv(sock_fd,get_r,sizeof(st_copy_folder),0);
 
-                int sock_fd1=connect_to_port(dest_server->port);
+ 
+                close(sock_fd);
+                request r=(request)malloc(sizeof(st_request));
+                printf("%d\n",get_r->num_paths);
+                for(int i=0;i<get_r->num_paths;i++){
+                    // printf("%s\n",get_r->paths[i]);
+                    memset(r->data,0,MAX_DATA_LENGTH);
+                    r->request_type = PASTE;
 
-                if(r->request_type!=N_FILE_REQ){
-                    printf(RED("Error in copying folder with code : %d\n\n\n"),r->request_type);
-                    return NULL;
-                }
+                    strcat(r->data,desti);
+                    strcat(r->data,get_r->paths[i]);
+                    // printf("%s\n",r->data);
+                    int sock_fd1=connect_to_port(dest_server->port);
+                    send(sock_fd1,r,sizeof(st_request),0);
 
-                int total_packets = atoi(r->data);
-                int curr_packet = 0;
-
-                request r1 = (request)malloc(sizeof(st_request));
-                request r2 = (request)malloc(sizeof(st_request));
-                while(curr_packet<total_packets){
-                    memset(r1->data,0,sizeof(r->data));
-                    memset(r2->data,0,sizeof(r->data));
-
-
-                    recv(sock_fd,r1,sizeof(st_request),0);
-
-                    char* token1=strtok(r1->data,"|");
-                    char* token2=strtok(NULL,"|");
-                    char* path = (char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
-
-                    r2->request_type=PASTE;
-
-                    snprintf(path,sizeof(path),"%s/%s",desti,token);
-                    snprintf(r2->data,sizeof(r2->data),"%s|%s",path,token1);
-
-                    send(sock_fd1,r2,sizeof(st_request),0);
+                    close(sock_fd1);
 
 
-                    curr_packet++;
+            }
+                
+
+                // int sock_fd1=connect_to_port(dest_server->port);
+
+                // if(r->request_type!=N_FILE_REQ){
+                //     printf(RED("Error in copying folder with code : %d\n\n\n"),r->request_type);
+                //     return NULL;
+                // }
+
+                // // printf("%s\n",r->data);
+                // int total_packets = atoi(r->data);
+                
+                // int curr_packet = 0;
+
+                // request r1 = (request)malloc(sizeof(st_request));
+                // request r2 = (request)malloc(sizeof(st_request));
+
+                // request all_requests[MAX_CONNECTIONS];
+                // int req_ind=0;
+
+                // while(curr_packet<total_packets){
+
+                    
+                //     char* path = (char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+
+                //     int x=recv(sock_fd,r1,sizeof(st_request),0);
+                    
+                //     strcpy(path,r1->data);
+
+                //     // printf(ORANGE("%s\n"),r1->data);
+                //     r2->request_type=PASTE;
+                //     snprintf(r2->data,sizeof(r2->data),"%s/%s",desti,path);
+                //     printf("%s\n",r2->data);
+                //     // send(sock_fd1,r2,sizeof(st_request),0);
+                //     all_requests[req_ind++]=r2;
+                //     curr_packet++;
 
 
-                }
+                // }
 
 
 

@@ -23,6 +23,24 @@ pthread_t* requests_serving_threads_arr;                  // Holds the threads w
 
 int main(int argc, char *argv[])
 {
+    // Initializing mutexes, condition variables and semaphores
+    /*========== MUTEX ==========*/
+    if (pthread_mutex_init(&accessible_paths_mutex, NULL) != 0)
+    {
+        fprintf(stderr, RED("pthread_mutex_init : Unable to initialise accessible_paths_mutex : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    if (pthread_mutex_init(&threads_arr_mutex, NULL) != 0)
+    {
+        fprintf(stderr, RED("pthread_mutex_init : Unable to initialise threads_arr_mutex : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    if (pthread_mutex_init(&backup_paths_mutex, NULL) != 0)
+    {
+        fprintf(stderr, RED("pthread_mutex_init : Unable to initialise backup_paths_mutex : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
     PWD = (char*) calloc(MAX_PATH_LEN, sizeof(char));
     if (PWD == NULL)
     {
@@ -106,24 +124,12 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    // Initializing mutexes, condition variables and semaphores
-    /*========== MUTEX ==========*/
-    if (pthread_mutex_init(&accessible_paths_mutex, NULL) != 0)
+    // Register my SS with NFS
+    if (register_ss() != 0)
     {
-        fprintf(stderr, RED("pthread_mutex_init : Unable to initialise accessible_paths_mutex : %s\n"), strerror(errno));
+        fprintf(stderr, RED("Could not register SS.\n"));
         exit(EXIT_FAILURE);
     }
-    if (pthread_mutex_init(&threads_arr_mutex, NULL) != 0)
-    {
-        fprintf(stderr, RED("pthread_mutex_init : Unable to initialise threads_arr_mutex : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    if (pthread_mutex_init(&backup_paths_mutex, NULL) != 0)
-    {
-        fprintf(stderr, RED("pthread_mutex_init : Unable to initialise backup_paths_mutex : %s\n"), strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
     // First start the NFS and Client TCP servers to listen to their requests
     pthread_t nfs_thread, client_thread;
     if (pthread_create(&nfs_thread, NULL, &start_nfs_port, NULL) != 0)
@@ -137,12 +143,6 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    // Register my SS with NFS
-    if (register_ss() != 0)
-    {
-        fprintf(stderr, RED("Could not register SS.\n"));
-        exit(EXIT_FAILURE);
-    }
 
     if (strlen(new_paths) > 0)
     {
@@ -162,18 +162,18 @@ int main(int argc, char *argv[])
         fprintf(stderr, RED("pthread_create : Unable to create check_and_store_filepaths_thread : %s\n"), strerror(errno));
         exit(EXIT_FAILURE);
     }
-    // if (pthread_create(&check_and_store_backup_paths_thread, NULL, &check_and_store_backup_paths, NULL) != 0)
-    // {
-    //     fprintf(stderr, RED("pthread_create : Unable to create check_and_store_backup_paths_thread : %s\n"), strerror(errno));
-    //     exit(EXIT_FAILURE);
-    // }
+    if (pthread_create(&check_and_store_backup_paths_thread, NULL, &check_and_store_backup_paths, NULL) != 0)
+    {
+        fprintf(stderr, RED("pthread_create : Unable to create check_and_store_backup_paths_thread : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
 
     // Waiting for threads to complete
-    // if (pthread_join(check_and_store_backup_paths_thread, NULL) != 0)
-    // {
-    //     fprintf(stderr, RED("pthread_join : Could not join thread check_and_store_backup_paths_thread : %s\n"), strerror(errno));
-    //     exit(EXIT_FAILURE);
-    // }
+    if (pthread_join(check_and_store_backup_paths_thread, NULL) != 0)
+    {
+        fprintf(stderr, RED("pthread_join : Could not join thread check_and_store_backup_paths_thread : %s\n"), strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     if (pthread_join(check_and_store_filepaths_thread, NULL) != 0)
     {
         fprintf(stderr, RED("pthread_join : Could not join thread check_and_store_filepaths_thread : %s\n"), strerror(errno));

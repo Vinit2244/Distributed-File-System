@@ -116,12 +116,15 @@ void init_storage(char data[])
     }
     else
     {
+        printf(GREEN("Connected to server %s\n\n\n"),new_ss->port);
 
         new_ss->backup_path_count = 0;
         new_ss->root = create_trie_node();
         new_ss->backup_root = create_trie_node();
         new_ss->is_backedup = 0;
         new_ss->has_backup = 0;
+        new_ss->status=1;
+        new_ss->total_backups=0;
         new_ss->ssid=atoi(tokens[0]);
         ss_list[server_count] = new_ss;
         id = server_count;
@@ -130,7 +133,7 @@ void init_storage(char data[])
     pthread_mutex_unlock(&server_lock);
 
     // insert_log(1,id,atoi(new_ss->port),REGISTRATION_REQUEST,data,ACK);
-
+    sleep(2);
     pthread_t server_thread;
     pthread_create(&server_thread, NULL, &server_handler, (void *)ss_list[id]);
     

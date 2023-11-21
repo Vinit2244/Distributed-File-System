@@ -21,7 +21,7 @@ int client_socket_arr[100];
 
 void *receive_handler()
 {
-    printf(YELLOW("-------------------------TCP handler started-------------------------------\n\n\n"));
+    printf(YELLOW("-------------------------Naming Server started-------------------------------\n\n\n"));
 
     server_socket_tcp = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket_tcp == -1)
@@ -61,20 +61,20 @@ void *receive_handler()
         }
         request req = (request)malloc(sizeof(st_request));
         int x = recv(client_socket_arr[id], req, sizeof(st_request), 0);
-        // printf("%d\n",req->request_type);
-        if(req->request_type<36 && req->request_type>3){
-        // if(x>0)printf("%d\n",id);
+        
+        if(req->request_type<41 && req->request_type>3){
+        
+        printf("New request of type %d from client %d\n\n\n",req->request_type,id);
         pthread_t new_proc;
         proc n = (proc)malloc(sizeof(struct proc));
         n->request_type = req->request_type;
-        // n->r = req;
         strcpy(n->data, req->data);
         n->client_id = id;
         
         pthread_create(&new_proc, NULL, &process, (void*)n);
         
         }
-        // process(req,id); // thread
+    
 
         free(req);
         
@@ -94,28 +94,14 @@ void *server_handler(void *p)
     while (1)
 
     {
-
-        // printf("%s\n",pack->port);
-        struct sockaddr_in server_addr;
-        int sock;
-
-        sock = socket(AF_INET, SOCK_STREAM, 0);
-        if (sock == -1)
-        {
-            perror("Socket creation failed");
-        }
-        memset(&server_addr, '\0', sizeof(server_addr));
-        server_addr.sin_family = AF_INET;
-        server_addr.sin_port = htons(atoi(pack->port));
-        server_addr.sin_addr.s_addr = INADDR_ANY;
-
-        connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr));
+        if(pack->status==1){
+        
+        int sock=connect_to_port(pack->port);
 
         if (sock == -1)
         {
             printf(RED("Server %s disconnected!\n\n\n"), pack->port);
             pack->status = 0;
-            // pack->synced=0;
             return NULL;
         }
         // printf(GREEN("Connected to server %s succesfully!\n\n\n"),pack->port);
@@ -125,6 +111,7 @@ void *server_handler(void *p)
         strcpy(r->data, "");
 
         int x = send(sock, r, sizeof(st_request), MSG_NOSIGNAL);
+        printf("Pinging server %s\n\n\n", pack->port);
         if (x < 0)
         {
             pack->status = 0;
@@ -143,7 +130,7 @@ void *server_handler(void *p)
         }
         recv(sock, r, sizeof(st_request), 0);
 
-        if (r->request_type == PING)
+        if (r->request_type != ACK)
         {
             // printf("x: %d\n",x);
             pack->synced=0;
@@ -162,6 +149,8 @@ void *server_handler(void *p)
         }
         close(sock);
         sleep(5);
+        }
+
     }
     // close(pack->client_socket);
     return NULL;
@@ -231,7 +220,7 @@ void *sync_backup(void *arg)
             }
             pthread_mutex_unlock(&pack->lock);
             if(ind!=0)printf(BLUE("Syncing %s\n\n\n"),pack->port);
-            else printf("All synced up\n\n\n!");
+            else printf("%s all synced up\n\n\n",pack->port);
 
             for(int i=0;i<ind;i++){
 
@@ -299,22 +288,25 @@ void *backup_thread()
 
                 int flag = 0;
                 int id1 = -1, id2 = -1;
+                int min=1000000,second_min = 1000000;
+
+                pthread_mutex_lock(&server_lock);
                 for (int j = 0; j < server_count; j++)
                 {
                     if (i != j)
                     {
-                        if (flag == 0)
-                        {
-                            id1 = j;
-                            flag = 1;
+                        if(flag==0){
+                            id1=j;
+                            flag++;
                         }
-                        else
-                        {
-                            id2 = j;
-                            break;
+                        else if(flag==1){
+                            id2=j;
+                            flag++;
                         }
+                        if(flag==2)break;
                     }
                 }
+                pthread_mutex_unlock(&server_lock);
 
                 // copy paths in these two servers
                 if (id1 != -1 && id2 != -1 && ss_list[id1]->status == 1 && ss_list[id2]->status == 1 && id1 != i && id2 != i)
@@ -324,6 +316,8 @@ void *backup_thread()
 
                     strcpy(ss_list[i]->backup_port[0], ss_list[id1]->port);
                     strcpy(ss_list[i]->backup_port[1], ss_list[id2]->port);
+                    ss_list[id1]->total_backups++;
+                    ss_list[id2]->total_backups++;
 
                     linked_list_head ll = return_paths(ss_list[i]->root);
 

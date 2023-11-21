@@ -26,7 +26,7 @@
 #define MY_IP               "127.0.0.1" // Ip address of this storage server
 #define NFS_IP              "127.0.0.1" // IP address of the naming server
 #define MY_SS_ID            1           // Each storage server is assigned a unique SS_ID (used to distinguish between different servers)
-#define MAX_FILES           30          // Maximum number of files that can be stored in the storage server
+#define MAX_FILES           50          // Maximum number of files that can be stored in the storage server
 #define MAX_PENDING         10          // Maximum number of connections the TCP socket can have in queue waiting
 #define MAX_PATH_LEN        1024        // Maximum length the relative path of a file can have
 #define MAX_NO_OF_REQ       10          // At max it can handle 10 pending requests, if the request buffer is full then all the other incoming requests will be rejected
@@ -90,6 +90,7 @@
 #define CONSISTENT_WRITE     35
 #define COPY_FOLDER          36
 #define N_FILES_REQ          37
+#define FOLDER_DATA_TO_BE_COPIED 38
 
 // ============================= FILE TYPES =============================
 #define FILE_T               100
@@ -133,6 +134,13 @@ typedef struct st_thread_data
 } st_thread_data;
 
 typedef struct st_thread_data* thread_data;
+
+typedef struct st_copy_folder
+{
+    int request_type;
+    int num_paths;
+    char paths[MAX_FILES][MAX_PATH_LEN];
+} st_copy_folder;
 
 // ========================= Global variables =========================
 extern int        num_of_not_accessible_paths_stored;

@@ -99,6 +99,7 @@ void writing_append_operation(char *path,int f)
     readerpacket2->request_type = WRITE_APPEND_COMP;
     strcpy(readerpacket2->data, path);
     bytes_sent = send(client_socket_two, readerpacket2, sizeof(st_request), 0);
+    // printf("%ld\n",bytes_sent);
     if (bytes_sent == -1)
     {
         perror("Send failed");

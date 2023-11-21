@@ -2,7 +2,6 @@
 
 // Code to process the request according to request type
 
-
 void *process(void *arg)
 {
     proc n = (proc)arg;
@@ -45,12 +44,13 @@ void *process(void *arg)
     }
     else if (req->request_type == CREATE_FOLDER || req->request_type == CREATE_FILE)
     {
+        printf(BLUE("New create request from client %d\n\n\n"), client_id);
         handle_create(req, client_id);
         client_socket_arr[client_id] = -1;
         close(client_socket_arr[client_id]);
     }
 
-    else if (req->request_type == COPY_REQUEST)
+    else if (req->request_type == COPY_FILE || req->request_type == COPY_FOLDER)
     {
         printf("Copy request received from client %d\n\n\n", client_id);
         copy_handler(req, client_id);
@@ -117,7 +117,13 @@ void *process(void *arg)
         found_server->path_count = found_server->path_count + ind - 1;
         found_server->synced = 0;
         pthread_mutex_unlock(&found_server->lock);
-        printf(BLUE("Added %d new files/directories from server  %s\n\n\n"), count, found_server->port);
+        if (count > 0)
+            printf(BLUE("Added %d new files/directories from server  %s\n\n\n"), count, found_server->port);
+
+        client_socket_arr[client_id] = -1;
+        close(client_socket_arr[client_id]);
+
+        return NULL;
         // print_paths(found_server->root);
     }
 
@@ -144,7 +150,7 @@ void *process(void *arg)
             tkn_cnt++;
             token = strtok(NULL, "|");
         }
-
+        int count = 0;
         ss found_server = ss_list[atoi(ss_id) - 1];
         pthread_mutex_lock(&found_server->lock);
         for (int i = 0; i < tkn_cnt - 1; i++)
@@ -152,18 +158,26 @@ void *process(void *arg)
 
             if (search_path(found_server->root, path[i]) == 1)
             {
-                delete_path(found_server->root, path[i]);
+                if (delete_path(found_server->root, path[i]) == 1)
+                {
+                    count++;
+                }
                 found_server->path_count--;
             }
         }
         pthread_mutex_unlock(&found_server->lock);
-        printf(BLUE("Deleted files/directories from server number %d\n\n\n"), atoi(ss_id));
+        if (count > 0)
+            printf(BLUE("Deleted %d files/directories from server number %d\n\n\n"), count, atoi(ss_id));
+        client_socket_arr[client_id] = -1;
+        close(client_socket_arr[client_id]);
+        return NULL;
     }
     // Yet to work on depending on type of requests
     else if (req->request_type == LIST)
 
     {
 
+        printf(BLUE("List request received from client %d\n\n\n"), client_id);
         char *list = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
         strcpy(list, "");
         for (int i = 0; i < server_count; i++)
@@ -183,6 +197,8 @@ void *process(void *arg)
         r->request_type = RES;
         strcpy(r->data, list);
         send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+
+        return NULL;
     }
 
     else if (req->request_type == WRITE_APPEND_COMP)
@@ -195,7 +211,7 @@ void *process(void *arg)
     else if (req->request_type == CONSISTENT_WRITE)
     {
 
-        pthread_mutex_lock(&server_lock);
+        // pthread_mutex_lock(&server_lock);
 
         char *token = strtok(req->data, "|");
         char *token1 = strtok(NULL, "|");
@@ -209,10 +225,11 @@ void *process(void *arg)
                 break;
             }
         }
-        pthread_mutex_unlock(&server_lock);
-
+        // pthread_mutex_unlock(&server_lock);
+        // printf("hi\n");
         if (found_server->is_backedup == 1)
         {
+            // printf("hi\n");
             request r = (request)malloc(sizeof(st_request));
             r->request_type = BACKUP_WRITE_REQ;
 
@@ -226,12 +243,13 @@ void *process(void *arg)
 
             close(sock_two);
         }
+        client_socket_arr[client_id] = -1;
+        close(client_socket_arr[client_id]);
+        return NULL;
+        
     }
-    
 
     client_socket_arr[client_id] = -1;
     close(client_socket_arr[client_id]);
     return NULL;
-
-    
 }

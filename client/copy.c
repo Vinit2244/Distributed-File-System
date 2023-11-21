@@ -1,10 +1,10 @@
 #include "headers.h"
 
-void copy_operation(char *path1, char *path2)
+void copy_operation(int req_type,char *path1, char *path2)
 {
     int client_socket = connect_with_ns();
     st_request *packet = malloc(sizeof(st_request));
-    packet->request_type = COPY_REQ;
+    packet->request_type = req_type;
     snprintf(packet->data, sizeof(packet->data), "%s|%s", path1, path2);
     ssize_t bytes_sent = send(client_socket, packet, sizeof(st_request), 0);
     if (bytes_sent == -1)
