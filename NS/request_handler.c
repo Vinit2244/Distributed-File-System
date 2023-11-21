@@ -18,10 +18,8 @@ void *process(void *arg)
         close(client_socket_arr[client_id]); // Code to add a new storage server in naming server list
         return NULL;
     }
-
     else if (req->request_type == WRITE_REQ || req->request_type == READ_REQ || req->request_type == RETRIEVE_INFO || req->request_type == APPEND_REQ)
     {
-
         printf(BLUE("New request received from client number! %d\n\n\n"), client_id);
         basic_ops(req, client_id);
         if (client_socket_arr[client_id] > 0)
@@ -61,10 +59,8 @@ void *process(void *arg)
         }
         return NULL;
     }
-
     else if (req->request_type == ADD_PATHS)
     {
-        // printf("Adding paths\n");
         char *ss_id = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
         char **path = (char **)malloc(sizeof(char *) * MAX_CONNECTIONS);
         for (int i = 0; i < MAX_CONNECTIONS; i++)
@@ -87,18 +83,15 @@ void *process(void *arg)
             token = strtok(NULL, "|");
         }
         int count = 0;
-        // ss found_server = ss_list[atoi(ss_id) - 1];
         ss found_server;
 
         int id = -1;
         for (int i = 0; i < server_count; i++)
         {
-
             if (ss_list[i]->ssid == atoi(ss_id))
             {
                 found_server = ss_list[i];
                 id = i;
-                // printf("Added in %s\n",found_server->port);
                 break;
             }
         }
@@ -109,7 +102,6 @@ void *process(void *arg)
             strcpy(found_server->paths[found_server->path_count + i], path[i]);
             if (search_path(found_server->root, path[i]) == -1)
             {
-
                 if (insert_path(found_server->root, path[i], atoi(ss_id)) == 1)
                 {
                     count++;
@@ -117,49 +109,53 @@ void *process(void *arg)
 
                 if (found_server->is_backedup == 1)
                 {
-
                     if (strstr(path[i], ".txt") != NULL)
                     {
-
                         request r = (request)malloc(sizeof(st_request));
                         r->request_type = COPY_FILE;
                         strcpy(r->data, path[i]);
 
                         int sock_one = connect_to_port(found_server->port);
-                        if(sock_one == -1){
-                            printf(RED("Server %s is down\n"),found_server->port);
+                        if (sock_one == -1)
+                        {
+                            printf(RED("Server %s is down\n"), found_server->port);
                             continue;
                         }
 
-                        if(send(sock_one, r, sizeof(st_request), 0)<0){
-                            printf(RED("Error in sending request to server %s\n"),found_server->port);
+                        if (send(sock_one, r, sizeof(st_request), 0) < 0)
+                        {
+                            printf(RED("Error in sending request to server %s\n"), found_server->port);
                         }
 
                         int logging = insert_log(SS, found_server->ssid, atoi(found_server->port), req->request_type, req->data, OK);
                         if (logging == 0)
                         {
-                            printf(RED("Logging not added\n"));
+                            printf(RED("Log addition failed\n"));
                         }
 
-                        if(recv(sock_one, r, sizeof(st_request), 0)<0){
-                            printf(RED("Error in receiving request from server %s\n"),found_server->port);
+                        if (recv(sock_one, r, sizeof(st_request), 0) < 0)
+                        {
+                            printf(RED("Error in receiving request from server %s\n"), found_server->port);
                         }
 
-                        if(close(sock_one)<0){
-                            printf(RED("Error in closing socket %s\n"),found_server->port);
+                        if (close(sock_one) < 0)
+                        {
+                            printf(RED("Error in closing socket %s\n"), found_server->port);
                         }
 
                         r->request_type = BACKUP_PASTE;
 
                         int sock_two = connect_to_port(found_server->backup_port[0]);
 
-                        if(sock_two < 0){
-                            printf(RED("Server %s is down\n"),found_server->backup_port[0]);
+                        if (sock_two < 0)
+                        {
+                            printf(RED("Server %s is down\n"), found_server->backup_port[0]);
                             continue;
                         }
 
-                        if(send(sock_two, r, sizeof(st_request), 0)<0){
-                            printf(RED("Error in sending request to server %s\n"),found_server->backup_port[0]);
+                        if (send(sock_two, r, sizeof(st_request), 0) < 0)
+                        {
+                            printf(RED("Error in sending request to server %s\n"), found_server->backup_port[0]);
                         }
                         int ssid = 0;
                         for (int i = 0; i < server_count; i++)
@@ -173,25 +169,26 @@ void *process(void *arg)
                         logging = insert_log(SS, ssid, atoi(found_server->backup_port[0]), r->request_type, r->data, OK);
                         if (logging == 0)
                         {
-                            printf(RED("Logging not added\n"));
+                            printf(RED("Log addition failed\n"));
                         }
 
-                        if(close(sock_two)<0){
-                            printf(RED("Error in closing socket %s\n"),found_server->backup_port[0]);
+                        if (close(sock_two) < 0)
+                        {
+                            printf(RED("Error in closing socket %s\n"), found_server->backup_port[0]);
                         }
-
 
                         int sock_three = connect_to_port(found_server->backup_port[1]);
 
-                        if(sock_three < 0){
-                            printf(RED("Server %s is down\n"),found_server->backup_port[1]);
+                        if (sock_three < 0)
+                        {
+                            printf(RED("Server %s is down\n"), found_server->backup_port[1]);
                             continue;
                         }
 
-                        if(send(sock_three, r, sizeof(st_request), 0)<0){
-                            printf(RED("Error in sending request to server %s\n"),found_server->backup_port[1]);
+                        if (send(sock_three, r, sizeof(st_request), 0) < 0)
+                        {
+                            printf(RED("Error in sending request to server %s\n"), found_server->backup_port[1]);
                         }
-
 
                         int ssid2 = 0;
 
@@ -206,30 +203,32 @@ void *process(void *arg)
                         logging = insert_log(SS, ssid2, atoi(found_server->backup_port[1]), r->request_type, r->data, OK);
                         if (logging == 0)
                         {
-                            printf(RED("Logging not added\n"));
+                            printf(RED("Log addition failed\n"));
                         }
 
-                        if(close(sock_three)<0){
-                            printf(RED("Error in closing socket %s\n"),found_server->backup_port[1]);
+                        if (close(sock_three) < 0)
+                        {
+                            printf(RED("Error in closing socket %s\n"), found_server->backup_port[1]);
                         }
                     }
 
                     else
                     {
-
                         request r = (request)malloc(sizeof(st_request));
                         r->request_type = BACKUP_CREATE_FOLDER;
                         strcpy(r->data, path[i]);
 
                         int sock_one = connect_to_port(found_server->backup_port[0]);
 
-                        if(sock_one < 0){
-                            printf(RED("Server %s is down\n"),found_server->backup_port[0]);
+                        if (sock_one < 0)
+                        {
+                            printf(RED("Server %s is down\n"), found_server->backup_port[0]);
                             continue;
                         }
 
-                        if(send(sock_one, r, sizeof(st_request), 0)<0){
-                            printf(RED("Error in sending request to server %s\n"),found_server->backup_port[0]);
+                        if (send(sock_one, r, sizeof(st_request), 0) < 0)
+                        {
+                            printf(RED("Error in sending request to server %s\n"), found_server->backup_port[0]);
                         }
                         int ssid = 0;
                         for (int i = 0; i < server_count; i++)
@@ -243,23 +242,26 @@ void *process(void *arg)
                         int logging = insert_log(SS, ssid, atoi(found_server->backup_port[0]), r->request_type, r->data, OK);
                         if (logging == 0)
                         {
-                            printf(RED("Logging not added\n"));
+                            printf(RED("Log addition failed\n"));
                         }
-                        if(close(sock_one)<0){
-                            printf(RED("Error in closing socket %s\n"),found_server->backup_port[0]);
+                        if (close(sock_one) < 0)
+                        {
+                            printf(RED("Error in closing socket %s\n"), found_server->backup_port[0]);
                         }
 
                         int sock_two = connect_to_port(found_server->backup_port[1]);
 
-                        if(sock_two < 0){
-                            printf(RED("Server %s is down\n"),found_server->backup_port[1]);
+                        if (sock_two < 0)
+                        {
+                            printf(RED("Server %s is down\n"), found_server->backup_port[1]);
                             continue;
                         }
-                        
-                        if(send(sock_two, r, sizeof(st_request), 0)<0){
-                            printf(RED("Error in sending request to server %s\n"),found_server->backup_port[1]);
+
+                        if (send(sock_two, r, sizeof(st_request), 0) < 0)
+                        {
+                            printf(RED("Error in sending request to server %s\n"), found_server->backup_port[1]);
                         }
-                        
+
                         int ssid2 = 0;
                         for (int i = 0; i < server_count; i++)
                         {
@@ -272,12 +274,12 @@ void *process(void *arg)
                         logging = insert_log(SS, ssid2, atoi(found_server->backup_port[1]), r->request_type, r->data, OK);
                         if (logging == 0)
                         {
-                            printf(RED("Logging not added\n"));
+                            printf(RED("Log addition failed\n"));
                         }
 
-                        if(close(sock_two)<0){
-                            printf(RED("Error in closing socket %s\n"),found_server->backup_port[1]);
-                        
+                        if (close(sock_two) < 0)
+                        {
+                            printf(RED("Error in closing socket %s\n"), found_server->backup_port[1]);
                         }
                     }
                 }
@@ -295,7 +297,6 @@ void *process(void *arg)
         close(client_socket_arr[client_id]);
 
         return NULL;
-        // print_paths(found_server->root);
     }
 
     else if (req->request_type == DELETE_PATHS)
@@ -326,10 +327,8 @@ void *process(void *arg)
         pthread_mutex_lock(&found_server->lock);
         for (int i = 0; i < tkn_cnt - 1; i++)
         {
-
             if (search_path(found_server->root, path[i]) >= 0)
             {
-
                 if (delete_path(found_server->root, path[i]) == 1)
                 {
                     count++;
@@ -363,7 +362,7 @@ void *process(void *arg)
                     int logging = insert_log(SS, ssid, atoi(found_server->backup_port[0]), r->request_type, r->data, OK);
                     if (logging == 0)
                     {
-                        printf(RED("Logging not added\n"));
+                        printf(RED("Log addition failed\n"));
                     }
                     close(sock_one);
 
@@ -381,7 +380,7 @@ void *process(void *arg)
                     logging = insert_log(SS, ssid2, atoi(found_server->backup_port[1]), r->request_type, r->data, OK);
                     if (logging == 0)
                     {
-                        printf(RED("Logging not added\n"));
+                        printf(RED("Log addition failed\n"));
                     }
                     close(sock_two);
                 }
@@ -399,24 +398,25 @@ void *process(void *arg)
     }
     // Yet to work on depending on type of requests
     else if (req->request_type == LIST)
-
     {
-
         printf(BLUE("List request received from client %d\n\n\n"), client_id);
         char *list = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
         strcpy(list, "");
         for (int i = 0; i < server_count; i++)
         {
-            // pthread_mutex_lock(&ss_list[i]->lock);
-            if (ss_list[i]->status == 1)
+            if (ss_list[i]->status == 1 || ss_list[i]->is_backedup == 1)
             {
-                for (int j = 0; j < ss_list[i]->path_count; j++)
+                linked_list_head head = return_paths(ss_list[i]->root);
+                linked_list_node trav = head->first;
+                while (trav != NULL)
                 {
-                    strcat(list, ss_list[i]->paths[j]);
-                    strcat(list, "|");
+                    char *temp = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
+                    strcpy(temp, trav->path);
+                    strcat(temp, "|");
+                    strcat(list, temp);
+                    trav = trav->next;
                 }
             }
-            // pthread_mutex_unlock(&ss_list[i]->lock);
         }
         request r = (request)malloc(sizeof(st_request));
         r->request_type = RES;
@@ -425,41 +425,32 @@ void *process(void *arg)
         int logging = insert_log(CLIENT, 0, NS_PORT, req->request_type, req->data, OK);
         if (logging == 0)
         {
-            printf(RED("Logging not added\n"));
+            printf(RED("Log addition failed\n"));
         }
-
         return NULL;
     }
-
     else if (req->request_type == WRITE_APPEND_COMP)
     {
-
         delete_path_lock(req->data);
         printf(GREEN("Given path is deleted from locked paths : %s\n"), req->data);
     }
 
     else if (req->request_type == CONSISTENT_WRITE)
     {
-
-        // pthread_mutex_lock(&server_lock);
-
         char *token = strtok(req->data, "|");
         char *token1 = strtok(NULL, "|");
         ss found_server;
         for (int i = 0; i < server_count; i++)
         {
-
             if (search_path(ss_list[i]->root, token) >= 0)
             {
                 found_server = ss_list[i];
                 break;
             }
         }
-        // pthread_mutex_unlock(&server_lock);
-        // printf("hi\n");
+
         if (found_server->is_backedup == 1)
         {
-            // printf("hi\n");
             request r = (request)malloc(sizeof(st_request));
             r->request_type = BACKUP_WRITE_REQ;
 
@@ -479,7 +470,7 @@ void *process(void *arg)
             int logging = insert_log(SS, ssid, atoi(found_server->backup_port[0]), r->request_type, r->data, OK);
             if (logging == 0)
             {
-                printf(RED("Logging not added\n"));
+                printf(RED("Log addition failed\n"));
             }
             close(sock_one);
 
@@ -497,7 +488,7 @@ void *process(void *arg)
             logging = insert_log(SS, ssid, atoi(found_server->backup_port[1]), r->request_type, r->data, OK);
             if (logging == 0)
             {
-                printf(RED("Logging not added\n"));
+                printf(RED("Log addition failed\n"));
             }
             close(sock_two);
         }
@@ -510,3 +501,4 @@ void *process(void *arg)
     close(client_socket_arr[client_id]);
     return NULL;
 }
+

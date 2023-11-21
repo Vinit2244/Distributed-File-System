@@ -6,7 +6,7 @@ int main()
     char input[3000];
     while (1)
     {
-        printf(YELLOW("----Enter operation you want to do -------\n"));
+        printf(YELLOW("\n------- Enter operation you want to do -------\n"));
         fgets(input, sizeof(input), stdin);
         input[strcspn(input, "\n")] = '\0';
         char *operation = strtok(input, " ");
@@ -88,5 +88,7 @@ int main()
             printf(RED("Invalid Operation do again\n"));
         }
     }
-    // close(client_socket);
+
+    return 0;
 }
+

@@ -10,7 +10,6 @@ int send_count = 0;      // Number of packets in buffer
 // Helper function to split string into tokens (n tokens)
 char **processstring(char data[], int n)
 {
-
     char **tokens = (char **)malloc(sizeof(char *) * n);
     for (int i = 0; i < n; i++)
     {
@@ -33,7 +32,6 @@ char **processstring(char data[], int n)
 
 int connect_to_port(char *port)
 {
-
     int client_socket;
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in server_address;
@@ -81,7 +79,6 @@ void client_handler(char data[])
 
 void replicate_backups(ss server)
 {
-
     int id_array[MAX_CONNECTIONS];
     int ind = 0;
     for (int i = 0; i < server_count; i++)
@@ -102,12 +99,10 @@ void replicate_backups(ss server)
     int total_new_paths = 0;
     for (int i = 0; i < ind; i++)
     {
-
         linked_list_head head = return_paths(ss_list[id_array[i]]->root);
         linked_list_node trav = head->first;
         while (trav != NULL)
         {
-
             strcpy(new_paths[total_new_paths], trav->path);
             total_new_paths++;
             trav = trav->next;
@@ -116,7 +111,6 @@ void replicate_backups(ss server)
 
     for (int i = 0; i < total_new_paths; i++)
     {
-
         ss found_server = NULL;
         for (int j = 0; j < server_count; j++)
         {
@@ -131,30 +125,33 @@ void replicate_backups(ss server)
 
         if (strstr(new_paths[i], ".txt") != NULL)
         {
-
             printf("Copying file %s\n\n", new_paths[i]);
             r->request_type = COPY_FILE;
             strcpy(r->data, new_paths[i]);
             printf("Connecting to %s\n", found_server->port);
             int sock = connect_to_port(found_server->port);
 
-            if(send(sock, r, sizeof(st_request), 0)<0){
+            if (send(sock, r, sizeof(st_request), 0) < 0)
+            {
                 printf(RED("Error in sending\n"));
             }
-            
-            if(recv(sock, r, sizeof(st_request), 0)<0){
+
+            if (recv(sock, r, sizeof(st_request), 0) < 0)
+            {
                 printf(RED("Error in receiving\n"));
             }
-            
+
             close(sock);
             r->request_type = BACKUP_PASTE;
 
             sock = connect_to_port(server->port);
-            if(sock<=0){
-                printf(RED("Error in connecting to %s\n"),server->port);
+            if (sock <= 0)
+            {
+                printf(RED("Error in connecting to %s\n"), server->port);
             }
 
-            if(send(sock, r, sizeof(st_request), 0)<0){
+            if (send(sock, r, sizeof(st_request), 0) < 0)
+            {
                 printf(RED("Error in sending\n"));
             }
             close(sock);
@@ -166,11 +163,13 @@ void replicate_backups(ss server)
             strcpy(r->data, new_paths[i]);
 
             int sock = connect_to_port(server->port);
-            if(sock<=0){
-                printf(RED("Error in connecting to %s\n"),server->port);
+            if (sock <= 0)
+            {
+                printf(RED("Error in connecting to %s\n"), server->port);
             }
 
-            if(send(sock, r, sizeof(st_request), 0)<0){
+            if (send(sock, r, sizeof(st_request), 0) < 0)
+            {
                 printf(RED("Error in sending\n"));
             }
             close(sock);
@@ -187,80 +186,82 @@ void replicate_backups(ss server)
     linked_list_head ll = return_paths(server->backup_root);
 
     linked_list_node trav = ll->first;
-    int del_ind=0;
+    int del_ind = 0;
     while (trav != NULL)
     {
-
         strcpy(del_paths[del_ind], trav->path);
         del_ind++;
         trav = trav->next;
     }
 
-    char** to_rem = (char**)malloc(sizeof(char*)*MAX_CONNECTIONS);
-    for(int i=0;i<MAX_CONNECTIONS;i++){
-        to_rem[i] = (char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+    char **to_rem = (char **)malloc(sizeof(char *) * MAX_CONNECTIONS);
+    for (int i = 0; i < MAX_CONNECTIONS; i++)
+    {
+        to_rem[i] = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
     }
-    int to_rem_ind=0;
-    for(int i=0;i<del_ind;i++){
+    int to_rem_ind = 0;
+    for (int i = 0; i < del_ind; i++)
+    {
+        int flag = 1;
 
-        int flag=1;
-
-        for(int j=0;j<total_new_paths;j++){
-            if(strcmp(del_paths[i],new_paths[j])==0){
-                flag=0;
+        for (int j = 0; j < total_new_paths; j++)
+        {
+            if (strcmp(del_paths[i], new_paths[j]) == 0)
+            {
+                flag = 0;
                 break;
             }
         }
-        if(flag == 1){
-            strcpy(to_rem[to_rem_ind],del_paths[i]);
+        if (flag == 1)
+        {
+            strcpy(to_rem[to_rem_ind], del_paths[i]);
             to_rem_ind++;
         }
-
     }
     request r = (request)malloc(sizeof(st_request));
-    for(int i=0;i<to_rem_ind;i++){
+    for (int i = 0; i < to_rem_ind; i++)
+    {
 
-        if(strstr(to_rem[i],".txt")!=NULL){
-            memset(r->data,0,sizeof(MAX_DATA_LENGTH));
+        if (strstr(to_rem[i], ".txt") != NULL)
+        {
+            memset(r->data, 0, sizeof(MAX_DATA_LENGTH));
             r->request_type = BACKUP_DELETE_FILE;
-            strcpy(r->data,to_rem[i]);
+            strcpy(r->data, to_rem[i]);
 
             int sock = connect_to_port(server->port);
 
-            if(sock<0){
-                printf(RED("Error in connecting to %s\n"),server->port);
+            if (sock < 0)
+            {
+                printf(RED("Error in connecting to %s\n"), server->port);
             }
 
-            if(send(sock,r,sizeof(st_request),0)<0){
+            if (send(sock, r, sizeof(st_request), 0) < 0)
+            {
                 printf(RED("Error in sending\n"));
             }
             close(sock);
-
         }
-        else{
-
-            memset(r->data,0,sizeof(MAX_DATA_LENGTH));
+        else
+        {
+            memset(r->data, 0, sizeof(MAX_DATA_LENGTH));
             r->request_type = BACKUP_DELETE_FOLDER;
-            strcpy(r->data,to_rem[i]);
+            strcpy(r->data, to_rem[i]);
 
             int sock = connect_to_port(server->port);
 
-            if(sock<0){
-                printf(RED("Error in connecting to %s\n"),server->port);
+            if (sock < 0)
+            {
+                printf(RED("Error in connecting to %s\n"), server->port);
             }
 
-            if(send(sock,r,sizeof(st_request),0)<0){
+            if (send(sock, r, sizeof(st_request), 0) < 0)
+            {
                 printf(RED("Error in sending\n"));
             }
-            
+
             close(sock);
-
-
         }
-
     }
-
-
 
     return;
 }
@@ -293,7 +294,6 @@ void init_storage(char data[])
     }
     if (check_flag == 1)
     {
-
         printf(GREEN("%s is back online!\n\n\n"), new_ss->port);
         new_ss->status = 1;
         ss_list[id]->status = 1;
@@ -303,9 +303,9 @@ void init_storage(char data[])
             replicate_backups(ss_list[id]);
         }
 
-        if(ss_list[id]->is_backedup ==1){
-            sync_backup((void*)ss_list[id]);
-            
+        if (ss_list[id]->is_backedup == 1)
+        {
+            sync_backup((void *)ss_list[id]);
         }
 
         ss_list[id]->path_count = 0;
@@ -328,7 +328,6 @@ void init_storage(char data[])
     }
     pthread_mutex_unlock(&server_lock);
 
-    // insert_log(1,id,atoi(new_ss->port),REGISTRATION_REQUEST,data,ACK);
     sleep(2);
     pthread_t server_thread;
     pthread_create(&server_thread, NULL, &server_handler, (void *)ss_list[id]);
@@ -347,23 +346,20 @@ int main()
     init_nfs(); // initialises ns server
 
     // declaring thread variables
-
     pthread_t receive_thread;
     pthread_t backup_thread_idx;
 
     // TCP socket to check for new requests
 
     // constructing threads for listening to TCP sockets
-
     pthread_create(&receive_thread, NULL, &receive_handler, NULL);
     pthread_create(&backup_thread_idx, NULL, &backup_thread, NULL);
+
     // joining threads
     pthread_join(receive_thread, NULL);
     pthread_join(backup_thread_idx, NULL);
 
-    while (1)
-    {
-    }
+    while (1) {}
 
     return 0;
 }

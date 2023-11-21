@@ -232,7 +232,6 @@ void *serve_request(void *args)
     // Freeing arguments as all the information is extracted
     free(args);
 
-    
     // Receiving and serving the request
     st_request recvd_request;
     memset(recvd_request.data, 0, MAX_DATA_LENGTH);
@@ -289,7 +288,7 @@ void *serve_request(void *args)
         st_request send_read_data;
         send_read_data.request_type = READ_REQ_DATA;
         memset(send_read_data.data, 0, MAX_DATA_LENGTH);
-        // int count=0;
+
         while (fgets(send_read_data.data, MAX_DATA_LENGTH - 1, fptr) != NULL)
         {
             int sent_msg_size;
@@ -306,13 +305,11 @@ void *serve_request(void *args)
                 }
                 goto End;
             }
-            // count++;
-            // printf("Sent request %d\n",count);
+
             memset(send_read_data.data, 0, MAX_DATA_LENGTH);
         }
         sleep(1);
         send_ack(ACK, sock_fd, NULL);
-        printf("Ack sent!\n");
 
         if (recvd_request.request_type == BACKUP_READ_REQ)
         {
@@ -557,7 +554,7 @@ void *serve_request(void *args)
         strcpy(copy_data_request.data, path);
         strcat(copy_data_request.data, "|");
         strcat(copy_data_request.data, buffer);
-        // printf("Data to be copied : %s\n", copy_data_request.data);
+
         int sent_msg_size;
         if ((sent_msg_size = send(sock_fd, (request)&copy_data_request, sizeof(st_request), 0)) <= 0)
         {
@@ -580,18 +577,14 @@ void *serve_request(void *args)
         strcpy(abs_path, PWD);
         strcat(abs_path, path + 1);
         
-
         char** files_folders = get_all_files_folders(abs_path);
-        
 
         int n_files_folders = 0;
         while (files_folders[n_files_folders] != NULL)
         {
-            
             n_files_folders++;
         }
         char* src_folder_name = get_folder_name(path);
-        
 
         st_copy_folder paths_sending_req;
         paths_sending_req.request_type = FOLDER_DATA_TO_BE_COPIED;
@@ -600,18 +593,13 @@ void *serve_request(void *args)
         for (int i = 0; i < n_files_folders; i++)
         {
             char* curr_path = files_folders[i];
-            
-
             char* updated_path = update_path_rel(abs_path, curr_path);
-            
 
             char final_str_to_send[MAX_DATA_LENGTH] = {0};
             strcat(final_str_to_send, "/");
             strcat(final_str_to_send, src_folder_name);
             strcat(final_str_to_send, "/");
             strcat(final_str_to_send, curr_path + 2);
-
-            
 
             if (is_file(updated_path))
             {
@@ -976,44 +964,7 @@ void *serve_request(void *args)
 
         free(file_path);
     }
-    // else if (recvd_request.request_type == FORMAT_BACKUP)
-    // {
-    //     printf(YELLOW("Format backup request received.\n"));
 
-    //     char abs_path[MAX_PATH_LEN] = {0};
-    //     strcat(abs_path, PWD);
-    //     strcat(abs_path, "/storage");
-
-    //     int pid = fork();
-    //     if (pid == 0)
-    //     {
-    //         // Child process
-    //         char* command = "rm";
-    //         char* args[] = {"rm", "-r", abs_path, NULL};
-
-    //         execvp(command, args);
-    //         // execvp failed
-    //         fprintf(stderr, RED("execvp : failed to format backup\n"));
-    //         send_ack(FORMAT_BACKUP_FAILED, sock_fd, strerror(errno));
-    //         goto End;
-    //     }
-    //     else if (pid > 0)
-    //     {
-    //         // Parent process (waiting for child to finish)
-    //         wait(NULL);
-    //     }
-    //     else
-    //     {
-    //         // Fork failed so display error and send failed ack
-    //         fprintf(stderr, RED("fork: could not fork for folder deletion\n"));
-    //         send_ack(FORMAT_BACKUP_FAILED, sock_fd, strerror(errno));
-    //         goto End;
-    //     }
-
-    //     create_folder("./storage");
-
-    //     send_ack(ACK, sock_fd, NULL);
-    // }
 End:
     // Freeing tokens created at the start from request data
     free_tokens(request_tkns);

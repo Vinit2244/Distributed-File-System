@@ -73,6 +73,7 @@
 
 // Macros for caching 
 #define CACHE_SIZE 20
+
 // ============================= ERROR Codes =============================
 // All operation failed error codes start from 600
 #define REQ_UNSERVICED       600
@@ -88,8 +89,9 @@
 #define INVALID_DELETION     501
 // All not found error codes will start from 400
 #define FILE_NOT_FOUND       404
-#define OK                   200
 #define SERVER_NOT_FOUND     403
+// Everything ok
+#define OK                   200
 
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
@@ -243,6 +245,7 @@ extern pthread_mutex_t path_locked;
 extern paths_lock *global_paths_locked;      //Header Node
 extern int client_socket_arr[100];
 extern sem_t lock;
+
 //Defined functions
 char** processstring(char data[],int n);
 void init_nfs();
@@ -286,7 +289,6 @@ void initializer_header_node();
 int path_locked_or_not(char *path);
 void insert_path_lock(const char *new_path);
 void delete_path_lock(const char *path_to_delete);
-
 
 // Processing functions
 void* basic_ops(request req,int client_id);

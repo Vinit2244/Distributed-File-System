@@ -12,7 +12,7 @@ struct trie_node *create_trie_node()
     }
     node->key = NULL;   // Initially there is no string stored in the node (strings are stored only in end nodes)
     node->end = 0;      // Initially the node is not an end node
-    node->ssid = -1;
+    node->ssid = -1;    // Initially no ssid is assigned to node
     // 256 childrens 1 for each of the ASCII characters
     for (int i = 0; i < 256; i++)
     {
@@ -193,3 +193,4 @@ void free_linked_list(linked_list_head linked_list) {
     }
     free(linked_list);
 }
+

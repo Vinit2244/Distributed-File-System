@@ -4,7 +4,7 @@ pthread_mutex_t server_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t send_buffer_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t send_signal = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t status_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t path_locked=PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t path_locked = PTHREAD_MUTEX_INITIALIZER;
 
 sem_t lock;
 
@@ -17,7 +17,6 @@ int connection_count = 0;
 int ack = 0;
 
 int client_socket_arr[100];
-
 
 void *receive_handler()
 {
@@ -45,12 +44,12 @@ void *receive_handler()
 
     while (1)
     {
-        int id=-1;
-        for(int i=0;i<MAX_CONNECTIONS;i++)
+        int id = -1;
+        for (int i = 0; i < MAX_CONNECTIONS; i++)
         {
-            if(client_socket_arr[i]==-1)
+            if (client_socket_arr[i] == -1)
             {
-                id=i;
+                id = i;
                 break;
             }
         }
@@ -61,27 +60,24 @@ void *receive_handler()
         }
         request req = (request)malloc(sizeof(st_request));
         int x = recv(client_socket_arr[id], req, sizeof(st_request), 0);
-        int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,OK);
-        if(logging==0)
+        int logging = insert_log(CLIENT, 0, NS_PORT, req->request_type, req->data, OK);
+        if (logging == 0)
         {
             printf(RED("Logging not added\n"));
         }
-        if(req->request_type<41 && req->request_type>3){
-        
-        printf("New request of type %d from client %d\n\n\n",req->request_type,id);
-        pthread_t new_proc;
-        proc n = (proc)malloc(sizeof(struct proc));
-        n->request_type = req->request_type;
-        strcpy(n->data, req->data);
-        n->client_id = id;
-        
-        pthread_create(&new_proc, NULL, &process, (void*)n);
-        
+        if (req->request_type < 41 && req->request_type > 3)
+        {
+            printf("New request of type %d from client %d\n\n\n", req->request_type, id);
+            pthread_t new_proc;
+            proc n = (proc)malloc(sizeof(struct proc));
+            n->request_type = req->request_type;
+            strcpy(n->data, req->data);
+            n->client_id = id;
+
+            pthread_create(&new_proc, NULL, &process, (void *)n);
         }
-    
 
         free(req);
-        
     }
 
     close(server_socket_tcp);
@@ -96,215 +92,201 @@ void *server_handler(void *p)
     request r = (request)malloc(sizeof(st_request));
 
     while (1)
-
     {
-        if(pack->status==1){
-        
-        int sock=connect_to_port(pack->port);
-
-        if (sock == -1)
+        if (pack->status == 1)
         {
-            printf(RED("Server %s disconnected!\n\n\n"), pack->port);
-            pack->status = 0;
-            return NULL;
-        }
+            int sock = connect_to_port(pack->port);
 
-        
-
-        pack->status = 1;
-        r->request_type = PING;
-        strcpy(r->data, "");
-
-        int x = send(sock, r, sizeof(st_request), MSG_NOSIGNAL);
-        if (x < 0)
-        {
-            pack->status = 0;
-            pack->synced = 0;
-            printf(RED("Server %s disconnected with send error!\n\n\n"), pack->port);
-            pthread_mutex_lock(&server_lock);
-            for (int i = 0; i < server_count; i++)
+            if (sock == -1)
             {
-                if (strcmp(ss_list[i]->port, pack->port) == 0)
-                {
-                    ss_list[i]->status = 0;
-                }
+                printf(RED("Server %s disconnected!\n\n\n"), pack->port);
+                pack->status = 0;
+                return NULL;
             }
-            pthread_mutex_unlock(&server_lock);
-            return NULL;
-        }
-        recv(sock, r, sizeof(st_request), 0);
 
-        if (r->request_type != ACK)
-        {
+            pack->status = 1;
+            r->request_type = PING;
+            strcpy(r->data, "");
 
-
-            pack->synced=0;
-            printf(RED("Server %s disconnected!\n\n\n"), pack->port);
-            pthread_mutex_lock(&server_lock);
-            for (int i = 0; i < server_count; i++)
+            int x = send(sock, r, sizeof(st_request), MSG_NOSIGNAL);
+            if (x < 0)
             {
-                if (strcmp(ss_list[i]->port, pack->port) == 0)
+                pack->status = 0;
+                pack->synced = 0;
+                printf(RED("Server %s disconnected with send error!\n\n\n"), pack->port);
+                pthread_mutex_lock(&server_lock);
+                for (int i = 0; i < server_count; i++)
                 {
-                    ss_list[i]->status = 0;
+                    if (strcmp(ss_list[i]->port, pack->port) == 0)
+                    {
+                        ss_list[i]->status = 0;
+                    }
                 }
+                pthread_mutex_unlock(&server_lock);
+                return NULL;
             }
-            pthread_mutex_unlock(&server_lock);
-            return NULL;
-        }
-        close(sock);
-        sleep(5);
-        }
+            recv(sock, r, sizeof(st_request), 0);
 
+            if (r->request_type != ACK)
+            {
+
+                pack->synced = 0;
+                printf(RED("Server %s disconnected!\n\n\n"), pack->port);
+                pthread_mutex_lock(&server_lock);
+                for (int i = 0; i < server_count; i++)
+                {
+                    if (strcmp(ss_list[i]->port, pack->port) == 0)
+                    {
+                        ss_list[i]->status = 0;
+                    }
+                }
+                pthread_mutex_unlock(&server_lock);
+                return NULL;
+            }
+            close(sock);
+            sleep(5);
+        }
     }
-    // close(pack->client_socket);
+
     return NULL;
 }
 
-
-
-
 void *sync_backup(void *arg)
 {
-
-
     while (1)
     {
-
         ss pack = (ss)arg;
         pthread_mutex_lock(&pack->lock);
-        if (pack->is_backedup == 1 && pack->synced==0 && pack->added==1 && pack->status==1)
+        if (pack->is_backedup == 1 && pack->synced == 0 && pack->added == 1 && pack->status == 1)
         {
             char **paths = (char **)malloc(sizeof(char *) * 100);
-            char **add =(char**)malloc(sizeof(char*)*100);
-            char** old_paths=(char**)malloc(sizeof(char*)*100);
+            char **add = (char **)malloc(sizeof(char *) * 100);
+            char **old_paths = (char **)malloc(sizeof(char *) * 100);
             for (int i = 0; i < 100; i++)
             {
                 paths[i] = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
-                add[i]=(char*)malloc(sizeof(char*)*MAX_DATA_LENGTH);
-                old_paths[i]=(char*)malloc(sizeof(char*)*MAX_DATA_LENGTH);
+                add[i] = (char *)malloc(sizeof(char *) * MAX_DATA_LENGTH);
+                old_paths[i] = (char *)malloc(sizeof(char *) * MAX_DATA_LENGTH);
             }
 
-            
-            ss id,id2;
-            int idx_1=-1,idx_2=-1;
-            
+            ss id, id2;
+            int idx_1 = -1, idx_2 = -1;
+
             for (int i = 0; i < server_count; i++)
             {
-
                 if (strcmp(ss_list[i]->port, pack->backup_port[0]) == 0)
                 {
-                    id=ss_list[i];
-                    idx_1=i;
-                    // break;
+                    id = ss_list[i];
+                    idx_1 = i;
                 }
-                else if(strcmp(ss_list[i]->port, pack->backup_port[1]) == 0){
-                    id2=ss_list[i];
-                    idx_2=i;
-
+                else if (strcmp(ss_list[i]->port, pack->backup_port[1]) == 0)
+                {
+                    id2 = ss_list[i];
+                    idx_2 = i;
                 }
 
-                if(idx_1!=-1 && idx_2!=-1)break;
-
-
+                if (idx_1 != -1 && idx_2 != -1)
+                    break;
             }
 
-            // linked_list_head ll1 = return_paths(ss_list[]->backup_root);
             int cnt = 0;
             linked_list_head ll = return_paths(pack->root);
             linked_list_node trav = ll->first;
             while (trav != NULL)
             {
-                
                 strcpy(paths[cnt], trav->path);
                 cnt++;
                 trav = trav->next;
             }
-           
-            int ind=0;
 
-            for(int i=0;i<cnt;i++){
+            int ind = 0;
 
-                if(search_path(id->backup_root,paths[i])){
+            for (int i = 0; i < cnt; i++)
+            {
+
+                if (search_path(id->backup_root, paths[i]))
+                {
                     continue;
                 }
-                else{
-                    // if(strstr(paths[i],".txt")!=NULL){
-                    strcpy(add[ind++],paths[i]);
-                    // printf("Adding %s\n",paths[i]);
-                    // }
+                else
+                {
+                    strcpy(add[ind++], paths[i]);
                 }
-
             }
             pthread_mutex_unlock(&pack->lock);
-            if(ind!=0)printf(BLUE("Syncing %s\n\n\n"),pack->port);
-            else printf("%s all synced up\n\n\n",pack->port);
+            if (ind != 0)
+                printf(BLUE("Syncing %s\n\n\n"), pack->port);
+            else
+                printf("%s all synced up\n\n\n", pack->port);
 
-            for(int i=0;i<cnt;i++){
-                int id1=-1,id2=-1;
-                for(int j=0;j<server_count;j++){
-                    if(strcmp(ss_list[j]->port,pack->backup_port[0])==0){
-                        id1=j;
+            for (int i = 0; i < cnt; i++)
+            {
+                int id1 = -1, id2 = -1;
+                for (int j = 0; j < server_count; j++)
+                {
+                    if (strcmp(ss_list[j]->port, pack->backup_port[0]) == 0)
+                    {
+                        id1 = j;
                     }
-                    if(strcmp(ss_list[j]->port,pack->backup_port[1])==0){
-                        id2=j;
+                    if (strcmp(ss_list[j]->port, pack->backup_port[1]) == 0)
+                    {
+                        id2 = j;
                     }
-                    if(id1!=-1 && id2!=-1)break;
+                    if (id1 != -1 && id2 != -1)
+                        break;
                 }
 
-                request r=(request)malloc(sizeof(st_request));
+                request r = (request)malloc(sizeof(st_request));
 
-                if(strstr(paths[i],".txt")!=NULL){
-                r->request_type = COPY_FILE;
-                strcpy(r->data,paths[i]);
+                if (strstr(paths[i], ".txt") != NULL)
+                {
+                    r->request_type = COPY_FILE;
+                    strcpy(r->data, paths[i]);
 
-                int sock=connect_to_port(pack->port);
-                send(sock,r,sizeof(st_request),0);
-                recv(sock,r,sizeof(st_request),0);
-                close(sock);
-                
-                r->request_type=BACKUP_PASTE;
-
-                if(ss_list[id1]->status==1){
-                int sock=connect_to_port(pack->backup_port[0]);
-
-                send(sock, r, sizeof(st_request), 0);
-                close(sock);}
-
-
-                if(ss_list[id2]->status==1){
-                int sock=connect_to_port(pack->backup_port[1]);
-                send(sock, r, sizeof(st_request), 0);
-                close(sock);
-                }
-
-                }
-
-                else{
-
-
-                    r->request_type=BACKUP_CREATE_FOLDER;
-                    strcpy(r->data,paths[i]);
-
-                    if(ss_list[id1]->status==1){
-                    int sock=connect_to_port(pack->backup_port[0]);
+                    int sock = connect_to_port(pack->port);
                     send(sock, r, sizeof(st_request), 0);
-                    close(sock);}
+                    recv(sock, r, sizeof(st_request), 0);
+                    close(sock);
 
+                    r->request_type = BACKUP_PASTE;
 
-                    if(ss_list[id2]->status==1){
+                    if (ss_list[id1]->status == 1)
+                    {
+                        int sock = connect_to_port(pack->backup_port[0]);
 
-                    int sock=connect_to_port(pack->backup_port[1]);
-                    send(sock, r, sizeof(st_request), 0);
-                    close(sock);    
-                    
+                        send(sock, r, sizeof(st_request), 0);
+                        close(sock);
                     }
-                    
+
+                    if (ss_list[id2]->status == 1)
+                    {
+                        int sock = connect_to_port(pack->backup_port[1]);
+                        send(sock, r, sizeof(st_request), 0);
+                        close(sock);
+                    }
+                }
+                else
+                {
+                    r->request_type = BACKUP_CREATE_FOLDER;
+                    strcpy(r->data, paths[i]);
+
+                    if (ss_list[id1]->status == 1)
+                    {
+                        int sock = connect_to_port(pack->backup_port[0]);
+                        send(sock, r, sizeof(st_request), 0);
+                        close(sock);
                     }
 
+                    if (ss_list[id2]->status == 1)
+                    {
+                        int sock = connect_to_port(pack->backup_port[1]);
+                        send(sock, r, sizeof(st_request), 0);
+                        close(sock);
+                    }
+                }
             }
 
-
-            pack->synced=1;
+            pack->synced = 1;
 
             char **paths1 = (char **)malloc(sizeof(char *) * 100);
             for (int i = 0; i < 100; i++)
@@ -322,9 +304,10 @@ void *sync_backup(void *arg)
                 trav = trav->next;
             }
 
-            char** paths2 = (char**)malloc(sizeof(char*)*100);
-            for(int i=0;i<100;i++){
-                paths2[i]=(char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+            char **paths2 = (char **)malloc(sizeof(char *) * 100);
+            for (int i = 0; i < 100; i++)
+            {
+                paths2[i] = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
             }
             linked_list_head ll2 = return_paths(id2->backup_root);
             int cnt2 = 0;
@@ -336,120 +319,131 @@ void *sync_backup(void *arg)
                 trav = trav->next;
             }
 
-            char ** to_rem = (char**)malloc(sizeof(char*)*100);
-            for(int i=0;i<100;i++){
-                to_rem[i]=(char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+            char **to_rem = (char **)malloc(sizeof(char *) * 100);
+            for (int i = 0; i < 100; i++)
+            {
+                to_rem[i] = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
             }
-            int ind1=0;
-            for(int i=0;i<cnt1;i++){
-                int flag=1;
-                for(int j=0;j<cnt;j++){
-                    
-                    if(strcmp(paths1[i],paths[j])==0){
-                        flag=0;
+            int ind1 = 0;
+            for (int i = 0; i < cnt1; i++)
+            {
+                int flag = 1;
+                for (int j = 0; j < cnt; j++)
+                {
+                    if (strcmp(paths1[i], paths[j]) == 0)
+                    {
+                        flag = 0;
                         break;
                     }
-
                 }
-                if(flag==1 && search_path(id->backup_root,paths1[i])==pack->ssid){
-                    strcpy(to_rem[ind1++],paths1[i]);
+                if (flag == 1 && search_path(id->backup_root, paths1[i]) == pack->ssid)
+                {
+                    strcpy(to_rem[ind1++], paths1[i]);
                 }
             }
 
-            for(int i=0;i<ind1;i++){
-                request r=(request)malloc(sizeof(st_request));
+            for (int i = 0; i < ind1; i++)
+            {
+                request r = (request)malloc(sizeof(st_request));
 
-                if(strstr(to_rem[i],".txt")!=NULL){
-                r->request_type=BACKUP_DELETE_FILE;}
-                else r->request_type=BACKUP_DELETE_FOLDER;
-                strcpy(r->data,to_rem[i]);
+                if (strstr(to_rem[i], ".txt") != NULL)
+                {
+                    r->request_type = BACKUP_DELETE_FILE;
+                }
+                else
+                {
+                    r->request_type = BACKUP_DELETE_FOLDER;
+                }
 
-                if(id->status==1){
-                int sock=connect_to_port(pack->backup_port[0]);
-                send(sock,r,sizeof(st_request),0);
-                close(sock);}
+                strcpy(r->data, to_rem[i]);
 
+                if (id->status == 1)
+                {
+                    int sock = connect_to_port(pack->backup_port[0]);
+                    send(sock, r, sizeof(st_request), 0);
+                    close(sock);
+                }
             }
 
-
-            char ** to_rem1 = (char**)malloc(sizeof(char*)*100);
-            for(int i=0;i<100;i++){
-                to_rem1[i]=(char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+            char **to_rem1 = (char **)malloc(sizeof(char *) * 100);
+            for (int i = 0; i < 100; i++)
+            {
+                to_rem1[i] = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
             }
 
-            int ind2=0;
-            for(int i=0;i<cnt2;i++){
-                int flag=1;
-                for(int j=0;j<cnt;j++){
-                    
-                    if(strcmp(paths2[i],paths[j])==0){
-                        flag=0;
+            int ind2 = 0;
+            for (int i = 0; i < cnt2; i++)
+            {
+                int flag = 1;
+                for (int j = 0; j < cnt; j++)
+                {
+                    if (strcmp(paths2[i], paths[j]) == 0)
+                    {
+                        flag = 0;
                         break;
                     }
-
                 }
-                if(flag==1 && search_path(id2->backup_root,paths2[i])==pack->ssid){
-                    strcpy(to_rem1[ind2++],paths2[i]);
+                if (flag == 1 && search_path(id2->backup_root, paths2[i]) == pack->ssid)
+                {
+                    strcpy(to_rem1[ind2++], paths2[i]);
                 }
             }
 
-            for(int i=0;i<ind2;i++){
-                request r=(request)malloc(sizeof(st_request));
+            for (int i = 0; i < ind2; i++)
+            {
+                request r = (request)malloc(sizeof(st_request));
 
-                if(strstr(to_rem1[i],".txt")!=NULL){
-                r->request_type=BACKUP_DELETE_FILE;}
-                else r->request_type=BACKUP_DELETE_FOLDER;
-                strcpy(r->data,to_rem1[i]);
-                if(id2->status==1){
-                int sock=connect_to_port(pack->backup_port[1]);
-                send(sock,r,sizeof(st_request),0);
-                close(sock);}
+                if (strstr(to_rem1[i], ".txt") != NULL)
+                {
+                    r->request_type = BACKUP_DELETE_FILE;
+                }
+                else
+                {
+                    r->request_type = BACKUP_DELETE_FOLDER;
+                }
+                strcpy(r->data, to_rem1[i]);
+                if (id2->status == 1)
+                {
+                    int sock = connect_to_port(pack->backup_port[1]);
+                    send(sock, r, sizeof(st_request), 0);
+                    close(sock);
+                }
             }
-
-
-
-
-            // return NULL;
-
         }
-        else pthread_mutex_unlock(&pack->lock);
+        else
+        {
+            pthread_mutex_unlock(&pack->lock);
+        }
     }
 }
 
 void *backup_thread()
 {
-
     while (1)
     {
-        
-        // printf("Backup thread\n");
-
-        // pthread_mutex_lock(&server_lock);
-
         for (int i = 0; i < server_count; i++)
         {
-
             if (ss_list[i]->is_backedup == 0 && ss_list[i]->status == 1 && ss_list[i]->added == 1)
             {
-
                 int flag = 0;
                 int id1 = -1, id2 = -1;
-                int min=1000000,second_min = 1000000;
+                int min = 1000000, second_min = 1000000;
 
                 pthread_mutex_lock(&server_lock);
                 for (int j = 0; j < server_count; j++)
                 {
-                    if (i != j && ss_list[j]->status==1)
+                    if (i != j && ss_list[j]->status == 1)
                     {
-                        if(flag==0){
-                            id1=j;
-                            flag=1;
+                        if (flag == 0)
+                        {
+                            id1 = j;
+                            flag = 1;
                         }
-                        else if(flag==1){
-                            id2=j;
-                            flag=0;
+                        else if (flag == 1)
+                        {
+                            id2 = j;
+                            flag = 0;
                         }
-                        // if(flag==2)break;
                     }
                 }
                 pthread_mutex_unlock(&server_lock);
@@ -457,7 +451,6 @@ void *backup_thread()
                 // copy paths in these two servers
                 if (id1 != -1 && id2 != -1 && ss_list[id1]->status == 1 && ss_list[id2]->status == 1 && id1 != i && id2 != i)
                 {
-
                     printf(ORANGE("Backing up server %s in servers %s %s\n\n\n"), ss_list[i]->port, ss_list[id1]->port, ss_list[id2]->port);
 
                     strcpy(ss_list[i]->backup_port[0], ss_list[id1]->port);
@@ -484,17 +477,14 @@ void *backup_thread()
 
                     for (int j = 0; j < cnt; j++)
                     {
-
-                        insert_path(ss_list[id1]->backup_root, paths[j],ss_list[i]->ssid);
-                        insert_path(ss_list[id2]->backup_root, paths[j],ss_list[i]->ssid);
+                        insert_path(ss_list[id1]->backup_root, paths[j], ss_list[i]->ssid);
+                        insert_path(ss_list[id2]->backup_root, paths[j], ss_list[i]->ssid);
 
                         if (strstr(paths[j], ".txt") != NULL)
                         {
-                            // printf("path: %s\n",ss_list[i]->paths[j]);
                             request r = (request)malloc(sizeof(st_request));
                             request put_r = (request)malloc(sizeof(st_request));
                             struct sockaddr_in addr;
-                            // int sock=connect_ss(ss_list[i]->port,&addr);
                             int sock = socket(AF_INET, SOCK_STREAM, 0);
                             if (sock == -1)
                             {
@@ -557,7 +547,6 @@ void *backup_thread()
                             addr2.sin_addr.s_addr = INADDR_ANY;
 
                             y = -1;
-                            // printf("hi\n");
                             while (y != 0)
                             {
                                 y = connect(sock_two, (struct sockaddr *)&addr2, sizeof(addr2));
@@ -570,9 +559,9 @@ void *backup_thread()
 
                     ss_list[i]->is_backedup = 1;
                     pthread_t backup_thread_idx;
-                    // pthread_create(&backup_thread_idx, NULL, &sync_backup, (void *)ss_list[i]);
                 }
             }
         }
     }
 }
+

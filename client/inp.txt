@@ -1,1 +1,0 @@
-READ ./storage/SS1_dir1/SS1_file1.txt
