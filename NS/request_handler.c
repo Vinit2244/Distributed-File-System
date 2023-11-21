@@ -197,6 +197,11 @@ void *process(void *arg)
         r->request_type = RES;
         strcpy(r->data, list);
         send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+        int logging = insert_log(CLIENT, 0, NS_PORT, req->request_type, req->data, OK);
+        if (logging == 0)
+        {
+            printf(RED("Logging not added\n"));
+        }
 
         return NULL;
     }
@@ -246,7 +251,6 @@ void *process(void *arg)
         client_socket_arr[client_id] = -1;
         close(client_socket_arr[client_id]);
         return NULL;
-        
     }
 
     client_socket_arr[client_id] = -1;

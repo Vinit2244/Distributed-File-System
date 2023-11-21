@@ -4,7 +4,7 @@ pthread_mutex_t server_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t send_buffer_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t send_signal = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t status_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t path_locked=PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t path_locked = PTHREAD_MUTEX_INITIALIZER;
 
 sem_t lock;
 
@@ -17,7 +17,6 @@ int connection_count = 0;
 int ack = 0;
 
 int client_socket_arr[100];
-
 
 void *receive_handler()
 {
@@ -45,12 +44,12 @@ void *receive_handler()
 
     while (1)
     {
-        int id=-1;
-        for(int i=0;i<MAX_CONNECTIONS;i++)
+        int id = -1;
+        for (int i = 0; i < MAX_CONNECTIONS; i++)
         {
-            if(client_socket_arr[i]==-1)
+            if (client_socket_arr[i] == -1)
             {
-                id=i;
+                id = i;
                 break;
             }
         }
@@ -61,23 +60,26 @@ void *receive_handler()
         }
         request req = (request)malloc(sizeof(st_request));
         int x = recv(client_socket_arr[id], req, sizeof(st_request), 0);
-        
-        if(req->request_type<41 && req->request_type>3){
-        
-        printf("New request of type %d from client %d\n\n\n",req->request_type,id);
-        pthread_t new_proc;
-        proc n = (proc)malloc(sizeof(struct proc));
-        n->request_type = req->request_type;
-        strcpy(n->data, req->data);
-        n->client_id = id;
-        
-        pthread_create(&new_proc, NULL, &process, (void*)n);
-        
+        int logging = insert_log(CLIENT, 0, NS_PORT, req->request_type, req->data, OK);
+        if (logging == 0)
+        {
+            printf(RED("Logging not added\n"));
         }
-    
+
+        if (req->request_type < 41 && req->request_type > 3)
+        {
+
+            printf("New request of type %d from client %d\n\n\n", req->request_type, id);
+            pthread_t new_proc;
+            proc n = (proc)malloc(sizeof(struct proc));
+            n->request_type = req->request_type;
+            strcpy(n->data, req->data);
+            n->client_id = id;
+
+            pthread_create(&new_proc, NULL, &process, (void *)n);
+        }
 
         free(req);
-        
     }
 
     close(server_socket_tcp);
@@ -94,63 +96,72 @@ void *server_handler(void *p)
     while (1)
 
     {
-        if(pack->status==1){
-        
-        int sock=connect_to_port(pack->port);
-
-        if (sock == -1)
+        if (pack->status == 1)
         {
-            printf(RED("Server %s disconnected!\n\n\n"), pack->port);
-            pack->status = 0;
-            return NULL;
-        }
-        // printf(GREEN("Connected to server %s succesfully!\n\n\n"),pack->port);
 
-        pack->status = 1;
-        r->request_type = PING;
-        strcpy(r->data, "");
+            int sock = connect_to_port(pack->port);
 
-        int x = send(sock, r, sizeof(st_request), MSG_NOSIGNAL);
-        printf("Pinging server %s\n\n\n", pack->port);
-        if (x < 0)
-        {
-            pack->status = 0;
-            pack->synced = 0;
-            printf(RED("Server %s disconnected with send error!\n\n\n"), pack->port);
-            pthread_mutex_lock(&server_lock);
-            for (int i = 0; i < server_count; i++)
+            if (sock == -1)
             {
-                if (strcmp(ss_list[i]->port, pack->port) == 0)
-                {
-                    ss_list[i]->status = 0;
-                }
+                printf(RED("Server %s disconnected!\n\n\n"), pack->port);
+                pack->status = 0;
+                return NULL;
             }
-            pthread_mutex_unlock(&server_lock);
-            return NULL;
-        }
-        recv(sock, r, sizeof(st_request), 0);
+            // printf(GREEN("Connected to server %s succesfully!\n\n\n"),pack->port);
 
-        if (r->request_type != ACK)
-        {
-            // printf("x: %d\n",x);
-            pack->synced=0;
-            printf(RED("Server %s disconnected!\n\n\n"), pack->port);
-            // printf("%d\n",r->request_type);
-            pthread_mutex_lock(&server_lock);
-            for (int i = 0; i < server_count; i++)
+            pack->status = 1;
+            r->request_type = PING;
+            strcpy(r->data, "");
+
+            int x = send(sock, r, sizeof(st_request), MSG_NOSIGNAL);
+            // int logging=insert_log(SS,0,atoi(pack->port),r->request_type,r->data,OK);
+            //             if(logging==0)
+            //             {
+            //                 printf(RED("Logging not added\n"));
+            //             }
+            printf("Pinging server %s\n\n\n", pack->port);
+            if (x < 0)
             {
-                if (strcmp(ss_list[i]->port, pack->port) == 0)
+                pack->status = 0;
+                pack->synced = 0;
+                printf(RED("Server %s disconnected with send error!\n\n\n"), pack->port);
+                pthread_mutex_lock(&server_lock);
+                for (int i = 0; i < server_count; i++)
                 {
-                    ss_list[i]->status = 0;
+                    if (strcmp(ss_list[i]->port, pack->port) == 0)
+                    {
+                        ss_list[i]->status = 0;
+                    }
                 }
+                pthread_mutex_unlock(&server_lock);
+                return NULL;
             }
-            pthread_mutex_unlock(&server_lock);
-            return NULL;
+            recv(sock, r, sizeof(st_request), 0);
+            // int logging=insert_log(SS,0,atoi(pack->port),r->request_type,r->data,OK);
+            //             if(logging==0)
+            //             {
+            //                 printf(RED("Logging not added\n"));
+            //             }
+            if (r->request_type != ACK)
+            {
+                // printf("x: %d\n",x);
+                pack->synced = 0;
+                printf(RED("Server %s disconnected!\n\n\n"), pack->port);
+                // printf("%d\n",r->request_type);
+                pthread_mutex_lock(&server_lock);
+                for (int i = 0; i < server_count; i++)
+                {
+                    if (strcmp(ss_list[i]->port, pack->port) == 0)
+                    {
+                        ss_list[i]->status = 0;
+                    }
+                }
+                pthread_mutex_unlock(&server_lock);
+                return NULL;
+            }
+            close(sock);
+            sleep(5);
         }
-        close(sock);
-        sleep(5);
-        }
-
     }
     // close(pack->client_socket);
     return NULL;
@@ -159,25 +170,23 @@ void *server_handler(void *p)
 void *sync_backup(void *arg)
 {
 
-
     while (1)
     {
 
         ss pack = (ss)arg;
         pthread_mutex_lock(&pack->lock);
-        if (pack->is_backedup == 1 && pack->synced==0 && pack->added==1 && pack->status==1)
+        if (pack->is_backedup == 1 && pack->synced == 0 && pack->added == 1 && pack->status == 1)
         {
             linked_list_head ll = return_paths(pack->root);
 
             char **paths = (char **)malloc(sizeof(char *) * 100);
-            char **add =(char**)malloc(sizeof(char*)*100);
+            char **add = (char **)malloc(sizeof(char *) * 100);
             for (int i = 0; i < 100; i++)
             {
                 paths[i] = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
-                add[i]=(char*)malloc(sizeof(char*)*MAX_DATA_LENGTH);
+                add[i] = (char *)malloc(sizeof(char *) * MAX_DATA_LENGTH);
             }
 
-            
             ss id;
             // pthread_mutex_lock(&server_lock);
             for (int i = 0; i < server_count; i++)
@@ -185,7 +194,7 @@ void *sync_backup(void *arg)
 
                 if (strcmp(ss_list[i]->port, pack->backup_port[0]) == 0 || strcmp(ss_list[i]->port, pack->backup_port[1]) == 0)
                 {
-                    id=ss_list[i];
+                    id = ss_list[i];
                     break;
                 }
             }
@@ -195,36 +204,42 @@ void *sync_backup(void *arg)
             linked_list_node trav = ll->first;
             while (trav != NULL)
             {
-                
+
                 strcpy(paths[cnt], trav->path);
                 cnt++;
                 trav = trav->next;
             }
 
-           
-            int ind=0;
+            int ind = 0;
 
-            for(int i=0;i<cnt;i++){
+            for (int i = 0; i < cnt; i++)
+            {
 
-                if(search_path(id->backup_root,paths[i])){
+                if (search_path(id->backup_root, paths[i]))
+                {
                     continue;
                 }
-                else{
-                    if(strstr(paths[i],".txt")!=NULL){
-                    strcpy(add[ind++],paths[i]);}
+                else
+                {
+                    if (strstr(paths[i], ".txt") != NULL)
+                    {
+                        strcpy(add[ind++], paths[i]);
+                    }
                 }
-
             }
             pthread_mutex_unlock(&pack->lock);
-            if(ind!=0)printf(BLUE("Syncing %s\n\n\n"),pack->port);
-            else printf("%s all synced up\n\n\n",pack->port);
+            if (ind != 0)
+                printf(BLUE("Syncing %s\n\n\n"), pack->port);
+            else
+                printf("%s all synced up\n\n\n", pack->port);
 
-            for(int i=0;i<ind;i++){
+            for (int i = 0; i < ind; i++)
+            {
 
-                request r=(request)malloc(sizeof(st_request));
+                request r = (request)malloc(sizeof(st_request));
                 r->request_type = BACKUP_CREATE_FILE;
-                
-                strcpy(r->data,add[i]);
+
+                strcpy(r->data, add[i]);
                 struct sockaddr_in addr;
                 int sock;
                 sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -240,7 +255,17 @@ void *sync_backup(void *arg)
                 connect(sock, (struct sockaddr *)&addr, sizeof(addr));
 
                 send(sock, r, sizeof(st_request), 0);
+                int logging = insert_log(SS, pack->ssid, atoi(pack->backup_port[0]), r->request_type, r->data, OK);
+                if (logging == 0)
+                {
+                    printf(RED("Logging not added\n"));
+                }
                 recv(sock, r, sizeof(st_request), 0);
+                logging = insert_log(SS, pack->ssid, atoi(pack->backup_port[0]), r->request_type, r->data, OK);
+                if (logging == 0)
+                {
+                    printf(RED("Logging not added\n"));
+                }
 
                 close(sock);
 
@@ -256,16 +281,24 @@ void *sync_backup(void *arg)
 
                 connect(sock, (struct sockaddr *)&addr, sizeof(addr));
                 send(sock, r, sizeof(st_request), 0);
+                logging = insert_log(SS, pack->ssid, atoi(pack->backup_port[1]), r->request_type, r->data, OK);
+                if (logging == 0)
+                {
+                    printf(RED("Logging not added\n"));
+                }
                 recv(sock, r, sizeof(st_request), 0);
+                logging = insert_log(SS, pack->ssid, atoi(pack->backup_port[1]), r->request_type, r->data, OK);
+                if (logging == 0)
+                {
+                    printf(RED("Logging not added\n"));
+                }
                 close(sock);
-
-
             }
 
-            pack->synced=1;
-
+            pack->synced = 1;
         }
-        else pthread_mutex_unlock(&pack->lock);
+        else
+            pthread_mutex_unlock(&pack->lock);
     }
 }
 
@@ -285,22 +318,25 @@ void *backup_thread()
 
                 int flag = 0;
                 int id1 = -1, id2 = -1;
-                int min=1000000,second_min = 1000000;
+                int min = 1000000, second_min = 1000000;
 
                 pthread_mutex_lock(&server_lock);
                 for (int j = 0; j < server_count; j++)
                 {
                     if (i != j)
                     {
-                        if(flag==0){
-                            id1=j;
+                        if (flag == 0)
+                        {
+                            id1 = j;
                             flag++;
                         }
-                        else if(flag==1){
-                            id2=j;
+                        else if (flag == 1)
+                        {
+                            id2 = j;
                             flag++;
                         }
-                        if(flag==2)break;
+                        if (flag == 2)
+                            break;
                     }
                 }
                 pthread_mutex_unlock(&server_lock);
@@ -367,7 +403,17 @@ void *backup_thread()
                             strcpy(r->data, paths[j]);
 
                             int x = send(sock, r, sizeof(st_request), 0);
+                            int logging = insert_log(SS, i, atoi(ss_list[i]->port), r->request_type, r->data, OK);
+                            if (logging == 0)
+                            {
+                                printf(RED("Logging not added\n"));
+                            }
                             recv(sock, r, sizeof(st_request), 0);
+                            logging = insert_log(SS, i, atoi(ss_list[i]->port), r->request_type, r->data, OK);
+                            if (logging == 0)
+                            {
+                                printf(RED("Logging not added\n"));
+                            }
 
                             close(sock);
 
@@ -393,6 +439,11 @@ void *backup_thread()
                                 y = connect(sock_one, (struct sockaddr *)&addr1, sizeof(addr1));
                             }
                             send(sock_one, put_r, sizeof(st_request), 0);
+                            logging = insert_log(SS, id1, atoi(ss_list[id1]->port), r->request_type, r->data, OK);
+                            if (logging == 0)
+                            {
+                                printf(RED("Logging not added\n"));
+                            }
                             close(sock_one);
 
                             struct sockaddr_in addr2;
@@ -415,6 +466,11 @@ void *backup_thread()
                             }
 
                             x = send(sock_two, put_r, sizeof(st_request), 0);
+                            logging = insert_log(SS, id2, atoi(ss_list[id2]->port), r->request_type, r->data, OK);
+                            if (logging == 0)
+                            {
+                                printf(RED("Logging not added\n"));
+                            }
                             close(sock_two);
                         }
                     }
