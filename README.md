@@ -64,9 +64,10 @@ Vinit Mehta (2022111001)</i> <br>
 <p id="contributions"></p>
 
 ## <span style="color:skyblue">Individual Contributions</span>
-> <b><i>Divyansh Pandey:</i></b> NFS <br>
-> <b><i>Sanchit Jalan:</i></b> Client <br>
-> <b><i>Vinit Mehta:</i></b> SS + Tries + Book keeping + LRU <br>
+> <b><i>Divyansh Pandey:</i></b> NFS + Redundancy <br>
+> <b><i>Sanchit Jalan:</i></b> Client + Multiple Clients <br>
+> <b><i>Vinit Mehta:</i></b> SS + Tries + Book keeping + LRU Caching <br>
+> NOTE: Testing, Documentation and Error Handling are done by everyone on the team
 
 <p id="assumptions"></p>
 
@@ -75,6 +76,7 @@ Vinit Mehta (2022111001)</i> <br>
 <p id="#ssa"></p>
 
 ### <span style="color:pink">Storage Server</span>
+
 - IP address and port of naming server is known to all storage servers.
 - Only text files are stored.
 - Python script ```setup_ss.py``` and ```start_ss.py``` are just for helping in testing, it just creates an arbitrary number of copies of storage servers. Run ```make n=5``` to make 5 copies of storage server.
@@ -91,10 +93,13 @@ Vinit Mehta (2022111001)</i> <br>
 - If a storage server is down the all the paths of that storage server is still accessible but only in read mode.
 - Files and folders are assumed to have all permissions (0777).
 - Not all the SS are down (original + backups) at the same time.
+- Maximum number of paths in a storage server is fixed and can be changed by changing the value of macro in the header file.
+- <p style="color:red"><b><i><u>No file/folder outside the base folder can be accessible.</u></b></i></p>
 
 <p id="#nma"></p>
 
 ### <span style="color:pink">Naming Server</span>
+
 - The NS listens to new servers , clients on a single port (2000) using TCP socket communication.
 - The NS is exposed to only directories and text files.
 - The NS can support only a predefined number of clients at a particular instance(100 in our case) to ensure stability and accuracy in performance.
@@ -105,7 +110,9 @@ Vinit Mehta (2022111001)</i> <br>
 
 <p id="#clienta"></p>
 
-### <span style="color:pink">Client</span>
+### <span style="color:pink"> Client </span>
+
+- The data that would be provided to be written or appended onto a file will always be less than the size of the data packet that is being sent.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -116,6 +123,7 @@ Vinit Mehta (2022111001)</i> <br>
 <p id="#nm"></p>
 
 ### <span style="color:pink"> Naming Server </span>
+
 <p>The Naming Server(NS) servers as the central hub between the clients and the Storage servers. This is the central hub of file sharing and management for the clients to communicate with. The NS has the following key features:
 <ul><li>It acts as an address resolver for clients to perform operations like Read,Write,Retrieve Info on the files in the storage server. It resolves the IP address and port number of the storage server for the client to communicate.</li>
 <li>It allows the operation of privileged operations like Creating , Deleting and Copying Folders among storage servers by directly sending requests to the Storage Servers.</li>
@@ -128,15 +136,28 @@ Vinit Mehta (2022111001)</i> <br>
 
 ### <span style="color:pink"> Storage Server </span>
 
+<p>The Storage Servers (SS) acts as the data stores 
+In our distributed file system implementation in C, Storage Servers play a pivotal role as the backbone of the Network File System (NFS). These servers shoulder the critical responsibility of handling the physical storage and retrieval of files and folders within the network. Tasked with the management of data persistence, Storage Servers ensure that files are stored securely and efficiently, forming the bedrock of reliable file storage and access. By distributing data across multiple servers, our system aims to enhance performance, scalability, and fault tolerance, contributing to a robust and seamless file management experience for clients connected to the network. The Storage Servers, in essence, act as the guardians of data integrity, facilitating a distributed and resilient file storage infrastructure.
+</p>
+
 <p id="#client"></p>
 
 ### <span style="color:pink"> Client </span>
+
+The client serves as a user interface to communicate with the Network File System, offering several essential functionalities:
+- Users can initiate a variety of requests such as Read, Write, Append, and more.
+- Robust error handling mechanisms are implemented on the client side.
+- The Network File System supports concurrent usage by multiple clients.
+- A manual (MAN page) is provided on the client side, offering a comprehensive guide to the input formats for all commands.
 
 <p id="#implementation"></p>
 
 ## <span style="color:skyblue">Implementation</span>
 
 ### <span style="color:pink"> Flow of Control</span>
+
+#### <span style="color:cyan"> Naming Server </span>
+
 - The Naming server initialises all necessary parameters and starts by binding to port 2000.
 - Storage servers send initialisation requests to the Naming server which is handled by registering the storage server in the NS database and storing it's details(IP Address , NS Port , Client Port , Accessible paths).
 - After registering storage servers , clients can connect to NS to communicate in the file sharing system.Each client sends a request packet. For each client/storage server request a new thread is created which handles the process and ends the thread.
@@ -151,6 +172,22 @@ till the socket is closed.
 - LRU caching is used to achieve higher efficiency while dealing with higher times occuring requests to increase response time(latency).
 - Trie data structure is used for more efficient search for accessible paths in the storage servers.
 - A logging mechanism records all TCP communication happening from the NS for transparency and debugging.
+
+#### <span style="color:cyan"> Storage Server </span>
+
+- On initializing it first takes the list of accessible paths as command line input from the user.
+- It then finds the list of not accessible paths (basically all the paths in the tree from the root folder except the accessible paths provided), and all the subsequent paths that would be added either through the client or by the SS admin manually will be counted as accessible.
+- Then the SS sends the registration request to the NS with it's ip and port details.
+- After registration it starts two threads to keep listening on two ports of client and nfs registration respectively.
+- In the threads we are accepting connections in a while loop and on each new connection a separate thread is created to serve that request. Only a certain number of threads can function concurrently and if all the thread slots are busy any new request will directly be declined.
+- In the request handler thread the SS first checks the type of request received and then serves the request accordingly and sends ACK if the request is processed successfully and sends error code and message if some error occurs while serving the request. All the backup related does not send an acknowledgement as backup has to be done asynchronously, so in case the backup request fails due to some reason the NS would not know about that and the data may become inconsistent.
+
+#### <span style="color:cyan"> Client </span>
+
+- The client initially gathers user input, determines the type of request, processes it, and provides either the specific output or an error code.
+- For Read, Write, Append, and Info requests, the client obtains the IP address and port number of the designated storage server. Subsequently, it interacts with the specified storage server to execute the requested operation.
+- In the case of Copy, Create, Delete, and List requests, the client communicates directly with the naming server to retrieve the desired output.
+- The "MAN" command, exclusive to the client, serves as a comprehensive command providing users with a detailed guide on the input formats for all commands.
 
 ### <span style="color:pink"> Backup and Redundancy </span>
 - To ensure Backup and Redundancy , the Naming Server has a dedicated thread which checks whether each storage server is backed up and if it is not , it finds two other online servers to back up data. Once two servers are selected,it sends a "Copy request" for all the accessible files present in the Storage server and sends a "Paste request" to the two servers selected for backing up data.This ensures each file is backed up properly in the storage servers. It also maintains where each storage server is backed up in.
@@ -172,6 +209,17 @@ till the socket is closed.
 * NS maintains a cache which is just a normal array of structs in which it stores information about the requests that it served to client.
 * It only stores the request that were successful.
 * When NS receives a request from client it first checks in the cache if the reply to that path is already present there or not if it is present there then cache is updated and that found request is inserted at the end (End of the cache has newer requests and start of the cache has older requests, cache acts like a queue). And if the request is not found in the cache then the first entry in the cache is deleted and the new entry is inserted from the back.
+
+### <span style="color:pink"> Efficient Search </span>
+* To implement efficient searching of paths and respective SS having the path we have implemented tries data structure to store all the file paths of the respective SS.
+* If the search function of tries returns the ss_id of the storage server in which the path is present (backup storage id if it is the backup path and the original ss_id if it's own accessible path) and returns 0 if path is not found in the trie.
+* The trie implementation follows the lazy deletion method by just removing the last end node and resetting it to zero.
+* Each node in the trie has 256 children each for 256 1 byte ASCII characters possible.
+
+### <span style="color:pink"> Multiple Clients handling </span>
+
+- To manage multiple clients, a global linked list is employed to store all the paths currently undergoing write or append operations. When a Write/Append request is received, the system checks if the specified file path is present in the linked list. If it is, the response indicates that the file is not accessible. Conversely, if the path is not in the linked list, it is added, and the corresponding function is called. After serving the Write/Append request, the path is removed from the global linked list.
+- For Read/Info requests, the system first verifies whether the provided path is currently undergoing a write operation. If the path is found in the linked list, indicating an ongoing write process, the response indicates that the file is not accessible. However, if the path is not in the linked list, the corresponding function is executed, allowing the code to proceed
 
 ### <span style="color:pink"> READ Request </span>
 * FORMAT : 
@@ -268,7 +316,7 @@ till the socket is closed.
 * FORMAT :
   * EXIT
 * DESCRIPTION :
-  * Goodbye!
+  * Goodbye!😊
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -285,4 +333,4 @@ Project Link: [https://github.com/serc-courses/final-project-43](https://github.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<center>&copy; 2023 Team 43</center>
+<center>&copy; 2023 Team 43 with ❤️</center>

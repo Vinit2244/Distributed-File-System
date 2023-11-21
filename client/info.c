@@ -1,11 +1,8 @@
 #include "headers.h"
 
-//ERROR HANDLING WITH SS 
-
 void communicate_with_ss_info(char *ipaddress, char *port, char *path)
 {
     int client_socket = connect_with_ss(ipaddress, port);
-    printf("-----Storage     Server      Connected------\n");
     st_request *readerpacket = malloc(sizeof(st_request));
     readerpacket->request_type = RETRIEVE_INFO;
     strcpy(readerpacket->data, path);
@@ -45,7 +42,7 @@ void info(char *path)
     {
         perror("Send failed");
     }
-    st_request *response = (st_request *)malloc(sizeof(st_request));
+    st_request *response = (st_request *) malloc(sizeof(st_request));
     ssize_t bytes_received = recv(client_socket, response, sizeof(st_request), 0);
     char *port;
     char *ipaddress;
@@ -68,7 +65,7 @@ void info(char *path)
         ipaddress = strtok(response->data, "|");
         port = strtok(NULL, "|");
     }
-    printf("%s %s \n", ipaddress, port);
     close(client_socket);
     communicate_with_ss_info(ipaddress, port, path);
 }
+

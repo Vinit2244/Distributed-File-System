@@ -3,7 +3,6 @@
 void communicate_with_ss(char *ipaddress, char *port, char *path)
 {
     int client_socket = connect_with_ss(ipaddress, port);
-    printf("-----Storage     Server      Connected------\n");
     st_request *readerpacket = malloc(sizeof(st_request));
     readerpacket->request_type = READ_REQ;
     strcpy(readerpacket->data, path);
@@ -47,7 +46,6 @@ void communicate_with_ss(char *ipaddress, char *port, char *path)
 void communicate_with_ss_backup(char *ipaddress, char *port, char *path)
 {
     int client_socket = connect_with_ss(ipaddress, port);
-    printf("-----Storage     Server      Connected------\n");
     st_request *readerpacket = malloc(sizeof(st_request));
     readerpacket->request_type = BACKUP_READ_REQ;
     strcpy(readerpacket->data, path);
@@ -126,7 +124,6 @@ void reading_operation(char *path)
             port = strtok(NULL, "|");
         }
     }
-    printf("%s %s \n", ipaddress, port);
     close(client_socket);
     if (response->request_type == RES)
     {

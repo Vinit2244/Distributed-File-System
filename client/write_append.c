@@ -3,7 +3,6 @@
 void communicate_with_ss_write(char *ipaddress, char *port, char *path,int f)
 {
     int client_socket = connect_with_ss(ipaddress, port);
-    printf("-----Storage     Server      Connected------\n");
     char input = 'a'; // Junk to initialise so that goes into loop
     int dataread = 0;
     st_request *packet = malloc(sizeof(st_request));
@@ -54,7 +53,7 @@ void communicate_with_ss_write(char *ipaddress, char *port, char *path,int f)
     }
     if(req->request_type==ACK)
     {
-        printf("%s\n", req->data);
+        // do nothing
     }
     else
     {
@@ -103,9 +102,8 @@ void writing_append_operation(char *path,int f)
         ipaddress = strtok(response->data, "|");
         port = strtok(NULL, "|");
     }
-    printf("%s %s \n", ipaddress, port);
     close(client_socket);
-    // communicate_with_ss(ipaddress,port,path);
+
     communicate_with_ss_write(ipaddress, port, path,f);
 
     int client_socket_two = connect_with_ns();
@@ -113,10 +111,11 @@ void writing_append_operation(char *path,int f)
     readerpacket2->request_type = WRITE_APPEND_COMP;
     strcpy(readerpacket2->data, path);
     bytes_sent = send(client_socket_two, readerpacket2, sizeof(st_request), 0);
-    // printf("%ld\n",bytes_sent);
+
     if (bytes_sent == -1)
     {
         perror("Send failed");
     }
-    printf(GREEN("-----Write/Append Completed------\n"));
+    printf(GREEN("------Write/Append Completed------\n"));
 }
+
