@@ -19,7 +19,7 @@ void delete_operation(char *path,int macro)
     }
     else
     {
-        printf(RED("Deletion of Directory or File not succesfull : %s\n"),response->request_type); // Error Not succesfull
+        printf(RED("Deletion of Directory or File not succesfull : %s\n"), response->data); // Error Not succesfull
     }
     close(client_socket);
 }
