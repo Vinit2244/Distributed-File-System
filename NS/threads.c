@@ -439,7 +439,7 @@ void *backup_thread()
                 pthread_mutex_lock(&server_lock);
                 for (int j = 0; j < server_count; j++)
                 {
-                    if (i != j)
+                    if (i != j && ss_list[j]->status==1)
                     {
                         if(flag==0){
                             id1=j;
