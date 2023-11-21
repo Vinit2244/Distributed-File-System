@@ -142,6 +142,6 @@ void info(char *path);
 void delete_operation(char *path,int macro);
 void copy_operation(int req_type,char *path1, char *path2);
 void list();
-
+void man();
 
 #endif

@@ -2,6 +2,7 @@
 
 int main()
 {
+    printf(BLUE("For input related doubts type MAN\n"));
     char input[3000];
     while (1)
     {
@@ -73,6 +74,10 @@ int main()
         else if (strcmp("LIST", operation) == 0)
         {
             list();
+        }
+        else if (strcmp("MAN", operation) == 0)
+        {
+            man();
         }
         else if (strcmp("EXIT", operation) == 0)
         {
