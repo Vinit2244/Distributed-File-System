@@ -387,23 +387,8 @@ char* replace_storage_by_backup(char* path)
 {
     char *new_path = (char*) calloc(MAX_PATH_LEN, sizeof(char));
 
-    char **tkns = tokenize(path, '/');
-    int idx = 0;
-    while (tkns[idx] != NULL)
-    {
-        if (idx == 1 && (strcmp(tkns[idx], "storage") == 0))
-        {
-            strcat(new_path, "backup");
-        }
-        else
-        {
-            strcat(new_path, tkns[idx]);
-        }
-        strcat(new_path, "/");
-        idx++;
-    }
-    new_path[strlen(new_path) - 1] = '\0';
-    free_tokens(tkns);
+    strcpy(new_path, "./backup/");
+    strcat(new_path, path + 2);
 
     return new_path;
 }
