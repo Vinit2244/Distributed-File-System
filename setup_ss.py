@@ -129,14 +129,14 @@ for i in range(num_of_ss):
             create_dir(dir_path)
             with open(f"{cwd}/SS{i + 1}/accessible_paths.txt", "a") as file:
                 file.write(f"./SS{i + 1}_dir{j + 1}")
-                file.write("\n")
+                file.write(" ")
             
             # Creating sample files with sample text in each dir
             for k in range(max_num_of_files_in_dir):
                 file_path = os.path.join(dir_path, f"SS{i + 1}_file{curr_file_index}.txt")
                 with open(f"{cwd}/SS{i + 1}/accessible_paths.txt", "a") as file:
                     file.write(f"./SS{i + 1}_dir{j + 1}/SS{i + 1}_file{curr_file_index}.txt")
-                    file.write("\n")
+                    file.write(" ")
                 if curr_file_index <= total_num_of_files:
                     create_file(file_path, curr_file_index)
                     curr_file_index += 1
@@ -145,9 +145,9 @@ for i in range(num_of_ss):
         create_file(base_dir + f"/SS{i + 1}_file{curr_file_index + 2}.txt", curr_file_index + 2)
         with open(f"{cwd}/SS{i + 1}/accessible_paths.txt", "a") as file:
                 file.write(f"./SS{i + 1}_file{curr_file_index + 1}.txt")
-                file.write("\n")
+                file.write(" ")
                 file.write(f"./SS{i + 1}_file{curr_file_index + 2}.txt")
-                file.write("\n")
+                file.write(" ")
         
         # Compiling all the makefiles
         compile_make(i)

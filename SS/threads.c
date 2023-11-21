@@ -599,6 +599,7 @@ void *serve_request(void *args)
     {
         // Relative path to the folder to be copied
         char *path = recvd_request.data;
+        // Absolute path
         char abs_path[MAX_PATH_LEN] = {0};
 
         // Creating the absolute path to the folder
@@ -606,6 +607,15 @@ void *serve_request(void *args)
         strcat(abs_path, path + 2);
 
         char** files_folders = get_all_files_folders(abs_path);
+
+        int n_files_folders = 0;
+        while (files_folders[n_files_folders] != NULL)
+        {
+            n_files_folders++;
+        }
+
+        st_request num_of_paths_req;
+        num_of_paths_req.request_type = N_FILES_REQ;
     }
     else if (recvd_request.request_type == PASTE || recvd_request.request_type == BACKUP_PASTE)
     {
