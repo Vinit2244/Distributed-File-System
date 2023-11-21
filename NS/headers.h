@@ -174,7 +174,6 @@ struct trie_node
 {
     char *key;
     int end;
-    int ssid;
     struct trie_node *children[256];    // Total 256 characters possible that can come in any path name
 };
 
@@ -263,7 +262,7 @@ void insert_in_linked_list(linked_list_head linked_list, char* path);
 // Tries functions
 struct trie_node *create_trie_node();
 void print_paths(struct trie_node *root);
-int insert_path(struct trie_node *root, char *key, int ss_id);
+int insert_path(struct trie_node *root, char *key);
 int search_path(struct trie_node *root, char *key);
 int delete_path(struct trie_node *root, char *key);
 linked_list_head return_paths(struct trie_node *root);
@@ -293,3 +292,4 @@ void* handle_create(request req,int client_id);
 void* handle_delete(request req,int client_id);
 void* copy_handler(request req,int client_id);
 int connect_to_port(char* port);
+void replicate_backups(ss server);

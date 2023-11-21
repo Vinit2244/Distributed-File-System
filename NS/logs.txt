@@ -1,0 +1,28 @@
+Communicating with Client
+NFS Port number                   : 2000
+Client Port number                : 2000
+Request type                      : 3
+Request data                      : 127.0.0.1|1501
+Status                            : 200
+
+Communicating with Client
+NFS Port number                   : 2000
+Client Port number                : 2000
+Request type                      : 3
+Request data                      : 127.0.0.1|1501
+Status                            : 200
+
+Communicating with Client
+NFS Port number                   : 2000
+Client Port number                : 2000
+Request type                      : 4
+Request data                      : ./SS1_dir1/SS1_file1.txt
+Status                            : 200
+
+Communicating with Client
+NFS Port number                   : 2000
+Client Port number                : 2000
+Request type                      : 4
+Request data                      : ./SS2_dir1/SS2_file1.txt
+Status                            : 200
+

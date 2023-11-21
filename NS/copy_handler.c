@@ -54,11 +54,6 @@ void* copy_handler(request req,int client_id){
                 r->request_type=FILE_NOT_FOUND;
                 strcpy(r->data,"File not found");
                 send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-                int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,FILE_NOT_FOUND);
-                if(logging==0)
-                {
-                    printf(RED("Logging not added\n"));
-                }
                 client_socket_arr[client_id] = -1;  
                 close(client_socket_arr[client_id]);
                 return NULL;
@@ -70,17 +65,8 @@ void* copy_handler(request req,int client_id){
                 st_copy_folder* get_r=(st_copy_folder*)malloc(sizeof(st_copy_folder));
                 int sock_fd=connect_to_port(found_server->port);
                 send(sock_fd,r,sizeof(st_request),0);
-                int logging = insert_log(SS, found_server->ssid, atoi(found_server->port), r->request_type, r->data, OK);
-                if (logging == 0)
-                {
-                    printf(RED("Logging not added\n"));
-                }
                 recv(sock_fd,get_r,sizeof(st_copy_folder),0);
-                logging = insert_log(SS, found_server->ssid, atoi(found_server->port), r->request_type, r->data, OK);
-                if (logging == 0)
-                {
-                    printf(RED("Logging not added\n"));
-                }
+
  
                 close(sock_fd);
                 request r=(request)malloc(sizeof(st_request));
@@ -95,11 +81,7 @@ void* copy_handler(request req,int client_id){
                     // printf("%s\n",r->data);
                     int sock_fd1=connect_to_port(dest_server->port);
                     send(sock_fd1,r,sizeof(st_request),0);
-                    logging = insert_log(SS, dest_server->ssid, atoi(dest_server->port), r->request_type, r->data, OK);
-                    if (logging == 0)
-                    {
-                        printf(RED("Logging not added\n"));
-                    }
+
                     close(sock_fd1);
 
 
@@ -191,11 +173,6 @@ void* copy_handler(request req,int client_id){
             r->request_type = FILE_NOT_FOUND;
             strcpy(r->data, "File not found");
             send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-            int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,FILE_NOT_FOUND);
-            if(logging==0)
-            {
-                printf(RED("Logging not added\n"));
-            }
         }
         else
         {
@@ -208,17 +185,8 @@ void* copy_handler(request req,int client_id){
             int s_fd = connect_to_port(source_no->port);
 
             send(s_fd, get_r, sizeof(st_request), 0);
-            int logging = insert_log(SS, source_no->ssid, atoi(source_no->port), get_r->request_type, get_r->data, OK);
-            if (logging == 0)
-            {
-                printf(RED("Logging not added\n"));
-            }
             recv(s_fd, get_r, sizeof(st_request), 0);
-            logging = insert_log(SS, source_no->ssid, atoi(source_no->port), get_r->request_type, get_r->data, OK);
-            if (logging == 0)
-            {
-                printf(RED("Logging not added\n"));
-            }
+
             if(get_r->request_type!=21){
                 printf(RED("Error in copying file with code : %d\n\n\n"),get_r->request_type);
                 return NULL;
@@ -252,11 +220,6 @@ void* copy_handler(request req,int client_id){
             int s_fd1 = connect_to_port(dest_no->port);
 
             send(s_fd1, get_r, sizeof(st_request), 0);
-            logging = insert_log(SS, dest_no->ssid, atoi(dest_no->port), get_r->request_type, get_r->data, OK);
-            if (logging == 0)
-            {
-                printf(RED("Logging not added\n"));
-            }
             close(s_fd1);
 
             if (dest_no->is_backedup == 1)
@@ -268,20 +231,11 @@ void* copy_handler(request req,int client_id){
 
 
                 send(s_fd1, get_r, sizeof(st_request), 0);
-                logging = insert_log(SS, dest_no->ssid, atoi(dest_no->backup_port[0]), get_r->request_type, get_r->data, OK);
-                if (logging == 0)
-                {
-                    printf(RED("Logging not added\n"));
-                }
                 close(s_fd1);
 
                 get_r->request_type = BACKUP_PASTE;
                 int s_fd2=connect_to_port(dest_no->backup_port[1]);
-                logging = insert_log(SS, dest_no->ssid, atoi(dest_no->backup_port[1]), get_r->request_type, get_r->data, OK);
-                if (logging == 0)
-                {
-                    printf(RED("Logging not added\n"));
-                }
+                send(s_fd2, get_r, sizeof(st_request), 0);
                 close(s_fd2);
             }
 
@@ -290,11 +244,6 @@ void* copy_handler(request req,int client_id){
             strcpy(r->data, "Copying succesful!\n");
             printf(BLUE("Copying succesful!\n\n\n"));
             send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-            int logging=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,OK);
-            if(logging==0)
-            {
-                printf(RED("Logging not added\n"));
-            }
         }
 
 }

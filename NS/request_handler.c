@@ -89,12 +89,15 @@ void *process(void *arg)
         int count = 0;
         // ss found_server = ss_list[atoi(ss_id) - 1];
         ss found_server;
+
+
         for (int i = 0; i < server_count; i++)
         {
 
             if (ss_list[i]->ssid == atoi(ss_id))
             {
                 found_server = ss_list[i];
+                // printf("Added in %s\n",found_server->port);
                 break;
             }
         }
@@ -165,6 +168,7 @@ void *process(void *arg)
                 found_server->path_count--;
             }
         }
+        found_server->synced = 0;
         pthread_mutex_unlock(&found_server->lock);
         if (count > 0)
             printf(BLUE("Deleted %d files/directories from server number %d\n\n\n"), count, atoi(ss_id));
@@ -197,11 +201,6 @@ void *process(void *arg)
         r->request_type = RES;
         strcpy(r->data, list);
         send(client_socket_arr[client_id], r, sizeof(st_request), 0);
-        int logging = insert_log(CLIENT, 0, NS_PORT, req->request_type, req->data, OK);
-        if (logging == 0)
-        {
-            printf(RED("Logging not added\n"));
-        }
 
         return NULL;
     }
@@ -241,16 +240,17 @@ void *process(void *arg)
             snprintf(r->data, sizeof(r->data), "%s|%s", token, token1);
 
             int sock_one = connect_to_port(found_server->backup_port[0]);
-
+            send(sock_one, r, sizeof(st_request), 0);
             close(sock_one);
 
             int sock_two = connect_to_port(found_server->backup_port[1]);
-
+            send(sock_two, r, sizeof(st_request), 0);
             close(sock_two);
         }
         client_socket_arr[client_id] = -1;
         close(client_socket_arr[client_id]);
         return NULL;
+        
     }
 
     client_socket_arr[client_id] = -1;
