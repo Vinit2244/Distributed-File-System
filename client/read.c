@@ -21,15 +21,29 @@ void communicate_with_ss(char *ipaddress, char *port, char *path)
     // while(1)
     // {
     request req = (request)malloc(sizeof(st_request));
-    if (recv(client_socket, req, sizeof(st_request), 0) == -1)
+    while(1)
     {
-        perror("Receiving data failed");
-        // continue;
+        memset(req,0,sizeof(struct st_request));
+        if (recv(client_socket, req, sizeof(st_request), 0) == -1)
+        {
+            perror("Receiving data failed");
+            // continue;
+        }
+        if(req->request_type==ACK)
+        {
+            break;
+        }
+        else if(req->request_type==READ_FAILED)
+        {
+            printf("%s",req->data);
+            break;
+        }
+        else
+        {
+            printf("%s", req->data);
+        }
     }
-    printf("%s\n", req->data);
 
-    req->request_type=ACK;
-    send(client_socket, req, sizeof(st_request), 0);
 
     free(req);
     close(client_socket);
@@ -53,15 +67,28 @@ void communicate_with_ss_backup(char *ipaddress, char *port, char *path)
     // while(1)
     // {
     request req = (request)malloc(sizeof(st_request));
-    if (recv(client_socket, req, sizeof(st_request), 0) == -1)
+    while(1)
     {
-        perror("Receiving data failed");
-        // continue;
+        memset(req,0,sizeof(struct st_request));
+        if (recv(client_socket, req, sizeof(st_request), 0) == -1)
+        {
+            perror("Receiving data failed");
+            // continue;
+        }
+        if(req->request_type==ACK)
+        {
+            break;
+        }
+        else if(req->request_type==READ_FAILED)
+        {
+            printf("%s",req->data);
+            break;
+        }
+        else
+        {
+            printf("%s", req->data);
+        }
     }
-    printf("%s\n", req->data);
-
-    req->request_type=ACK;
-    send(client_socket, req, sizeof(st_request), 0);
 
     free(req);
     close(client_socket);
