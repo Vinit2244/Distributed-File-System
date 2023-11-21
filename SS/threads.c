@@ -319,7 +319,6 @@ void *serve_request(void *args)
             free(path_to_read);
         }
     }
-
     else if (recvd_request.request_type == WRITE_REQ || recvd_request.request_type == BACKUP_WRITE_REQ)
     {
         char* path_to_write;
@@ -984,44 +983,44 @@ void *serve_request(void *args)
 
         free(file_path);
     }
-    else if (recvd_request.request_type == FORMAT_BACKUP)
-    {
-        printf(YELLOW("Format backup request received.\n"));
+    // else if (recvd_request.request_type == FORMAT_BACKUP)
+    // {
+    //     printf(YELLOW("Format backup request received.\n"));
 
-        char abs_path[MAX_PATH_LEN] = {0};
-        strcat(abs_path, PWD);
-        strcat(abs_path, "/storage");
+    //     char abs_path[MAX_PATH_LEN] = {0};
+    //     strcat(abs_path, PWD);
+    //     strcat(abs_path, "/storage");
 
-        int pid = fork();
-        if (pid == 0)
-        {
-            // Child process
-            char* command = "rm";
-            char* args[] = {"rm", "-r", abs_path, NULL};
+    //     int pid = fork();
+    //     if (pid == 0)
+    //     {
+    //         // Child process
+    //         char* command = "rm";
+    //         char* args[] = {"rm", "-r", abs_path, NULL};
 
-            execvp(command, args);
-            // execvp failed
-            fprintf(stderr, RED("execvp : failed to format backup\n"));
-            send_ack(FORMAT_BACKUP_FAILED, sock_fd, strerror(errno));
-            goto End;
-        }
-        else if (pid > 0)
-        {
-            // Parent process (waiting for child to finish)
-            wait(NULL);
-        }
-        else
-        {
-            // Fork failed so display error and send failed ack
-            fprintf(stderr, RED("fork: could not fork for folder deletion\n"));
-            send_ack(FORMAT_BACKUP_FAILED, sock_fd, strerror(errno));
-            goto End;
-        }
+    //         execvp(command, args);
+    //         // execvp failed
+    //         fprintf(stderr, RED("execvp : failed to format backup\n"));
+    //         send_ack(FORMAT_BACKUP_FAILED, sock_fd, strerror(errno));
+    //         goto End;
+    //     }
+    //     else if (pid > 0)
+    //     {
+    //         // Parent process (waiting for child to finish)
+    //         wait(NULL);
+    //     }
+    //     else
+    //     {
+    //         // Fork failed so display error and send failed ack
+    //         fprintf(stderr, RED("fork: could not fork for folder deletion\n"));
+    //         send_ack(FORMAT_BACKUP_FAILED, sock_fd, strerror(errno));
+    //         goto End;
+    //     }
 
-        create_folder("./storage");
+    //     create_folder("./storage");
 
-        send_ack(ACK, sock_fd, NULL);
-    }
+    //     send_ack(ACK, sock_fd, NULL);
+    // }
 End:
     // Freeing tokens created at the start from request data
     free_tokens(request_tkns);

@@ -91,7 +91,7 @@
 #define COPY_FOLDER          36
 #define N_FILES_REQ          37
 #define FOLDER_DATA_TO_BE_COPIED 38
-#define FORMAT_BACKUP        39
+// #define FORMAT_BACKUP        39
 
 // ============================= FILE TYPES =============================
 #define FILE_T               100
@@ -108,7 +108,7 @@
 #define INFO_RETRIEVAL_FAILED 606
 #define READ_FAILED          607
 #define WRITE_FAILED         608
-#define FORMAT_BACKUP_FAILED 609
+// #define FORMAT_BACKUP_FAILED 609
 // All not allowed error codes will start from 500
 #define INVALID_DELETION     501
 // All not found error codes will start from 400

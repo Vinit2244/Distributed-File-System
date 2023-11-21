@@ -12,6 +12,7 @@ struct trie_node *create_trie_node()
     }
     node->key = NULL;   // Initially there is no string stored in the node (strings are stored only in end nodes)
     node->end = 0;      // Initially the node is not an end node
+    node->ssid = -1;    // Initially no ssid is assigned
     // 256 childrens 1 for each of the ASCII characters
     for (int i = 0; i < 256; i++)
     {
@@ -21,7 +22,7 @@ struct trie_node *create_trie_node()
 }
 
 // A function to insert a string into the trie, Returns 1 if successfull else 0
-int insert_path(struct trie_node *root, char *key)
+int insert_path(struct trie_node *root, char *key, int ss_id)
 {
     // Starting from the root node
     struct trie_node *current = root;
@@ -46,10 +47,11 @@ int insert_path(struct trie_node *root, char *key)
     // We have reached the end of the string that is to be stored so we are at the final node so just store the string as the key and mark this node as one of the end nodes
     current->key = key;
     current->end = 1;
+    current->ssid = ss_id;
     return 1;
 }
 
-// A function to search for a string in the trie, Returns 1 if path is found else 0
+// A function to search for a string in the trie, Returns the ssid of the storage server in which it is stored if found else 0
 int search_path(struct trie_node *root, char *key)
 {
     // Starting from the root node
@@ -68,7 +70,7 @@ int search_path(struct trie_node *root, char *key)
 
     if (current->end == 1)
     {
-        return 1;
+        current->ssid;
     }
     return 0;
 }
@@ -91,6 +93,7 @@ int delete_path(struct trie_node *root, char *key)
     
     current->key = NULL;
     current->end = 0;
+    current->ssid = -1;
     return 1;
 }
 
@@ -104,7 +107,7 @@ void print_paths(struct trie_node *root)
 
     if (root->end == 1)
     {
-        printf("%s\n", root->key);
+        printf("%s %d\n", root->key, root->ssid);
     }
 
     for (int i = 0; i < 256; i++)
@@ -147,7 +150,8 @@ void add_paths(linked_list_head ll, struct trie_node *root)
 }
 
 // Linked list functions
-linked_list_head create_linked_list_head() {
+linked_list_head create_linked_list_head()
+{
     linked_list_head linked_list = (linked_list_head) malloc(sizeof(linked_list_head_struct));
     linked_list->number_of_nodes = 0;
     linked_list->first = NULL;
@@ -155,7 +159,8 @@ linked_list_head create_linked_list_head() {
     return linked_list;
 }
 
-linked_list_node create_linked_list_node(char* path) {
+linked_list_node create_linked_list_node(char* path)
+{
     linked_list_node N = (linked_list_node) malloc(sizeof(linked_list_node_struct));
     N->next = NULL;
     N->path = (char*) calloc(MAX_PATH_LEN, sizeof(char));
@@ -163,7 +168,8 @@ linked_list_node create_linked_list_node(char* path) {
     return N;
 }
 
-void insert_in_linked_list(linked_list_head linked_list, char* path) {
+void insert_in_linked_list(linked_list_head linked_list, char* path)
+{
     linked_list_node N = create_linked_list_node(path);
     if (linked_list->number_of_nodes == 0) {
         linked_list->first = N;
@@ -180,7 +186,8 @@ void insert_in_linked_list(linked_list_head linked_list, char* path) {
     }
 }
 
-void free_linked_list(linked_list_head linked_list) {
+void free_linked_list(linked_list_head linked_list)
+{
     linked_list_node trav = linked_list->first;
     while (trav != NULL) {
         free(trav->path);
