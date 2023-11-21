@@ -61,7 +61,11 @@ void *receive_handler()
         }
         request req = (request)malloc(sizeof(st_request));
         int x = recv(client_socket_arr[id], req, sizeof(st_request), 0);
-        
+        int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,OK);
+        if(logging==0)
+        {
+            printf(RED("Logging not added\n"));
+        }
         if(req->request_type<41 && req->request_type>3){
         
         printf("New request of type %d from client %d\n\n\n",req->request_type,id);

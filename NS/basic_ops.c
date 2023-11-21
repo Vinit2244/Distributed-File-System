@@ -125,6 +125,12 @@ void* basic_ops(request req,int client_id){
                 snprintf(data, MAX_DATA_LENGTH, "%s|%s", ss_list[id]->ip, ss_list[id]->backup_port[0]);
                 strcpy(r->data, data);
                 send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+                int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,OK);
+                if(logging==0)
+                {
+                    printf(RED("Logging not added\n"));
+                }
+
             }
             else
             {
@@ -265,5 +271,5 @@ void* basic_ops(request req,int client_id){
                 }
             }
         }
-
+    return NULL;
 }

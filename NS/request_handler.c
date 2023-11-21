@@ -90,14 +90,14 @@ void *process(void *arg)
         // ss found_server = ss_list[atoi(ss_id) - 1];
         ss found_server;
 
-        int id=-1;
+        int id = -1;
         for (int i = 0; i < server_count; i++)
         {
 
             if (ss_list[i]->ssid == atoi(ss_id))
             {
                 found_server = ss_list[i];
-                id=i;
+                id = i;
                 // printf("Added in %s\n",found_server->port);
                 break;
             }
@@ -109,15 +109,17 @@ void *process(void *arg)
             strcpy(found_server->paths[found_server->path_count + i], path[i]);
             if (search_path(found_server->root, path[i]) == -1)
             {
-                
-                if (insert_path(found_server->root, path[i],atoi(ss_id)) == 1)
+
+                if (insert_path(found_server->root, path[i], atoi(ss_id)) == 1)
                 {
                     count++;
                 }
 
-                if(found_server->is_backedup == 1){
+                if (found_server->is_backedup == 1)
+                {
 
-                    if(strstr(path[i],".txt")!=NULL){
+                    if (strstr(path[i], ".txt") != NULL)
+                    {
 
                         request r = (request)malloc(sizeof(st_request));
                         r->request_type = COPY_FILE;
@@ -126,6 +128,11 @@ void *process(void *arg)
                         int sock_one = connect_to_port(found_server->port);
 
                         send(sock_one, r, sizeof(st_request), 0);
+                        int logging = insert_log(SS, found_server->ssid, atoi(found_server->port), req->request_type, req->data, OK);
+                        if (logging == 0)
+                        {
+                            printf(RED("Logging not added\n"));
+                        }
                         recv(sock_one, r, sizeof(st_request), 0);
 
                         close(sock_one);
@@ -134,17 +141,43 @@ void *process(void *arg)
 
                         int sock_two = connect_to_port(found_server->backup_port[0]);
                         send(sock_two, r, sizeof(st_request), 0);
+                        int ssid = 0;
+                        for (int i = 0; i < server_count; i++)
+                        {
+                            if (strcmp(ss_list[i]->port, found_server->backup_port[0]) == 0)
+                            {
+                                ssid = ss_list[i]->ssid;
+                                break;
+                            }
+                        }
+                        logging = insert_log(SS, ssid, atoi(found_server->backup_port[0]), r->request_type, r->data, OK);
+                        if (logging == 0)
+                        {
+                            printf(RED("Logging not added\n"));
+                        }
                         close(sock_two);
 
                         int sock_three = connect_to_port(found_server->backup_port[1]);
                         send(sock_three, r, sizeof(st_request), 0);
+                        int ssid2 = 0;
+                        for (int i = 0; i < server_count; i++)
+                        {
+                            if (strcmp(ss_list[i]->port, found_server->backup_port[1]) == 0)
+                            {
+                                ssid2 = ss_list[i]->ssid;
+                                break;
+                            }
+                        }
+                        logging = insert_log(SS, ssid2, atoi(found_server->backup_port[1]), r->request_type, r->data, OK);
+                        if (logging == 0)
+                        {
+                            printf(RED("Logging not added\n"));
+                        }
                         close(sock_three);
-
-
                     }
 
-                    else{
-
+                    else
+                    {
 
                         request r = (request)malloc(sizeof(st_request));
                         r->request_type = BACKUP_CREATE_FOLDER;
@@ -153,17 +186,41 @@ void *process(void *arg)
                         int sock_one = connect_to_port(found_server->backup_port[0]);
 
                         send(sock_one, r, sizeof(st_request), 0);
+                        int ssid = 0;
+                        for (int i = 0; i < server_count; i++)
+                        {
+                            if (strcmp(ss_list[i]->port, found_server->backup_port[0]) == 0)
+                            {
+                                ssid = ss_list[i]->ssid;
+                                break;
+                            }
+                        }
+                        int logging = insert_log(SS, ssid, atoi(found_server->backup_port[0]), r->request_type, r->data, OK);
+                        if (logging == 0)
+                        {
+                            printf(RED("Logging not added\n"));
+                        }
                         close(sock_one);
 
                         int sock_two = connect_to_port(found_server->backup_port[1]);
                         send(sock_two, r, sizeof(st_request), 0);
+                        int ssid2 = 0;
+                        for (int i = 0; i < server_count; i++)
+                        {
+                            if (strcmp(ss_list[i]->port, found_server->backup_port[1]) == 0)
+                            {
+                                ssid2 = ss_list[i]->ssid;
+                                break;
+                            }
+                        }
+                        logging = insert_log(SS, ssid2, atoi(found_server->backup_port[1]), r->request_type, r->data, OK);
+                        if (logging == 0)
+                        {
+                            printf(RED("Logging not added\n"));
+                        }
                         close(sock_two);
-
                     }
-
-
                 }
-
             }
         }
 
@@ -213,33 +270,60 @@ void *process(void *arg)
             if (search_path(found_server->root, path[i]) >= 0)
             {
 
-                
-
                 if (delete_path(found_server->root, path[i]) == 1)
                 {
                     count++;
                 }
 
-                if(found_server->is_backedup==1){
+                if (found_server->is_backedup == 1)
+                {
 
                     request r = (request)malloc(sizeof(st_request));
 
-                    if(strstr(path[i],".txt")!=NULL){
+                    if (strstr(path[i], ".txt") != NULL)
+                    {
                         r->request_type = BACKUP_DELETE_FILE;
                     }
-                    else r->request_type = BACKUP_DELETE_FOLDER;
+                    else
+                        r->request_type = BACKUP_DELETE_FOLDER;
 
                     strcpy(r->data, path[i]);
 
                     int sock_one = connect_to_port(found_server->backup_port[0]);
-                    send(sock_one,r, sizeof(st_request), 0);
+                    send(sock_one, r, sizeof(st_request), 0);
+                    int ssid = 0;
+                    for (int i = 0; i < server_count; i++)
+                    {
+                        if (strcmp(ss_list[i]->port, found_server->backup_port[0]) == 0)
+                        {
+                            ssid = ss_list[i]->ssid;
+                            break;
+                        }
+                    }
+                    int logging = insert_log(SS, ssid, atoi(found_server->backup_port[0]), r->request_type, r->data, OK);
+                    if (logging == 0)
+                    {
+                        printf(RED("Logging not added\n"));
+                    }
                     close(sock_one);
 
                     int sock_two = connect_to_port(found_server->backup_port[1]);
-                    send(sock_two,r, sizeof(st_request), 0);
+                    send(sock_two, r, sizeof(st_request), 0);
+                    int ssid2 = 0;
+                    for (int i = 0; i < server_count; i++)
+                    {
+                        if (strcmp(ss_list[i]->port, found_server->backup_port[1]) == 0)
+                        {
+                            ssid2 = ss_list[i]->ssid;
+                            break;
+                        }
+                    }
+                    logging = insert_log(SS, ssid2, atoi(found_server->backup_port[1]), r->request_type, r->data, OK);
+                    if (logging == 0)
+                    {
+                        printf(RED("Logging not added\n"));
+                    }
                     close(sock_two);
-                    
-
                 }
 
                 found_server->path_count--;
@@ -278,6 +362,11 @@ void *process(void *arg)
         r->request_type = RES;
         strcpy(r->data, list);
         send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+        int logging = insert_log(CLIENT, 0, NS_PORT, req->request_type, req->data, OK);
+        if (logging == 0)
+        {
+            printf(RED("Logging not added\n"));
+        }
 
         return NULL;
     }
@@ -300,7 +389,7 @@ void *process(void *arg)
         for (int i = 0; i < server_count; i++)
         {
 
-            if (search_path(ss_list[i]->root, token) >=0)
+            if (search_path(ss_list[i]->root, token) >= 0)
             {
                 found_server = ss_list[i];
                 break;
@@ -318,16 +407,43 @@ void *process(void *arg)
 
             int sock_one = connect_to_port(found_server->backup_port[0]);
             send(sock_one, r, sizeof(st_request), 0);
+            int ssid = 0;
+            for (int i = 0; i < server_count; i++)
+            {
+                if (strcmp(ss_list[i]->port, found_server->backup_port[0]) == 0)
+                {
+                    ssid = ss_list[i]->ssid;
+                    break;
+                }
+            }
+            int logging = insert_log(SS, ssid, atoi(found_server->backup_port[0]), r->request_type, r->data, OK);
+            if (logging == 0)
+            {
+                printf(RED("Logging not added\n"));
+            }
             close(sock_one);
 
             int sock_two = connect_to_port(found_server->backup_port[1]);
             send(sock_two, r, sizeof(st_request), 0);
+            int ssid2 = 0;
+            for (int i = 0; i < server_count; i++)
+            {
+                if (strcmp(ss_list[i]->port, found_server->backup_port[1]) == 0)
+                {
+                    ssid2 = ss_list[i]->ssid;
+                    break;
+                }
+            }
+            logging = insert_log(SS, ssid, atoi(found_server->backup_port[1]), r->request_type, r->data, OK);
+            if (logging == 0)
+            {
+                printf(RED("Logging not added\n"));
+            }
             close(sock_two);
         }
         client_socket_arr[client_id] = -1;
         close(client_socket_arr[client_id]);
         return NULL;
-        
     }
 
     client_socket_arr[client_id] = -1;
