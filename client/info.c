@@ -16,9 +16,6 @@ void communicate_with_ss_info(char *ipaddress, char *port, char *path)
     }
 
     // Reader Packet sent
-
-    // while(1)
-    // {
     request req = (request)malloc(sizeof(st_request));
     if (recv(client_socket, req, sizeof(st_request), 0) == -1)
     {
@@ -31,7 +28,7 @@ void communicate_with_ss_info(char *ipaddress, char *port, char *path)
     }
     else
     {
-        printf("WRONG DATA RECEIVED\n");
+        printf(RED("Failed to retrieve Data : %s\n"),req->data);
     }
     free(req);
     close(client_socket);
@@ -61,6 +58,11 @@ void info(char *path)
         if (response->request_type == FILE_NOT_FOUND)
         {
             printf(RED("File/Directory Not Found \n")); // Error Not Found File
+            return;
+        }
+        else if(response->request_type == TIMEOUT)
+        {
+            printf(RED("File currently unavailable please try again\n"));
             return;
         }
         ipaddress = strtok(response->data, "|");

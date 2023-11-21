@@ -5,8 +5,8 @@ void *basic_ops(request req, int client_id)
     if (strstr(req->data, ".txt") == NULL)
     {
         request r = (request)malloc(sizeof(st_request));
-        r->request_type = FILE_NOT_FOUND;
-        strcpy(r->data, "File not found");
+        r->request_type = INVALID_FILETYPE;
+        strcpy(r->data, "Incompatible file opened!");
         send(client_socket_arr[client_id], r, sizeof(st_request), 0);
         int logging = insert_log(CLIENT, 0, NS_PORT, req->request_type, req->data, OK);
         if (logging == 0)

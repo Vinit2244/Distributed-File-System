@@ -2,6 +2,11 @@
 
 void copy_operation(int req_type,char *path1, char *path2)
 {
+    if(strstr(path2,".txt")!=NULL)
+    {
+        printf(RED("File cannot be a destination path \n"));
+        return ;
+    }
     int client_socket = connect_with_ns();
     st_request *packet = malloc(sizeof(st_request));
     packet->request_type = req_type;
@@ -19,7 +24,7 @@ void copy_operation(int req_type,char *path1, char *path2)
     }
     else
     {
-        printf(RED("Copy of Directory or File not succesfull \n")); // Error Not succesfull
+        printf(RED("Copy of Directory or File not succesfull : %s \n"),response->data); // Error Not succesfull
     }
     close(client_socket);
 }

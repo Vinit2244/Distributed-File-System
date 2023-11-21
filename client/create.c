@@ -19,8 +19,7 @@ void create_operation(char *path, char *name,int macro)
     }
     else
     {   
-        printf("%d\n",response->request_type);
-        printf(RED("Creation of Directory or File not succesfull \n")); // Error Not succesfull
+        printf(RED("Creation of Directory or File not succesfull : %s \n"),response->data); // Error Not succesfull
     }
     close(client_socket);
 }

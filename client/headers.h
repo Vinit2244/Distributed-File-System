@@ -104,6 +104,10 @@
 #define INVALID_DELETION     501
 // All not found error codes will start from 400
 #define FILE_NOT_FOUND       404
+#define INVALID_FILETYPE     402
+#define SERVER_NOT_FOUND     403
+// Everything ok
+#define OK                   200
 
 
 // ============================ Structures ============================

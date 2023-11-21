@@ -46,6 +46,20 @@ void communicate_with_ss_write(char *ipaddress, char *port, char *path,int f)
         }
     }
     free(packet);
+    request req = (request)malloc(sizeof(st_request));
+    if (recv(client_socket, req, sizeof(st_request), 0) == -1)
+    {
+        perror("Receiving data failed");
+        // continue;
+    }
+    if(req->request_type==ACK)
+    {
+        printf("%s\n", req->data);
+    }
+    else
+    {
+        printf(RED("Failed to Write Data : %s\n"),req->data);
+    }
     close(client_socket);
 }
 

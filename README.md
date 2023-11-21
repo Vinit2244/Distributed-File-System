@@ -87,6 +87,10 @@ Vinit Mehta (2022111001)</i> <br>
 - Assuming all the files ends with .txt (all are text files) and no folder name ends with .txt
 - Got the basic tries code from chatGPT prompt : "Write me a tries code in C to store directory structure such that each node of trie contains name of a file/directory and points to next files in the directory. Write code for effective search, insert and delete", and then changed it according to our requirement.
 - Manually can't change backup folder.
+- If we have a very large text file then while backing it up only data which can fit into one request.
+- If a storage server is down the all the paths of that storage server is still accessible but only in read mode.
+- Files and folders are assumed to have all permissions (0777).
+- Not all the SS are down (original + backups) at the same time.
 
 <p id="#nma"></p>
 
@@ -209,6 +213,13 @@ till the socket is closed.
   * CREATE FOLDER \<path\> \<folder name\>
 * DESCRIPTION :
   * Similar to create file.
+
+### <span style="color:pink"> DELETE FILE Request </span>
+* FORMAT :
+  * DELETE FILE \<path\>
+* DESCRIPTION :
+  * Client sends the request to the NS (FORMAT : \<path\>). Then NS checks if the path provided is accessible or not, if the path is accessible then it sends Delete request to the respective server.
+  * SS tries to delete the file, if there is some error while 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

@@ -5,7 +5,7 @@ void list()
     int client_socket = connect_with_ns();
     st_request *packet = malloc(sizeof(st_request));
     packet->request_type = LIST;
-    strcpy(packet->data,"hi Fuck dp");
+    strcpy(packet->data,"dummy");
     ssize_t bytes_sent = send(client_socket, packet, sizeof(st_request), 0);
     if (bytes_sent == -1)
     {

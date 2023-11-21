@@ -92,6 +92,7 @@
 #define SERVER_NOT_FOUND     403
 // Everything ok
 #define OK                   200
+#define INVALID_FILETYPE     402
 
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
