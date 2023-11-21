@@ -1,0 +1,1 @@
+./SS3_dir1 ./SS3_dir1/SS3_file1.txt ./SS3_dir1/SS3_file2.txt ./SS3_dir2 ./SS3_dir2/SS3_file3.txt ./SS3_dir2/SS3_file4.txt ./SS3_dir3 ./SS3_dir3/SS3_file5.txt ./SS3_dir3/SS3_file6.txt ./SS3_file7.txt ./SS3_file8.txt 

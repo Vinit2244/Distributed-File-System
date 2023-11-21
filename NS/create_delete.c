@@ -36,10 +36,20 @@ void* handle_create(request req,int client_id){
 
         if (flag == 0 || found_server->status == 0)
         {
-            printf(RED("Error in creating file/folder with code : %d\n\n\n"),r->request_type);
+            // printf(RED("Error in creating file/folder with code : %d\n\n\n"),r->request_type);
+            if(flag==0)
+            {
             r->request_type = FILE_NOT_FOUND;
+                
+            }
+            else{
+            r->request_type = SERVER_NOT_FOUND;
+            }
             strcpy(r->data, "File/Directory not found");
-            send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+            
+            if(send(client_socket_arr[client_id], r, sizeof(st_request), 0)<0){
+                printf(RED("Error in sending data to client \n"));
+            }
             int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,FILE_NOT_FOUND);
             if(logging==0)
             {
@@ -52,22 +62,42 @@ void* handle_create(request req,int client_id){
             snprintf(r->data, sizeof(r->data), "%s/%s", search_path_string, name);
 
             int s_fd=connect_to_port(found_server->port);
-            send(s_fd, r, sizeof(st_request), 0);
+
+            if(s_fd<0){
+                printf(RED("Error in connecting to server\n"));
+            }
+
+            if(send(s_fd, r, sizeof(st_request), 0)<0){
+                printf(RED("Error in sending data to server \n"));
+            }
+
+
             int logging=insert_log(SS,found_server->ssid,atoi(found_server->port),req->request_type,req->data,OK);
             if(logging==0)
             {
                 printf(RED("Logging not added\n"));
             }
-            recv(s_fd, r, sizeof(st_request), 0);
+
+
+            if(recv(s_fd, r, sizeof(st_request), 0)<0){
+                printf(RED("Error in receiving data from server \n"));
+            }
+            
+            
+            
             logging=insert_log(SS,found_server->ssid,atoi(found_server->port),req->request_type,req->data,OK);
             if(logging==0)
             {
                 printf(RED("Logging not added\n"));
             }
-            close(s_fd);
+
+            if(close(s_fd)<0){
+                printf(RED("Error in closing connection with server \n"));
+            }
             
             if(r->request_type!=ACK){
                 printf(RED("Error in creating file/folder with code : %d\n\n\n"),r->request_type);
+                send(client_socket_arr[client_id], r, sizeof(st_request), 0);
                 return NULL;
             }
 
@@ -84,7 +114,13 @@ void* handle_create(request req,int client_id){
                 }
                 snprintf(r->data, sizeof(r->data), "%s/%s", search_path_string, name);
                 int s_fd=connect_to_port(found_server->backup_port[0]);
-                send(s_fd, r, sizeof(st_request), 0);
+
+
+                if(send(s_fd, r, sizeof(st_request), 0)<0){
+                    printf(RED("Error in sending data to server \n"));
+                }
+
+
                 int ssid=0;
                 for(int i=0;i<server_count;i++)
                 {
@@ -94,13 +130,17 @@ void* handle_create(request req,int client_id){
                         break;
                     }
                 }
+
                 logging=insert_log(SS,ssid,atoi(found_server->backup_port[0]),r->request_type,r->data,OK);
                 if(logging==0)
                 {
                     printf(RED("Logging not added\n"));
                 }
 
-                close(s_fd);
+                if(close(s_fd)<0){
+                    printf(RED("Error in closing connection with server \n"));
+                }
+                
                 if (req->request_type == CREATE_FOLDER)
                 {
                     r->request_type = BACKUP_CREATE_FOLDER;
@@ -111,8 +151,16 @@ void* handle_create(request req,int client_id){
                 }
                 snprintf(r->data, sizeof(r->data), "%s/%s", search_path_string, name);
                 s_fd = connect_to_port(found_server->backup_port[1]);
+
+                if(s_fd<0){
+                    printf(RED("Error in connecting to server\n"));
+                }
                 
-                send(s_fd, r, sizeof(st_request), 0);
+
+                if(send(s_fd, r, sizeof(st_request), 0)<0){
+                    printf(RED("Error in sending data to server \n"));
+                }
+
                 int ssid2=0;
                 for(int i=0;i<server_count;i++)
                 {
@@ -128,12 +176,18 @@ void* handle_create(request req,int client_id){
                     printf(RED("Logging not added\n"));
                 }
 
-                close(s_fd);
+                if(close(s_fd)<0){
+                    printf(RED("Error in closing connection with server \n"));
+                }
             }
 
             r->request_type = ACK;
             strcpy(r->data, "Operation succesful!\n");
-            send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+
+            if(send(client_socket_arr[client_id], r, sizeof(st_request), 0)<0){
+                printf(RED("Error in sending data to client \n"));
+            }
+            
             int logging1=insert_log(CLIENT,0,NS_PORT,r->request_type,r->data,OK);
             if(logging1==0)
             {
@@ -175,7 +229,13 @@ void* handle_delete(request req,int client_id){
         {
             r->request_type = FILE_NOT_FOUND;
             strcpy(r->data, "File/Directory not found");
-            send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+
+
+            if(send(client_socket_arr[client_id], r, sizeof(st_request), 0)<0){
+                printf(RED("Error in sending data to client \n"));
+            }
+
+
             int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,FILE_NOT_FOUND);
             if(logging==0)
             {
@@ -191,23 +251,43 @@ void* handle_delete(request req,int client_id){
                 strcpy(r->data, req->data);
 
                 int s_fd=connect_to_port(found_server->port);
-                send(s_fd, r, sizeof(st_request), 0);
+
+                if(s_fd<0){
+                    printf(RED("Error in connecting to server\n"));
+                }
+
+                if(send(s_fd, r, sizeof(st_request), 0)<0){
+                    printf(RED("Error in sending data to server \n"));
+                }
+
                 int logging=insert_log(SS,found_server->ssid,atoi(found_server->port),req->request_type,req->data,OK);
                 if(logging==0)
                 {
                     printf(RED("Logging not added\n"));
                 }
-                recv(s_fd, r, sizeof(st_request), 0);
+
+                
+                if(recv(s_fd, r, sizeof(st_request), 0)<0){
+                    printf(RED("Error in receiving data from server \n"));
+                }
+
+
                 logging=insert_log(SS,found_server->ssid,atoi(found_server->port),req->request_type,req->data,OK);
                 if(logging==0)
                 {
                     printf(RED("Logging not added\n"));
                 }
-                close(s_fd);
+
+                if(close(s_fd)<0){
+                    printf(RED("Error in closing connection with server \n"));
+                }
+                // close(s_fd);
+
+
                 if(r->request_type!=ACK){
                 printf(RED("Error in creating file/folder with code : %d\n\n\n"),r->request_type);
                 return NULL;
-            }
+                }
 
                 if (found_server->is_backedup == 1)
                 {
@@ -237,7 +317,15 @@ void* handle_delete(request req,int client_id){
                     if(ss_list[id1]->status ==1){
                     strcpy(r->data, req->data);
                     s_fd=connect_to_port(found_server->backup_port[0]);
-                    send(s_fd, r, sizeof(st_request), 0);
+
+                    if(s_fd<0){
+                        printf(RED("Error in connecting to server\n"));
+                    }
+
+                    if(send(s_fd, r, sizeof(st_request), 0)<0){
+                        printf(RED("Error in sending data to server \n"));
+                    }
+                    
                     int ssid=0;
                     for(int i=0;i<server_count;i++)
                     {
@@ -252,7 +340,12 @@ void* handle_delete(request req,int client_id){
                     {
                         printf(RED("Logging not added\n"));
                     }
-                    close(s_fd);}
+
+                    if(close(s_fd)<0){
+                        printf(RED("Error in closing connection with server \n"));
+                    }
+                    
+                    }
 
                     if(ss_list[id2]->status ==1){
                     if (req->request_type == DELETE_FOLDER)
@@ -265,7 +358,18 @@ void* handle_delete(request req,int client_id){
                     }
                     strcpy(r->data, req->data);
                     s_fd=connect_to_port(found_server->backup_port[1]);
-                    send(s_fd, r, sizeof(st_request), 0);
+
+
+                    if(s_fd<0){
+                        printf(RED("Error in connecting to server\n"));
+                    }
+                    
+                    
+                    if(send(s_fd, r, sizeof(st_request), 0)<0){
+                        printf(RED("Error in sending data to server \n"));
+                    }
+                    
+                    
                     int ssid2=0;
                     for(int i=0;i<server_count;i++)
                     {
@@ -281,24 +385,42 @@ void* handle_delete(request req,int client_id){
                         printf(RED("Logging not added\n"));
                     }
 
-                    close(s_fd);}
+                    if(close(s_fd)<0){
+                        printf(RED("Error in closing connection with server \n"));
+                    }
+                    
+                    }
                 }
 
                 r->request_type = ACK;
                 strcpy(r->data, "Operation succesful!\n");
-                send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+
+
+                if(send(client_socket_arr[client_id], r, sizeof(st_request), 0)<0){
+                    printf(RED("Error in sending data to client \n"));
+                }
+                
+                
                 int logging2=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,OK);
                 if(logging2==0)
                 {
                     printf(RED("Logging not added\n"));
                 }
-                close(s_fd);
+
+
+                if(close(s_fd)<0){
+                    printf(RED("Error in closing connection with server \n"));
+                }
             }
             else
             {
-                r->request_type = FILE_NOT_FOUND;
+                r->request_type = SERVER_NOT_FOUND;
                 strcpy(r->data, "File not found");
-                send(client_socket_arr[client_id], r, sizeof(st_request), 0);
+
+                if(send(client_socket_arr[client_id], r, sizeof(st_request), 0)<0){
+                    printf(RED("Error in sending data to client \n"));
+                }
+                
                 int logging=insert_log(CLIENT,0,NS_PORT,req->request_type,req->data,FILE_NOT_FOUND);
                 if(logging==0)
                 {

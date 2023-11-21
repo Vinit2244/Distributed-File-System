@@ -89,6 +89,7 @@
 // All not found error codes will start from 400
 #define FILE_NOT_FOUND       404
 #define OK                   200
+#define SERVER_NOT_FOUND     403
 
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"

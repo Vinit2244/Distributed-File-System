@@ -17,7 +17,7 @@ void *check_and_store_filepaths(void *args)
         seek(base_dir_path, paths);
 
         // Print the number of paths found for debugging
-        printf("\nChecked filepaths : %d\n", paths->number_of_nodes);
+    
 
         // Number of paths found
         int num_paths_found = paths->number_of_nodes;
@@ -195,7 +195,7 @@ void *check_and_store_backup_paths(void *args)
         seek(base_dir_path, paths);
 
         // Print the number of paths found for debugging
-        printf("\nChecked backup_paths : %d\n", paths->number_of_nodes);
+        
 
         // Number of paths found
         int num_backup_paths_found = paths->number_of_nodes;
@@ -557,7 +557,7 @@ void *serve_request(void *args)
         strcpy(copy_data_request.data, path);
         strcat(copy_data_request.data, "|");
         strcat(copy_data_request.data, buffer);
-
+        // printf("Data to be copied : %s\n", copy_data_request.data);
         int sent_msg_size;
         if ((sent_msg_size = send(sock_fd, (request)&copy_data_request, sizeof(st_request), 0)) <= 0)
         {
@@ -572,32 +572,26 @@ void *serve_request(void *args)
     {
         // Relative path to the folder to be copied
         char *path = recvd_request.data;
-        printf("Data came : %s\n", path);
+        
         // Absolute path
         char abs_path[MAX_PATH_LEN] = {0};
 
         // Creating the absolute path to the folder
         strcpy(abs_path, PWD);
         strcat(abs_path, path + 1);
-        printf("Absolute path created : %s\n", abs_path);
+        
 
         char** files_folders = get_all_files_folders(abs_path);
-        printf("All files and folders extracted : \n");
+        
 
         int n_files_folders = 0;
         while (files_folders[n_files_folders] != NULL)
         {
-            printf("%s", files_folders[n_files_folders]);
+            
             n_files_folders++;
         }
-        printf("Number of files and folder in the folder found : %d\n", n_files_folders);
-
-        // char n_paths[100] = {0};
-        // sprintf(n_paths, "%d", n_files_folders);
-        // send_ack(N_FILES_REQ, sock_fd, n_paths);
-
         char* src_folder_name = get_folder_name(path);
-        printf("Source folder name : %s\n", src_folder_name);
+        
 
         st_copy_folder paths_sending_req;
         paths_sending_req.request_type = FOLDER_DATA_TO_BE_COPIED;
@@ -606,10 +600,10 @@ void *serve_request(void *args)
         for (int i = 0; i < n_files_folders; i++)
         {
             char* curr_path = files_folders[i];
-            printf("Curr path copying : %s\n", curr_path);
+            
 
             char* updated_path = update_path_rel(abs_path, curr_path);
-            printf("Updated curr path : %s\n", updated_path);
+            
 
             char final_str_to_send[MAX_DATA_LENGTH] = {0};
             strcat(final_str_to_send, "/");
@@ -617,7 +611,7 @@ void *serve_request(void *args)
             strcat(final_str_to_send, "/");
             strcat(final_str_to_send, curr_path + 2);
 
-            printf("Final string to send before attaching content : %s\n", final_str_to_send);
+            
 
             if (is_file(updated_path))
             {
@@ -765,7 +759,6 @@ void *serve_request(void *args)
     }
     else if (recvd_request.request_type == PING)
     {
-        printf(YELLOW("Ping request received.\n"));
         // Received a ping request from NFS to check if my SS is still responding or not so sending back the PING to say that I am active and listening
         st_request ping_request;
         send_ack(ACK, sock_fd, NULL);

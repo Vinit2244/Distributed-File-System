@@ -209,6 +209,7 @@ void* copy_handler(request req,int client_id){
             int s_fd = connect_to_port(source_no->port);
 
             send(s_fd, get_r, sizeof(st_request), 0);
+
             int logging=insert_log(SS,source_no->ssid,atoi(source_no->port),get_r->request_type,get_r->data,OK);
             if(logging==0)
             {
@@ -229,7 +230,9 @@ void* copy_handler(request req,int client_id){
 
             char *token = strtok(get_r->data, "|");
             char *token1 = strtok(NULL, "|");
-
+            // printf("%s\n",token1);
+            char* file_name = (char*)malloc(sizeof(char)*MAX_DATA_LENGTH);
+            strcpy(file_name,token1);
             char **paths = (char **)malloc(sizeof(char *) * MAX_CONNECTIONS);
             for (int i = 0; i < MAX_CONNECTIONS; i++)
             {
@@ -243,13 +246,17 @@ void* copy_handler(request req,int client_id){
                 ind++;
                 token_path = strtok(NULL, "/");
             }
-            char *new_dest = (char *)malloc(sizeof(char) * MAX_DATA_LENGTH);
+
+            char *new_dest = (char *)calloc(MAX_DATA_LENGTH,sizeof(char));
             snprintf(new_dest, MAX_DATA_LENGTH, "%s/%s", desti, paths[ind - 1]);
-            
+            // printf("%s\n", new_dest);
 
             get_r->request_type = PASTE;
-            snprintf(get_r->data, MAX_DATA_LENGTH, "%s|%s", new_dest, token);
-            // printf("%s\n", get_r->data);
+            memset(get_r->data, 0, MAX_DATA_LENGTH);
+            strcat(get_r->data, new_dest);
+            strcat(get_r->data, "|");
+            strcat(get_r->data, file_name);
+            // printf("%s %s\n", get_r->data,file_name);
             int s_fd1 = connect_to_port(dest_no->port);
 
             send(s_fd1, get_r, sizeof(st_request), 0);

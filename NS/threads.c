@@ -115,7 +115,6 @@ void *server_handler(void *p)
         strcpy(r->data, "");
 
         int x = send(sock, r, sizeof(st_request), MSG_NOSIGNAL);
-        printf("Pinging server %s\n\n\n", pack->port);
         if (x < 0)
         {
             pack->status = 0;

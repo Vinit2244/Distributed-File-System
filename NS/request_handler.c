@@ -126,21 +126,41 @@ void *process(void *arg)
                         strcpy(r->data, path[i]);
 
                         int sock_one = connect_to_port(found_server->port);
+                        if(sock_one == -1){
+                            printf(RED("Server %s is down\n"),found_server->port);
+                            continue;
+                        }
 
-                        send(sock_one, r, sizeof(st_request), 0);
+                        if(send(sock_one, r, sizeof(st_request), 0)<0){
+                            printf(RED("Error in sending request to server %s\n"),found_server->port);
+                        }
+
                         int logging = insert_log(SS, found_server->ssid, atoi(found_server->port), req->request_type, req->data, OK);
                         if (logging == 0)
                         {
                             printf(RED("Logging not added\n"));
                         }
-                        recv(sock_one, r, sizeof(st_request), 0);
 
-                        close(sock_one);
+                        if(recv(sock_one, r, sizeof(st_request), 0)<0){
+                            printf(RED("Error in receiving request from server %s\n"),found_server->port);
+                        }
+
+                        if(close(sock_one)<0){
+                            printf(RED("Error in closing socket %s\n"),found_server->port);
+                        }
 
                         r->request_type = BACKUP_PASTE;
 
                         int sock_two = connect_to_port(found_server->backup_port[0]);
-                        send(sock_two, r, sizeof(st_request), 0);
+
+                        if(sock_two < 0){
+                            printf(RED("Server %s is down\n"),found_server->backup_port[0]);
+                            continue;
+                        }
+
+                        if(send(sock_two, r, sizeof(st_request), 0)<0){
+                            printf(RED("Error in sending request to server %s\n"),found_server->backup_port[0]);
+                        }
                         int ssid = 0;
                         for (int i = 0; i < server_count; i++)
                         {
@@ -155,11 +175,26 @@ void *process(void *arg)
                         {
                             printf(RED("Logging not added\n"));
                         }
-                        close(sock_two);
+
+                        if(close(sock_two)<0){
+                            printf(RED("Error in closing socket %s\n"),found_server->backup_port[0]);
+                        }
+
 
                         int sock_three = connect_to_port(found_server->backup_port[1]);
-                        send(sock_three, r, sizeof(st_request), 0);
+
+                        if(sock_three < 0){
+                            printf(RED("Server %s is down\n"),found_server->backup_port[1]);
+                            continue;
+                        }
+
+                        if(send(sock_three, r, sizeof(st_request), 0)<0){
+                            printf(RED("Error in sending request to server %s\n"),found_server->backup_port[1]);
+                        }
+
+
                         int ssid2 = 0;
+
                         for (int i = 0; i < server_count; i++)
                         {
                             if (strcmp(ss_list[i]->port, found_server->backup_port[1]) == 0)
@@ -173,7 +208,10 @@ void *process(void *arg)
                         {
                             printf(RED("Logging not added\n"));
                         }
-                        close(sock_three);
+
+                        if(close(sock_three)<0){
+                            printf(RED("Error in closing socket %s\n"),found_server->backup_port[1]);
+                        }
                     }
 
                     else
@@ -185,7 +223,14 @@ void *process(void *arg)
 
                         int sock_one = connect_to_port(found_server->backup_port[0]);
 
-                        send(sock_one, r, sizeof(st_request), 0);
+                        if(sock_one < 0){
+                            printf(RED("Server %s is down\n"),found_server->backup_port[0]);
+                            continue;
+                        }
+
+                        if(send(sock_one, r, sizeof(st_request), 0)<0){
+                            printf(RED("Error in sending request to server %s\n"),found_server->backup_port[0]);
+                        }
                         int ssid = 0;
                         for (int i = 0; i < server_count; i++)
                         {
@@ -200,10 +245,21 @@ void *process(void *arg)
                         {
                             printf(RED("Logging not added\n"));
                         }
-                        close(sock_one);
+                        if(close(sock_one)<0){
+                            printf(RED("Error in closing socket %s\n"),found_server->backup_port[0]);
+                        }
 
                         int sock_two = connect_to_port(found_server->backup_port[1]);
-                        send(sock_two, r, sizeof(st_request), 0);
+
+                        if(sock_two < 0){
+                            printf(RED("Server %s is down\n"),found_server->backup_port[1]);
+                            continue;
+                        }
+                        
+                        if(send(sock_two, r, sizeof(st_request), 0)<0){
+                            printf(RED("Error in sending request to server %s\n"),found_server->backup_port[1]);
+                        }
+                        
                         int ssid2 = 0;
                         for (int i = 0; i < server_count; i++)
                         {
@@ -218,7 +274,11 @@ void *process(void *arg)
                         {
                             printf(RED("Logging not added\n"));
                         }
-                        close(sock_two);
+
+                        if(close(sock_two)<0){
+                            printf(RED("Error in closing socket %s\n"),found_server->backup_port[1]);
+                        
+                        }
                     }
                 }
             }
