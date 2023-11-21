@@ -284,29 +284,33 @@ void *serve_request(void *args)
         send_read_data.request_type = READ_REQ_DATA;
         memset(send_read_data.data, 0, MAX_DATA_LENGTH);
 
-        // Reading data onto the data buffer of read request
-        int bytes_read = fread(send_read_data.data, 1, MAX_DATA_LENGTH, fptr);
-
-        int sent_msg_size;
-        if ((sent_msg_size = send(sock_fd, (request)&send_read_data, sizeof(st_request), 0)) <= 0)
+        while (fgets(send_read_data.data, MAX_DATA_LENGTH - 1, fptr) != NULL)
         {
-            fprintf(stderr, RED("send : could not send the read data : %s\n"), strerror(errno));
-            if (recvd_request.request_type == READ_REQ)
+            int sent_msg_size;
+            if ((sent_msg_size = send(sock_fd, (request)&send_read_data, sizeof(st_request), 0)) <= 0)
             {
-                send_ack(READ_FAILED, sock_fd, strerror(errno));
+                fprintf(stderr, RED("send : could not send the read data : %s\n"), strerror(errno));
+                if (recvd_request.request_type == READ_REQ)
+                {
+                    send_ack(READ_FAILED, sock_fd, strerror(errno));
+                }
+                else
+                {
+                    free(path_to_read);
+                }
+                goto End;
             }
-            else
-            {
-                free(path_to_read);
-            }
-            goto End;
+            memset(send_read_data.data, 0, MAX_DATA_LENGTH);
         }
+        send_ack(ACK, sock_fd, NULL);
+        
 
         if (recvd_request.request_type == BACKUP_READ_REQ)
         {
             free(path_to_read);
         }
     }
+
     else if (recvd_request.request_type == WRITE_REQ || recvd_request.request_type == BACKUP_WRITE_REQ)
     {
         char* path_to_write;
