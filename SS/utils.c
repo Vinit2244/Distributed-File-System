@@ -339,6 +339,7 @@ void send_ack(const int status_code, const int sock_fd, const char* msg)
 
     // Nothing to be written onto the data as only ack is being sent
     
+    
     int sent_msg_size;
     if ((sent_msg_size = send(sock_fd, (request) &ack_st, sizeof(st_request), 0)) <= 0)
     {

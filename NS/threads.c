@@ -443,13 +443,13 @@ void *backup_thread()
                     {
                         if(flag==0){
                             id1=j;
-                            flag++;
+                            flag=1;
                         }
                         else if(flag==1){
                             id2=j;
-                            flag++;
+                            flag=0;
                         }
-                        if(flag==2)break;
+                        // if(flag==2)break;
                     }
                 }
                 pthread_mutex_unlock(&server_lock);
