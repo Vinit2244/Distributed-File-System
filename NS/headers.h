@@ -43,7 +43,6 @@
 #define COPY_FILE            16
 #define PASTE                15
 #define COPY_REQUEST         17
-#define FILE_NOT_FOUND       18
 #define RETRIEVE_INFO        19
 #define LIST                 20
 #define PING                 22
@@ -74,6 +73,22 @@
 
 // Macros for caching 
 #define CACHE_SIZE 20
+// ============================= ERROR Codes =============================
+// All operation failed error codes start from 600
+#define REQ_UNSERVICED       600
+#define DELETE_FAILED        601
+#define PASTE_FAILED         602
+#define COPY_FAILED          603
+#define APPEND_FAILED        604
+#define CREATE_FAILED        605
+#define INFO_RETRIEVAL_FAILED 606
+#define READ_FAILED          607
+#define WRITE_FAILED         608
+// All not allowed error codes will start from 500
+#define INVALID_DELETION     501
+// All not found error codes will start from 400
+#define FILE_NOT_FOUND       404
+#define OK                   200
 
 // =========================== Color Codes ============================
 #define RED_COLOR    "\033[0;31m"
