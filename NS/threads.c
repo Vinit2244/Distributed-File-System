@@ -201,10 +201,7 @@ void *sync_backup(void *arg)
                 trav = trav->next;
             }
 
-            // printf("Server %s path count is %d\n\n\n",pack->port,cnt);
-
-            
-
+           
             int ind=0;
 
             for(int i=0;i<cnt;i++){

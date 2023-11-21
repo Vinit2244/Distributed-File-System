@@ -38,6 +38,12 @@ void *check_and_store_filepaths(void *args)
         // Have copied all the found paths in the array so now we can free the linked list
         free_linked_list(paths);
 
+        for(int k=0 ; k< num_paths_found; k++){
+            if(strstr(found_paths[k],"/backup")!=NULL){
+                free(found_paths[k]);
+                found_paths[k]=NULL;
+            }
+        }
         // Now go and match each paths in not_accessible_paths and found_paths
         for (int k = 0; k < num_of_not_accessible_paths_stored; k++)
         {
@@ -283,7 +289,7 @@ void *serve_request(void *args)
         st_request send_read_data;
         send_read_data.request_type = READ_REQ_DATA;
         memset(send_read_data.data, 0, MAX_DATA_LENGTH);
-
+        // int count=0;
         while (fgets(send_read_data.data, MAX_DATA_LENGTH - 1, fptr) != NULL)
         {
             int sent_msg_size;
@@ -300,10 +306,13 @@ void *serve_request(void *args)
                 }
                 goto End;
             }
+            // count++;
+            // printf("Sent request %d\n",count);
             memset(send_read_data.data, 0, MAX_DATA_LENGTH);
         }
+        sleep(1);
         send_ack(ACK, sock_fd, NULL);
-        
+        printf("Ack sent!\n");
 
         if (recvd_request.request_type == BACKUP_READ_REQ)
         {

@@ -64,7 +64,7 @@
 #define COPY_TO              15
 #define COPY_FROM            16
 #define COPY_FILE            16
-#define FILE_NOT_FOUND       18
+// #define FILE_NOT_FOUND       18
 #define RETRIEVE_INFO        19
 #define INFO                 20
 #define LIST                 20
